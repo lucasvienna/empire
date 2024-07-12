@@ -13,5 +13,6 @@ pub struct Faction {
 #[derive(Insertable)]
 #[diesel(table_name = factions)]
 pub struct NewFaction<'a> {
+    pub id: &'a str,
     pub name: &'a str,
 }
