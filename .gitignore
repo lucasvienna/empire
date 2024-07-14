@@ -15,6 +15,7 @@ Cargo.lock
 
 # development database
 *.sqlite
+*.sqlite-*
 
 # logs
 log/

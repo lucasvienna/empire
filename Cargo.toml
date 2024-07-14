@@ -7,6 +7,7 @@ repository = "https://github.com/lucasvienna/empire.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rocket = "0.5.1"
 diesel = { version = "2.2.1", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
 diesel_migrations = "2.2.0"
 libsqlite3-sys = { version = "0.28.0", features = ["bundled"] }

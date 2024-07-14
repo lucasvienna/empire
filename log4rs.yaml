@@ -18,7 +18,7 @@ appenders:
 
 # Set the default logging level to "info" and attach the "stdout" appender to the root
 root:
-  level: info
+  level: trace
   appenders:
     - stdout
 
@@ -27,9 +27,14 @@ loggers:
   empire::db:
     level: trace
 
-  # Route log events sent to the "app::requests" logger to the "requests" appender,
+  # Route log events sent to the "empire::requests" logger to the "requests" appender,
   # and *not* the normal appenders installed at the root
   empire::requests:
+    level: trace
+    appenders:
+      - requests
+    additive: false
+  rocket::server:
     level: trace
     appenders:
       - requests
