@@ -50,6 +50,7 @@ enum ErrorRepr {
     WithDescription(ErrorKind, &'static str),
     WithDescriptionAndDetail(ErrorKind, &'static str, String),
     IoError(io::Error),
+    DbError(diesel::result::Error),
 }
 
 pub struct EmpError {
@@ -80,6 +81,14 @@ impl From<(ErrorKind, &'static str, String)> for EmpError {
     }
 }
 
+impl From<diesel::result::Error> for EmpError {
+    fn from(err: diesel::result::Error) -> EmpError {
+        EmpError {
+            repr: ErrorRepr::DbError(err),
+        }
+    }
+}
+
 impl error::Error for EmpError {
     fn cause(&self) -> Option<&dyn error::Error> {
         match self.repr {
@@ -99,6 +108,7 @@ impl fmt::Display for EmpError {
                 detail.fmt(f)
             }
             ErrorRepr::IoError(ref err) => err.fmt(f),
+            ErrorRepr::DbError(ref err) => err.fmt(f),
         }
     }
 }

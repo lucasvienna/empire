@@ -7,7 +7,6 @@ use log::info;
 // https://gist.github.com/lanedraex/bc01eb399614359470cfacc9d95993fb
 
 const BUFFER_SIZE: usize = 2048;
-const READ_TIMEOUT: std::time::Duration = std::time::Duration::new(1, 0);
 const STRING_CAPACITY: usize = 128;
 
 fn listen(socket: &UdpSocket) -> Vec<u8> {
@@ -41,8 +40,6 @@ fn send(socket: &UdpSocket, receiver: &str, msg: &Vec<u8>) -> usize {
 fn init_host(host: &str) -> UdpSocket {
     info!("initializing host: {:?}", host);
     let socket = UdpSocket::bind(host).expect("failed to bind host socket");
-    let dur = Some(READ_TIMEOUT);
-    let _res = socket.set_read_timeout(dur).expect("failed to set timeout");
 
     socket
 }
@@ -157,9 +154,10 @@ fn build_config(cmd_input: CommandInput, host_config: &mut HostConfig) {
 }
 
 fn main() {
+    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
     let mut host_config = HostConfig {
         local_ip: "127.0.0.1".to_owned(),
-        local_port: "7777".to_owned(),
+        local_port: "40404".to_owned(),
         local_host: String::with_capacity(STRING_CAPACITY),
         remote_ip: "127.0.0.1".to_owned(),
         remote_port: "12345".to_owned(),
@@ -190,12 +188,11 @@ fn main() {
     }*/
 
     let socket: UdpSocket = init_host(&host_config.local_host);
-    info!("host config: {:?}", host_config);
-    info!("socket: {:?}", socket);
     let msg_bytes = vec![
         0, 5, 0, 108, 111, 114, 101, 109, 5, 0, 105, 112, 115, 117, 109,
     ];
 
+    send(&socket, &host_config.remote_host, &msg_bytes);
     loop {
         let received_msg = listen(&socket);
         send(&socket, &host_config.remote_host, &msg_bytes);

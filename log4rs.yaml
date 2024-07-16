@@ -18,7 +18,7 @@ appenders:
 
 # Set the default logging level to "info" and attach the "stdout" appender to the root
 root:
-  level: trace
+  level: info
   appenders:
     - stdout
 

@@ -1,16 +1,20 @@
 use crate::models::faction::NewFaction;
 
-pub const DEFAULT_FACTIONS: [NewFaction; 3] = [
+pub const DEFAULT_FACTIONS: [NewFaction; 4] = [
     NewFaction {
-        id: "H",
+        id: 0,
+        name: "Neutral",
+    },
+    NewFaction {
+        id: 1,
         name: "Humans",
     },
     NewFaction {
-        id: "O",
+        id: 2,
         name: "Orcs",
     },
     NewFaction {
-        id: "E",
+        id: 3,
         name: "Elves",
     },
 ];

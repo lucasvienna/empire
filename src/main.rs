@@ -7,21 +7,23 @@ use crate::data::hydrate::initialize_database;
 use crate::db::conn::get_connection_pool;
 use crate::db::migrations::run_migrations;
 
-pub mod data;
-pub mod db;
-pub mod models;
-pub mod net;
-pub mod rpc;
-pub mod schema;
+mod data;
+mod db;
+mod game;
+mod models;
+mod net;
+mod rpc;
+mod schema;
 
 fn main() {
     log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
     log::info!("Starting Empire server...");
 
     let pool = get_connection_pool();
-    let res = run_migrations(&mut pool.get().unwrap());
+    let mut conn = pool.get().unwrap();
+    let res = run_migrations(&mut conn);
     res.expect("Should execute pending migrations");
-    initialize_database(&mut pool.get().unwrap());
+    initialize_database(&mut conn).expect("Should initialize database");
 
     rpc::receiver::start().expect("Should start receiver");
 

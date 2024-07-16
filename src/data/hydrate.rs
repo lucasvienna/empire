@@ -1,29 +1,35 @@
-use diesel::SqliteConnection;
-
 use crate::data::buildings::DEFAULT_BUILDINGS;
 use crate::data::factions::DEFAULT_FACTIONS;
-use crate::db::{buildings, factions};
+use crate::db::{DbConn, Repository};
+use crate::db::buildings::BuildingRepository;
+use crate::db::factions::FactionRepository;
+use crate::models::error::EmpResult;
 
-pub fn initialize_database(conn: &mut SqliteConnection) {
-    if !has_all_factions(conn) {
+pub fn initialize_database(conn: &mut DbConn) -> EmpResult<()> {
+    let mut factions_repo = FactionRepository {};
+    let mut building_repo = BuildingRepository {};
+
+    if !has_all_factions(conn, &factions_repo) {
         log::info!("Creating default factions");
         for fac in DEFAULT_FACTIONS.iter() {
-            factions::create_faction(conn, fac);
+            factions_repo.create(conn, fac)?;
         }
     }
 
-    if !has_all_buildings(conn) {
+    if !has_all_buildings(conn, &building_repo) {
         log::info!("Creating default buildings");
         for building in DEFAULT_BUILDINGS.iter() {
-            buildings::create_building(conn, building);
+            building_repo.create(conn, building)?;
         }
     }
 
     log::info!("Database initialized");
+    Ok(())
 }
 
-fn has_all_factions(conn: &mut SqliteConnection) -> bool {
-    let facs: Vec<String> = factions::get_all(conn)
+fn has_all_factions(conn: &mut DbConn, repo: &FactionRepository) -> bool {
+    let facs: Vec<i32> = repo
+        .get_all(conn)
         .unwrap_or_default()
         .iter()
         .map(|f| f.id.clone())
@@ -32,15 +38,16 @@ fn has_all_factions(conn: &mut SqliteConnection) -> bool {
         return false;
     }
     for fac in DEFAULT_FACTIONS.iter() {
-        if !facs.contains(&String::from(fac.id)) {
+        if !facs.contains(&fac.id) {
             return false;
         }
     }
     true
 }
 
-fn has_all_buildings(conn: &mut SqliteConnection) -> bool {
-    let buildings: Vec<String> = buildings::get_all(conn)
+fn has_all_buildings(conn: &mut DbConn, repo: &BuildingRepository) -> bool {
+    let buildings: Vec<String> = repo
+        .get_all(conn)
         .unwrap_or_default()
         .iter()
         .map(|b| b.name.clone())

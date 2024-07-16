@@ -5,14 +5,25 @@ diesel::table! {
         id -> Integer,
         name -> Text,
         max_level -> Integer,
-        faction -> Nullable<Text>,
+        faction -> Integer,
     }
 }
 
 diesel::table! {
     factions (id) {
-        id -> Text,
+        id -> Integer,
         name -> Text,
+    }
+}
+
+diesel::table! {
+    resources (id) {
+        id -> Integer,
+        user -> Integer,
+        food -> Integer,
+        wood -> Integer,
+        stone -> Integer,
+        gold -> Integer,
     }
 }
 
@@ -29,13 +40,21 @@ diesel::table! {
     users (id) {
         id -> Integer,
         name -> Text,
-        faction -> Text,
+        faction -> Integer,
         data -> Nullable<Binary>,
     }
 }
 
+diesel::joinable!(buildings -> factions (faction));
+diesel::joinable!(resources -> users (user));
 diesel::joinable!(user_buildings -> buildings (building));
 diesel::joinable!(user_buildings -> users (user));
 diesel::joinable!(users -> factions (faction));
 
-diesel::allow_tables_to_appear_in_same_query!(buildings, factions, user_buildings, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    buildings,
+    factions,
+    resources,
+    user_buildings,
+    users,
+);

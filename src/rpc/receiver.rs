@@ -1,4 +1,3 @@
-use std::env;
 use std::net;
 use std::net::UdpSocket;
 use std::thread;
@@ -16,7 +15,7 @@ fn listen(socket: &UdpSocket, mut buffer: &mut [u8]) -> EmpResult<(usize, net::S
     Ok((number_of_bytes, src_addr))
 }
 
-fn send(socket: &UdpSocket, receiver: &str, msg: &Vec<u8>) -> EmpResult<usize> {
+fn send(socket: &UdpSocket, receiver: &str, msg: &[u8]) -> EmpResult<usize> {
     log::info!("sending data");
     let result = socket.send_to(msg, receiver)?;
 
@@ -24,7 +23,7 @@ fn send(socket: &UdpSocket, receiver: &str, msg: &Vec<u8>) -> EmpResult<usize> {
 }
 
 fn init_host(host: &str) -> UdpSocket {
-    log::info!("initializing host");
+    log::info!("initializing host: {:?}", host);
     let socket = UdpSocket::bind(host).expect("failed to bind host socket");
 
     socket
@@ -38,17 +37,18 @@ pub fn start() -> EmpResult<()> {
         let sock = socket.try_clone()?;
         match listen(&sock, &mut buf) {
             Ok((amt, src)) => {
+                let res = buf[..amt].to_vec();
                 thread::spawn(move || {
                     log::info!("Handling connection from {}", &src);
-                    let buf = &mut buf[..amt];
                     let packet =
-                        get_packet(&mut Buffer::from(buf.to_vec())).expect("error getting packet");
+                        get_packet(&mut Buffer::from(res.to_vec())).expect("error getting packet");
                     log::info!("Received packet: {:?}", packet);
-                    send(&sock, &src.to_string(), buf.into())
+                    send(&sock, &src.to_string(), &[])
                 });
             }
             Err(err) => {
                 log::error!("Err: {}", err);
+                log::error!("Buffer: {:?}", &buf);
             }
         }
     }
