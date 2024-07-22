@@ -1,13 +1,14 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
+use crate::models::building;
 use crate::models::building::{Building, NewBuilding};
 use crate::models::error::EmpResult;
 use crate::schema::buildings;
 
 pub struct BuildingRepository {}
 
-impl Repository<Building, NewBuilding<'static>> for BuildingRepository {
+impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingRepository {
     fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<Building>> {
         let buildings = buildings::table
             .select(Building::as_select())
@@ -15,8 +16,8 @@ impl Repository<Building, NewBuilding<'static>> for BuildingRepository {
         Ok(buildings)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, id: &i32) -> EmpResult<Building> {
-        let building = buildings::table.find(id).first(connection)?;
+    fn get_by_id(&self, connection: &mut DbConn, id: &building::PK) -> EmpResult<Building> {
+        let building = buildings::table.find(&id).first(connection)?;
         Ok(building)
     }
 
@@ -39,8 +40,8 @@ impl Repository<Building, NewBuilding<'static>> for BuildingRepository {
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &i32) -> EmpResult<()> {
-        diesel::delete(buildings::table.find(id)).execute(connection)?;
+    fn delete(&mut self, connection: &mut DbConn, id: &building::PK) -> EmpResult<()> {
+        diesel::delete(buildings::table.find(&id)).execute(connection)?;
         Ok(())
     }
 }

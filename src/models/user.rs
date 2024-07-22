@@ -6,7 +6,7 @@ use crate::schema::users;
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
-    pub id: i32,
+    pub id: PK,
     pub name: String,
     pub faction: i32,
     pub data: Option<Vec<u8>>,
@@ -19,3 +19,5 @@ pub struct NewUser<'a> {
     pub faction: i32,
     pub data: Option<Vec<u8>>,
 }
+
+pub type PK = i32;

@@ -6,9 +6,10 @@ use crate::schema::buildings;
 #[diesel(table_name = buildings)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Building {
-    pub id: i32,
+    pub id: PK,
     pub name: String,
     pub max_level: i32,
+    pub max_count: i32,
     pub faction: i32,
 }
 
@@ -17,5 +18,8 @@ pub struct Building {
 pub struct NewBuilding<'a> {
     pub name: &'a str,
     pub max_level: i32,
+    pub max_count: i32,
     pub faction: i32,
 }
+
+pub type PK = i32;

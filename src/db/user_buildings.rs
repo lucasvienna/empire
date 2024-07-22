@@ -1,0 +1,129 @@
+use diesel::prelude::*;
+
+use crate::db::{DbConn, Repository};
+use crate::models::{building, user, user_building};
+use crate::models::building::Building;
+use crate::models::error::EmpResult;
+use crate::models::user_building::{NewUserBuilding, UserBuilding};
+use crate::schema::{buildings, user_buildings};
+
+pub struct UserBuildingRepository {}
+
+impl Repository<UserBuilding, NewUserBuilding, user_building::PK> for UserBuildingRepository {
+    fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<UserBuilding>> {
+        let buildings = user_buildings::table
+            .select(UserBuilding::as_select())
+            .load(connection)?;
+        Ok(buildings)
+    }
+
+    fn get_by_id(
+        &self,
+        connection: &mut DbConn,
+        id: &user_building::PK,
+    ) -> EmpResult<UserBuilding> {
+        let building = user_buildings::table.find(id).first(connection)?;
+        Ok(building)
+    }
+
+    fn create(
+        &mut self,
+        connection: &mut DbConn,
+        entity: &NewUserBuilding,
+    ) -> EmpResult<UserBuilding> {
+        let building = diesel::insert_into(user_buildings::table)
+            .values(entity)
+            .returning(UserBuilding::as_returning())
+            .get_result(connection)?;
+        Ok(building)
+    }
+
+    fn update(
+        &mut self,
+        connection: &mut DbConn,
+        entity: &UserBuilding,
+    ) -> EmpResult<UserBuilding> {
+        let building = diesel::update(user_buildings::table.find(entity.id))
+            .set(entity)
+            .get_result(connection)?;
+        Ok(building)
+    }
+
+    fn delete(&mut self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<()> {
+        diesel::delete(user_buildings::table.find(id)).execute(connection)?;
+        Ok(())
+    }
+}
+
+/**
+* Tuple for upgrade information.  
+*
+* .0 - UserBuilding
+* .1 - buildings.max_level
+*/
+type UpgradeTuple = (UserBuilding, Option<i32>);
+
+impl UserBuildingRepository {
+    pub fn can_construct(
+        &self,
+        connection: &mut DbConn,
+        usr_id: &user::PK,
+        bld_id: &building::PK,
+    ) -> EmpResult<bool> {
+        let bld = buildings::table
+            .find(bld_id)
+            .select(Building::as_select())
+            .first(connection)?;
+        let count = user_buildings::table
+            .filter(user_buildings::user_id.eq(usr_id))
+            .filter(user_buildings::building_id.eq(bld_id))
+            .count()
+            .get_result::<i64>(connection)?;
+
+        Ok(count < bld.max_count as i64)
+    }
+
+    pub fn get_upgrade_tuple(
+        &self,
+        connection: &mut DbConn,
+        usr_bld_id: &user_building::PK,
+    ) -> EmpResult<UpgradeTuple> {
+        let upgrade_tuple = user_buildings::table
+            .left_join(buildings::table)
+            .filter(user_buildings::id.eq(usr_bld_id))
+            .select((UserBuilding::as_select(), buildings::max_level.nullable()))
+            .first::<UpgradeTuple>(connection)?;
+        Ok(upgrade_tuple)
+    }
+
+    pub fn set_upgrade_time(
+        &self,
+        connection: &mut DbConn,
+        pk: &user_building::PK,
+        upgrade_time: Option<&str>,
+    ) -> EmpResult<UserBuilding> {
+        let building = diesel::update(user_buildings::table.find(pk))
+            .set(user_buildings::upgrade_time.eq(upgrade_time))
+            .returning(UserBuilding::as_returning())
+            .get_result(connection)?;
+        Ok(building)
+    }
+
+    /**
+     * Increase the level of a building by one and resets the upgrade timer.
+     */
+    pub fn inc_level(
+        &self,
+        connection: &mut DbConn,
+        id: &user_building::PK,
+    ) -> EmpResult<UserBuilding> {
+        let building = diesel::update(user_buildings::table.find(id))
+            .set((
+                user_buildings::level.eq(user_buildings::level + 1),
+                user_buildings::upgrade_time.eq(None::<String>),
+            ))
+            .returning(UserBuilding::as_returning())
+            .get_result(connection)?;
+        Ok(building)
+    }
+}

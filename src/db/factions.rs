@@ -2,12 +2,13 @@ use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
 use crate::models::error::EmpResult;
+use crate::models::faction;
 use crate::models::faction::{Faction, NewFaction};
 use crate::schema::factions;
 
 pub struct FactionRepository {}
 
-impl Repository<Faction, NewFaction<'static>> for FactionRepository {
+impl Repository<Faction, NewFaction<'static>, faction::PK> for FactionRepository {
     fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<Faction>> {
         let factions = factions::table
             .select(Faction::as_select())
@@ -15,7 +16,7 @@ impl Repository<Faction, NewFaction<'static>> for FactionRepository {
         Ok(factions)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, id: &i32) -> EmpResult<Faction> {
+    fn get_by_id(&self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<Faction> {
         let faction = factions::table.find(id).first(connection)?;
         Ok(faction)
     }
@@ -39,7 +40,7 @@ impl Repository<Faction, NewFaction<'static>> for FactionRepository {
         Ok(faction)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &i32) -> EmpResult<()> {
+    fn delete(&mut self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<()> {
         diesel::delete(factions::table.find(id)).execute(connection)?;
         Ok(())
     }

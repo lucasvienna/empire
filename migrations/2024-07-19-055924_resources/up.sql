@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS resources
+(
+    user_id INTEGER NOT NULL,
+    food    INTEGER NOT NULL DEFAULT 100,
+    wood    INTEGER NOT NULL DEFAULT 100,
+    stone   INTEGER NOT NULL DEFAULT 100,
+    gold    INTEGER NOT NULL DEFAULT 100,
+
+    PRIMARY KEY (user_id),
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);

@@ -6,13 +6,15 @@ use crate::schema::factions;
 #[diesel(table_name = factions)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Faction {
-    pub id: i32,
+    pub id: PK,
     pub name: String,
 }
 
 #[derive(Insertable)]
 #[diesel(table_name = factions)]
 pub struct NewFaction<'a> {
-    pub id: i32,
+    pub id: PK,
     pub name: &'a str,
 }
+
+pub type PK = i32;

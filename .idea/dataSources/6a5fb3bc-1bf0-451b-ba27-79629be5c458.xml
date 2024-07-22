@@ -499,7 +499,7 @@
     </routine>
     <schema id="191" parent="1" name="main">
       <Current>1</Current>
-      <LastIntrospectionLocalTimestamp>2024-07-15.14:38:24</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2024-07-19.19:30:42</LastIntrospectionLocalTimestamp>
     </schema>
     <argument id="192" parent="16">
       <ArgumentDirection>R</ArgumentDirection>
@@ -1591,227 +1591,265 @@
       <Position>1</Position>
     </argument>
     <table id="555" parent="191" name="__diesel_schema_migrations"/>
-    <table id="556" parent="191" name="buildings"/>
-    <table id="557" parent="191" name="factions"/>
-    <table id="558" parent="191" name="resources"/>
-    <table id="559" parent="191" name="sqlite_master">
+    <table id="556" parent="191" name="building_levels"/>
+    <table id="557" parent="191" name="buildings"/>
+    <table id="558" parent="191" name="factions"/>
+    <table id="559" parent="191" name="resources"/>
+    <table id="560" parent="191" name="sqlite_master">
       <System>1</System>
     </table>
-    <table id="560" parent="191" name="sqlite_sequence">
+    <table id="561" parent="191" name="sqlite_sequence">
       <System>1</System>
     </table>
-    <table id="561" parent="191" name="user_buildings"/>
-    <table id="562" parent="191" name="users"/>
-    <column id="563" parent="555" name="version">
+    <table id="562" parent="191" name="user_buildings"/>
+    <table id="563" parent="191" name="users"/>
+    <column id="564" parent="555" name="version">
       <DasType>VARCHAR(50)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="564" parent="555" name="run_on">
+    <column id="565" parent="555" name="run_on">
       <DasType>TIMESTAMP|0s</DasType>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <index id="565" parent="555" name="sqlite_autoindex___diesel_schema_migrations_1">
+    <index id="566" parent="555" name="sqlite_autoindex___diesel_schema_migrations_1">
       <ColNames>version</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="566" parent="555">
+    <key id="567" parent="555">
       <ColNames>version</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex___diesel_schema_migrations_1</UnderlyingIndexName>
     </key>
-    <column id="567" parent="556" name="id">
+    <column id="568" parent="556" name="id">
       <AutoIncrement>1</AutoIncrement>
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="568" parent="556" name="name">
-      <DasType>TEXT|0s</DasType>
+    <column id="569" parent="556" name="building_id">
+      <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="569" parent="556" name="max_level">
+    <column id="570" parent="556" name="level">
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>3</Position>
     </column>
-    <column id="570" parent="556" name="faction">
-      <DasType>TEXT|0s</DasType>
+    <column id="571" parent="556" name="upgrade_time">
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
       <Position>4</Position>
     </column>
-    <key id="571" parent="556">
+    <column id="572" parent="556" name="req_food">
+      <DasType>INTEGER|0s</DasType>
+      <Position>5</Position>
+    </column>
+    <column id="573" parent="556" name="req_wood">
+      <DasType>INTEGER|0s</DasType>
+      <Position>6</Position>
+    </column>
+    <column id="574" parent="556" name="req_stone">
+      <DasType>INTEGER|0s</DasType>
+      <Position>7</Position>
+    </column>
+    <column id="575" parent="556" name="req_gold">
+      <DasType>INTEGER|0s</DasType>
+      <Position>8</Position>
+    </column>
+    <foreign-key id="576" parent="556">
+      <ColNames>building_id</ColNames>
+      <RefColNames>id</RefColNames>
+      <RefTableName>buildings</RefTableName>
+    </foreign-key>
+    <key id="577" parent="556">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
-    <check id="572" parent="557">
-      <Predicate>id IN (&apos;H&apos;, &apos;O&apos;, &apos;E&apos;)</Predicate>
-    </check>
-    <column id="573" parent="557" name="id">
-      <DasType>TEXT|0s</DasType>
-      <NotNull>1</NotNull>
-      <Position>1</Position>
-    </column>
-    <column id="574" parent="557" name="name">
-      <DasType>TEXT|0s</DasType>
-      <NotNull>1</NotNull>
-      <Position>2</Position>
-    </column>
-    <index id="575" parent="557" name="sqlite_autoindex_factions_1">
-      <ColNames>id</ColNames>
-      <NameSurrogate>1</NameSurrogate>
-      <Unique>1</Unique>
-    </index>
-    <key id="576" parent="557">
-      <ColNames>id</ColNames>
-      <Primary>1</Primary>
-      <UnderlyingIndexName>sqlite_autoindex_factions_1</UnderlyingIndexName>
-    </key>
-    <column id="577" parent="558" name="id">
+    <column id="578" parent="557" name="id">
       <AutoIncrement>1</AutoIncrement>
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="578" parent="558" name="user">
-      <DasType>INTEGER|0s</DasType>
+    <column id="579" parent="557" name="name">
+      <DasType>TEXT|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="579" parent="558" name="food">
+    <column id="580" parent="557" name="max_level">
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>3</Position>
+    </column>
+    <column id="581" parent="557" name="faction">
+      <DasType>INTEGER|0s</DasType>
+      <DefaultExpression>0</DefaultExpression>
+      <NotNull>1</NotNull>
+      <Position>4</Position>
+    </column>
+    <foreign-key id="582" parent="557">
+      <ColNames>faction</ColNames>
+      <RefColNames>id</RefColNames>
+      <RefTableName>factions</RefTableName>
+    </foreign-key>
+    <key id="583" parent="557">
+      <ColNames>id</ColNames>
+      <Primary>1</Primary>
+    </key>
+    <column id="584" parent="558" name="id">
+      <AutoIncrement>1</AutoIncrement>
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>1</Position>
+    </column>
+    <column id="585" parent="558" name="name">
+      <DasType>TEXT|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>2</Position>
+    </column>
+    <key id="586" parent="558">
+      <ColNames>id</ColNames>
+      <Primary>1</Primary>
+    </key>
+    <column id="587" parent="559" name="user_id">
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>1</Position>
+    </column>
+    <column id="588" parent="559" name="food">
+      <DasType>INTEGER|0s</DasType>
+      <DefaultExpression>100</DefaultExpression>
+      <NotNull>1</NotNull>
+      <Position>2</Position>
+    </column>
+    <column id="589" parent="559" name="wood">
       <DasType>INTEGER|0s</DasType>
       <DefaultExpression>100</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>3</Position>
     </column>
-    <column id="580" parent="558" name="wood">
+    <column id="590" parent="559" name="stone">
       <DasType>INTEGER|0s</DasType>
       <DefaultExpression>100</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>4</Position>
     </column>
-    <column id="581" parent="558" name="stone">
+    <column id="591" parent="559" name="gold">
       <DasType>INTEGER|0s</DasType>
       <DefaultExpression>100</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>5</Position>
     </column>
-    <column id="582" parent="558" name="gold">
-      <DasType>INTEGER|0s</DasType>
-      <DefaultExpression>100</DefaultExpression>
-      <NotNull>1</NotNull>
-      <Position>6</Position>
-    </column>
-    <foreign-key id="583" parent="558">
-      <ColNames>user</ColNames>
+    <foreign-key id="592" parent="559">
+      <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>users</RefTableName>
     </foreign-key>
-    <key id="584" parent="558">
-      <ColNames>id</ColNames>
+    <key id="593" parent="559">
+      <ColNames>user_id</ColNames>
       <Primary>1</Primary>
     </key>
-    <column id="585" parent="559" name="type">
+    <column id="594" parent="560" name="type">
       <DasType>TEXT|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="586" parent="559" name="name">
+    <column id="595" parent="560" name="name">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="587" parent="559" name="tbl_name">
+    <column id="596" parent="560" name="tbl_name">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="588" parent="559" name="rootpage">
+    <column id="597" parent="560" name="rootpage">
       <DasType>INT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="589" parent="559" name="sql">
+    <column id="598" parent="560" name="sql">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="590" parent="560" name="name">
+    <column id="599" parent="561" name="name">
       <Position>1</Position>
     </column>
-    <column id="591" parent="560" name="seq">
+    <column id="600" parent="561" name="seq">
       <Position>2</Position>
     </column>
-    <column id="592" parent="561" name="user">
+    <column id="601" parent="562" name="user_id">
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="593" parent="561" name="building">
+    <column id="602" parent="562" name="building_id">
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="594" parent="561" name="level">
+    <column id="603" parent="562" name="level">
       <DasType>INTEGER|0s</DasType>
       <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>3</Position>
     </column>
-    <column id="595" parent="561" name="upgrade_time">
+    <column id="604" parent="562" name="upgrade_time">
       <DasType>TEXT|0s</DasType>
+      <DefaultExpression>NULL</DefaultExpression>
       <Position>4</Position>
     </column>
-    <foreign-key id="596" parent="561">
-      <ColNames>user</ColNames>
+    <foreign-key id="605" parent="562">
+      <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>users</RefTableName>
     </foreign-key>
-    <foreign-key id="597" parent="561">
-      <ColNames>building</ColNames>
+    <foreign-key id="606" parent="562">
+      <ColNames>building_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>buildings</RefTableName>
     </foreign-key>
-    <index id="598" parent="561" name="sqlite_autoindex_user_buildings_1">
-      <ColNames>user
-building</ColNames>
+    <index id="607" parent="562" name="sqlite_autoindex_user_buildings_1">
+      <ColNames>user_id
+building_id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="599" parent="561">
-      <ColNames>user
-building</ColNames>
+    <key id="608" parent="562">
+      <ColNames>user_id
+building_id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_user_buildings_1</UnderlyingIndexName>
     </key>
-    <check id="600" parent="562">
-      <Predicate>faction IN (&apos;H&apos;, &apos;O&apos;, &apos;E&apos;)</Predicate>
-    </check>
-    <column id="601" parent="562" name="id">
+    <column id="609" parent="563" name="id">
       <AutoIncrement>1</AutoIncrement>
       <DasType>INTEGER|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="602" parent="562" name="name">
+    <column id="610" parent="563" name="name">
       <DasType>TEXT|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="603" parent="562" name="faction">
-      <DasType>TEXT|0s</DasType>
-      <DefaultExpression>&apos;H&apos;</DefaultExpression>
+    <column id="611" parent="563" name="faction">
+      <DasType>INTEGER|0s</DasType>
+      <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>3</Position>
     </column>
-    <column id="604" parent="562" name="data">
+    <column id="612" parent="563" name="data">
       <DasType>BLOB|0s</DasType>
       <Position>4</Position>
     </column>
-    <foreign-key id="605" parent="562">
+    <foreign-key id="613" parent="563">
       <ColNames>faction</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>factions</RefTableName>
     </foreign-key>
-    <key id="606" parent="562">
+    <key id="614" parent="563">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
