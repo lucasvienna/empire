@@ -1,5 +1,157 @@
-use crate::models::error::EmpResult;
+use std::str::FromStr;
 
-pub fn upgrade_building(user: i32, building: i32) -> EmpResult<bool> {
-    Ok(true)
+use chrono::prelude::*;
+
+use crate::db::{DbConn, Repository};
+use crate::db::building_levels::BuildingLevelRepository;
+use crate::db::buildings::BuildingRepository;
+use crate::db::resources::ResourcesRepository;
+use crate::db::user_buildings::UserBuildingRepository;
+use crate::models::{building, user, user_building};
+use crate::models::building_level::BuildingLevel;
+use crate::models::error::{EmpError, EmpResult, ErrorKind};
+use crate::models::user_building::NewUserBuilding;
+
+pub struct BuildingService<'a> {
+    connection: &'a mut DbConn,
+    bld_repo: BuildingRepository,
+    usr_bld_repo: UserBuildingRepository,
+    bld_lvl_repo: BuildingLevelRepository,
+    res_repo: ResourcesRepository,
+}
+
+impl BuildingService<'_> {
+    pub fn new(connection: &mut DbConn) -> BuildingService {
+        BuildingService {
+            connection,
+            bld_repo: BuildingRepository {},
+            usr_bld_repo: UserBuildingRepository {},
+            bld_lvl_repo: BuildingLevelRepository {},
+            res_repo: ResourcesRepository {},
+        }
+    }
+
+    pub fn construct_building(
+        &mut self,
+        usr_id: &user::PK,
+        bld_id: &building::PK,
+    ) -> EmpResult<()> {
+        let bld_lvl = self
+            .bld_lvl_repo
+            .get_next_upgrade(&mut *self.connection, bld_id, &0)?;
+
+        // check for resources
+        if !self.has_enough_resources(usr_id, &bld_lvl)? {
+            return Err(EmpError::from((
+                ErrorKind::ConstructBuildingError,
+                "Not enough resources",
+            )));
+        }
+
+        // verify if maximum number of buildings was reached
+        if !self
+            .usr_bld_repo
+            .can_construct(&mut *self.connection, usr_id, bld_id)?
+        {
+            return Err(EmpError::from((
+                ErrorKind::ConstructBuildingError,
+                "Max buildings reached",
+            )));
+        }
+
+        // construct building
+        let usr_bld = self.usr_bld_repo.create(
+            &mut *self.connection,
+            &NewUserBuilding {
+                user_id: *usr_id,
+                building_id: *bld_id,
+                level: Some(1),
+            },
+        );
+        match usr_bld {
+            Ok(_) => Ok(()),
+            Err(_) => Err(EmpError::from((
+                ErrorKind::ConstructBuildingError,
+                "Failed to construct building",
+            ))),
+        }
+    }
+
+    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> EmpResult<()> {
+        let (usr_bld, max_level) = self
+            .usr_bld_repo
+            .get_upgrade_tuple(&mut *self.connection, usr_bld_id)?;
+        let bld_lvl = self.bld_lvl_repo.get_next_upgrade(
+            &mut *self.connection,
+            &usr_bld.building_id,
+            &usr_bld.level,
+        )?;
+
+        // check for resources
+        if !self.has_enough_resources(&usr_bld.user_id, &bld_lvl)? {
+            return Err(EmpError::from((
+                ErrorKind::UpgradeBuildingError,
+                "Not enough resources",
+            )));
+        }
+
+        // check for max level constraints
+        if usr_bld.level >= max_level.unwrap_or(0) {
+            return Err(EmpError::from((
+                ErrorKind::UpgradeBuildingError,
+                "Building is at max level",
+            )));
+        }
+
+        // upgrade building
+        let usr_bld = self.usr_bld_repo.set_upgrade_time(
+            &mut *self.connection,
+            usr_bld_id,
+            Some(&bld_lvl.upgrade_time.as_str()),
+        )?;
+        match usr_bld.upgrade_time {
+            Some(_) => Ok(()),
+            None => Err(EmpError::from((
+                ErrorKind::UpgradeBuildingError,
+                "Failed to upgrade building",
+            ))),
+        }
+    }
+
+    pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> EmpResult<()> {
+        let usr_bld = self.usr_bld_repo.get_by_id(&mut *self.connection, id)?;
+        match usr_bld.upgrade_time {
+            None => Err(EmpError::from((
+                ErrorKind::ConfirmUpgradeError,
+                "Building is not upgrading",
+            ))),
+            Some(t) => {
+                let time = DateTime::<Utc>::from_str(&t.as_str()).map_err(|_| {
+                    EmpError::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
+                })?;
+                if time <= Utc::now() {
+                    self.usr_bld_repo.inc_level(&mut *self.connection, id)?;
+                    Ok(())
+                } else {
+                    Err(EmpError::from((
+                        ErrorKind::ConfirmUpgradeError,
+                        "Upgrade time has not passed",
+                    )))
+                }
+            }
+        }
+    }
+
+    fn has_enough_resources(
+        &mut self,
+        user_id: &user::PK,
+        bld_lvl: &BuildingLevel,
+    ) -> EmpResult<bool> {
+        let res = self.res_repo.get_by_id(&mut *self.connection, user_id)?;
+        let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
+        let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
+        let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);
+        let has_enough_gold = res.gold >= bld_lvl.req_gold.unwrap_or(0);
+        Ok(has_enough_food && has_enough_wood && has_enough_stone && has_enough_gold)
+    }
 }

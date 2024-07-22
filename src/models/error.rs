@@ -4,6 +4,7 @@ pub type EmpResult<T> = Result<T, EmpError>;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {
+    // Packet Errors
     InvalidPacket,
     InvalidUsername,
     InvalidPassword,
@@ -43,6 +44,11 @@ pub enum ErrorKind {
     InvalidPacketLevel,
     InvalidPacketFaction,
     UnreadBytesError,
+
+    // Service Errors
+    ConstructBuildingError,
+    UpgradeBuildingError,
+    ConfirmUpgradeError,
 }
 
 #[derive(Debug)]

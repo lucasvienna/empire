@@ -1,1 +1,1 @@
-mod building_service;
+pub mod building_service;
