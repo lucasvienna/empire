@@ -3,11 +3,9 @@ extern crate rocket;
 
 use log4rs;
 
-use crate::data::hydrate::initialize_database;
 use crate::db::conn::get_connection_pool;
 use crate::db::migrations::run_migrations;
 
-mod data;
 mod db;
 mod game;
 mod models;
@@ -23,7 +21,6 @@ fn main() {
     let mut conn = pool.get().unwrap();
     let res = run_migrations(&mut conn);
     res.expect("Should execute pending migrations");
-    initialize_database(&mut conn).expect("Should initialize database");
 
     rpc::receiver::start().expect("Should start receiver");
 
