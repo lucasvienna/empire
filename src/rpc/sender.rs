@@ -1,5 +1,4 @@
 use std::io;
-use std::net;
 use std::net::UdpSocket;
 
 use log::info;
@@ -154,7 +153,7 @@ fn build_config(cmd_input: CommandInput, host_config: &mut HostConfig) {
 }
 
 fn main() {
-    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
+    log4rs::init_file("../../log4rs.yaml", Default::default()).unwrap();
     let mut host_config = HostConfig {
         local_ip: "127.0.0.1".to_owned(),
         local_port: "40404".to_owned(),
