@@ -1,3 +1,7 @@
+// while in development, ignore dead code and unused variables warnings
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 #[macro_use]
 extern crate rocket;
 
@@ -21,8 +25,4 @@ fn main() {
     let mut conn = pool.get().unwrap();
     let res = run_migrations(&mut conn);
     res.expect("Should execute pending migrations");
-
-    rpc::receiver::start().expect("Should start receiver");
-
-    // let server = net::server::start().launch();
 }
