@@ -9,3 +9,17 @@ CREATE TABLE IF NOT EXISTS resources
     PRIMARY KEY (user_id),
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
+
+CREATE TRIGGER new_user_resources_trigger
+    AFTER INSERT
+    ON users
+BEGIN
+    INSERT INTO resources (user_id) VALUES (NEW.id);
+END;
+
+CREATE TRIGGER delete_user_resources_trigger
+    AFTER DELETE
+    ON users
+BEGIN
+    DELETE FROM resources WHERE user_id = OLD.id;
+END;

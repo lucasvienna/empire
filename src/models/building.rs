@@ -11,6 +11,7 @@ pub struct Building {
     pub max_level: i32,
     pub max_count: i32,
     pub faction: i32,
+    pub starter: bool,
 }
 
 #[derive(Insertable)]
@@ -20,6 +21,7 @@ pub struct NewBuilding<'a> {
     pub max_level: i32,
     pub max_count: i32,
     pub faction: i32,
+    pub starter: bool,
 }
 
 pub type PK = i32;

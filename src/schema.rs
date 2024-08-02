@@ -20,6 +20,7 @@ diesel::table! {
         max_level -> Integer,
         max_count -> Integer,
         faction -> Integer,
+        starter -> Bool,
     }
 }
 

@@ -9,7 +9,7 @@ use crate::schema::{buildings, user_buildings};
 
 pub struct UserBuildingRepository {}
 
-impl Repository<UserBuilding, NewUserBuilding, user_building::PK> for UserBuildingRepository {
+impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBuildingRepository {
     fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<UserBuilding>> {
         let buildings = user_buildings::table
             .select(UserBuilding::as_select())
