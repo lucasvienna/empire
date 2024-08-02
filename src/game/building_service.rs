@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use chrono::prelude::*;
+use diesel::Connection;
 
 use crate::db::{DbConn, Repository};
 use crate::db::building_levels::BuildingLevelRepository;
@@ -10,7 +11,7 @@ use crate::db::user_buildings::UserBuildingRepository;
 use crate::models::{building, user, user_building};
 use crate::models::building_level::BuildingLevel;
 use crate::models::error::{EmpError, EmpResult, ErrorKind};
-use crate::models::user_building::NewUserBuilding;
+use crate::models::user_building::{NewUserBuilding, UserBuilding};
 
 pub struct BuildingService<'a> {
     connection: &'a mut DbConn,
@@ -35,7 +36,8 @@ impl BuildingService<'_> {
         &mut self,
         usr_id: &user::PK,
         bld_id: &building::PK,
-    ) -> EmpResult<()> {
+    ) -> EmpResult<UserBuilding> {
+        log::info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self
             .bld_lvl_repo
             .get_next_upgrade(&mut *self.connection, bld_id, &0)?;
@@ -59,17 +61,35 @@ impl BuildingService<'_> {
             )));
         }
 
-        // construct building
-        let usr_bld = self.usr_bld_repo.create(
-            &mut *self.connection,
-            &NewUserBuilding {
-                user_id: *usr_id,
-                building_id: *bld_id,
-                level: Some(1),
-            },
-        );
-        match usr_bld {
-            Ok(_) => Ok(()),
+        let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
+            log::info!("Initiating construction transaction");
+            // deduct resources
+            self.res_repo.deduct(
+                connection,
+                usr_id,
+                &(
+                    bld_lvl.req_food.unwrap_or(0),
+                    bld_lvl.req_wood.unwrap_or(0),
+                    bld_lvl.req_stone.unwrap_or(0),
+                    bld_lvl.req_gold.unwrap_or(0),
+                ),
+            )?;
+            // construct building
+            let usr_bld = self.usr_bld_repo.create(
+                connection,
+                &NewUserBuilding {
+                    user_id: *usr_id,
+                    building_id: *bld_id,
+                    level: Some(0),
+                    upgrade_time: Some(bld_lvl.upgrade_time.as_str()),
+                },
+            )?;
+            log::info!("Building constructed: {:?}", usr_bld);
+            Ok(usr_bld)
+        });
+
+        match res {
+            Ok(usr_bld) => Ok(usr_bld),
             Err(_) => Err(EmpError::from((
                 ErrorKind::ConstructBuildingError,
                 "Failed to construct building",
