@@ -28,5 +28,5 @@ pub trait Repository<Entity, NewEntity, PK = i32> {
     fn update(&mut self, connection: &mut DbConn, entity: &Entity) -> EmpResult<Entity>;
 
     /// delete an entity by its id
-    fn delete(&mut self, connection: &mut DbConn, id: &PK) -> EmpResult<()>;
+    fn delete(&mut self, connection: &mut DbConn, id: &PK) -> EmpResult<usize>;
 }

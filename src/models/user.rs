@@ -2,7 +2,7 @@ use diesel::prelude::*;
 
 use crate::schema::users;
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
@@ -12,7 +12,7 @@ pub struct User {
     pub data: Option<Vec<u8>>,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser<'a> {
     pub name: &'a str,

@@ -40,8 +40,8 @@ impl Repository<Faction, NewFaction<'static>, faction::PK> for FactionRepository
         Ok(faction)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<()> {
-        diesel::delete(factions::table.find(id)).execute(connection)?;
-        Ok(())
+    fn delete(&mut self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<usize> {
+        let res = diesel::delete(factions::table.find(id)).execute(connection)?;
+        Ok(res)
     }
 }

@@ -49,9 +49,9 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<()> {
-        diesel::delete(user_buildings::table.find(id)).execute(connection)?;
-        Ok(())
+    fn delete(&mut self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<usize> {
+        let res = diesel::delete(user_buildings::table.find(id)).execute(connection)?;
+        Ok(res)
     }
 }
 
@@ -70,6 +70,11 @@ impl UserBuildingRepository {
         usr_id: &user::PK,
         bld_id: &building::PK,
     ) -> EmpResult<bool> {
+        log::info!(
+            "Checking if user {} can construct building: {}",
+            usr_id,
+            bld_id
+        );
         let bld = buildings::table
             .find(bld_id)
             .select(Building::as_select())
@@ -79,6 +84,13 @@ impl UserBuildingRepository {
             .filter(user_buildings::building_id.eq(bld_id))
             .count()
             .get_result::<i64>(connection)?;
+        log::info!(
+            "User {} has {} buildings of type {}. Maximum is {}",
+            usr_id,
+            count,
+            bld_id,
+            bld.max_count
+        );
 
         Ok(count < bld.max_count as i64)
     }

@@ -2,7 +2,7 @@ use diesel::prelude::*;
 
 use crate::schema::resources;
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = resources)]
 #[diesel(primary_key(user_id))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -14,7 +14,7 @@ pub struct Resource {
     pub gold: i32,
 }
 
-#[derive(Insertable)]
+#[derive(Debug, Insertable)]
 #[diesel(table_name = resources)]
 pub struct NewResource {
     pub user_id: i32,

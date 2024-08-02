@@ -147,11 +147,19 @@ impl BuildingService<'_> {
         user_id: &user::PK,
         bld_lvl: &BuildingLevel,
     ) -> EmpResult<bool> {
+        log::debug!("Checking resources for user: {}", user_id);
         let res = self.res_repo.get_by_id(&mut *self.connection, user_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);
         let has_enough_gold = res.gold >= bld_lvl.req_gold.unwrap_or(0);
+        log::debug!(
+            "Has enough resources: food({}) wood({}) stone({}) gold({})",
+            has_enough_food,
+            has_enough_wood,
+            has_enough_stone,
+            has_enough_gold
+        );
         Ok(has_enough_food && has_enough_wood && has_enough_stone && has_enough_gold)
     }
 }

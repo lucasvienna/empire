@@ -34,8 +34,8 @@ impl Repository<User, NewUser<'static>, user::PK> for UserRepository {
         Ok(user)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &user::PK) -> EmpResult<()> {
-        diesel::delete(users::table.find(id)).execute(connection)?;
-        Ok(())
+    fn delete(&mut self, connection: &mut DbConn, id: &user::PK) -> EmpResult<usize> {
+        let res = diesel::delete(users::table.find(id)).execute(connection)?;
+        Ok(res)
     }
 }

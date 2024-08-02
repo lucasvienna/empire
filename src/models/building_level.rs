@@ -2,7 +2,7 @@ use diesel::prelude::*;
 
 use crate::schema::building_levels;
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = building_levels)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct BuildingLevel {
@@ -16,7 +16,7 @@ pub struct BuildingLevel {
     pub req_gold: Option<i32>,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = building_levels)]
 pub struct NewBuildingLevel<'a> {
     pub building_id: i32,

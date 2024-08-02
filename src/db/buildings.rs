@@ -40,8 +40,8 @@ impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingReposi
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &building::PK) -> EmpResult<()> {
-        diesel::delete(buildings::table.find(&id)).execute(connection)?;
-        Ok(())
+    fn delete(&mut self, connection: &mut DbConn, id: &building::PK) -> EmpResult<usize> {
+        let res = diesel::delete(buildings::table.find(&id)).execute(connection)?;
+        Ok(res)
     }
 }
