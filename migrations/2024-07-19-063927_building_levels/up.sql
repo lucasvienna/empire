@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS building_levels
+CREATE TABLE building_levels
 (
     id           INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     building_id  INTEGER                           NOT NULL,

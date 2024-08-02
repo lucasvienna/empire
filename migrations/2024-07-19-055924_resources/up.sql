@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS resources
+CREATE TABLE resources
 (
     user_id INTEGER NOT NULL,
     food    INTEGER NOT NULL DEFAULT 100,
