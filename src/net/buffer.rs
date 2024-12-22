@@ -1,5 +1,5 @@
-use std::{fmt, mem, ptr};
 use std::io::{Read, Write};
+use std::{fmt, mem, ptr};
 
 use crate::models::error::{EmpResult, ErrorKind};
 
@@ -105,7 +105,7 @@ pub fn write_byte(buffer: &mut Buffer, value: &u8) -> std::io::Result<usize> {
 }
 
 pub fn read_string(buffer: &mut Buffer) -> EmpResult<String> {
-    let len = read_short(buffer).unwrap() as usize;
+    let len = read_short(buffer)? as usize;
     let value = String::from_utf8_lossy(&buffer.data[buffer.index..buffer.index + len]);
     buffer.index += len;
     Ok(value.to_string())

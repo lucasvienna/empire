@@ -54,36 +54,36 @@ pub fn get_packet(buffer: &mut Buffer) -> EmpResult<Packet> {
     let packet = get_packet_by_bit(byte)?;
     match packet {
         Packet::Login { .. } => {
-            let username = buffer::read_string(buffer).unwrap();
-            let password = buffer::read_string(buffer).unwrap();
+            let username = buffer::read_string(buffer)?;
+            let password = buffer::read_string(buffer)?;
             Ok(Packet::Login { username, password })
         }
         Packet::Logout { .. } => {
-            let token = buffer::read_string(buffer).unwrap();
+            let token = buffer::read_string(buffer)?;
             Ok(Packet::Logout(token))
         }
         Packet::Chat { .. } => {
-            let message = buffer::read_string(buffer).unwrap();
+            let message = buffer::read_string(buffer)?;
             Ok(Packet::Chat(message))
         }
         Packet::Build { .. } => {
-            let building = buffer::read_integer(buffer).unwrap() as i32;
+            let building = buffer::read_integer(buffer)? as i32;
             Ok(Packet::Build(building))
         }
         Packet::Upgrade { .. } => {
-            let building = buffer::read_integer(buffer).unwrap() as i32;
+            let building = buffer::read_integer(buffer)? as i32;
             Ok(Packet::Upgrade(building))
         }
         Packet::Destroy { .. } => {
-            let building = buffer::read_integer(buffer).unwrap() as i32;
+            let building = buffer::read_integer(buffer)? as i32;
             Ok(Packet::Destroy(building))
         }
         Packet::Cancel { .. } => {
-            let building = buffer::read_integer(buffer).unwrap() as i32;
+            let building = buffer::read_integer(buffer)? as i32;
             Ok(Packet::Cancel(building))
         }
         Packet::Error { .. } => {
-            let message = buffer::read_string(buffer).unwrap();
+            let message = buffer::read_string(buffer)?;
             Ok(Packet::Error { message })
         }
     }
