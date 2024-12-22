@@ -3,15 +3,15 @@ use std::str::FromStr;
 use chrono::prelude::*;
 use diesel::Connection;
 
-use crate::db::{DbConn, Repository};
 use crate::db::building_levels::BuildingLevelRepository;
 use crate::db::buildings::BuildingRepository;
 use crate::db::resources::ResourcesRepository;
 use crate::db::user_buildings::UserBuildingRepository;
-use crate::models::{building, user, user_building};
+use crate::db::{DbConn, Repository};
 use crate::models::building_level::BuildingLevel;
 use crate::models::error::{EmpError, EmpResult, ErrorKind};
 use crate::models::user_building::{NewUserBuilding, UserBuilding};
+use crate::models::{building, user, user_building};
 
 pub struct BuildingService<'a> {
     connection: &'a mut DbConn,
@@ -123,12 +123,29 @@ impl BuildingService<'_> {
             )));
         }
 
-        // upgrade building
-        let usr_bld = self.usr_bld_repo.set_upgrade_time(
-            &mut *self.connection,
-            usr_bld_id,
-            Some(&bld_lvl.upgrade_time.as_str()),
-        )?;
+        let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
+            log::info!("Initiating upgrade transaction");
+            // deduct resources
+            self.res_repo.deduct(
+                connection,
+                &usr_bld.user_id,
+                &(
+                    bld_lvl.req_food.unwrap_or(0),
+                    bld_lvl.req_wood.unwrap_or(0),
+                    bld_lvl.req_stone.unwrap_or(0),
+                    bld_lvl.req_gold.unwrap_or(0),
+                ),
+            )?;
+            // upgrade building
+            let usr_bld = self.usr_bld_repo.set_upgrade_time(
+                connection,
+                usr_bld_id,
+                Some(&bld_lvl.upgrade_time.as_str()),
+            )?;
+            log::info!("Building upgrade started: {:?}", usr_bld);
+            Ok(usr_bld)
+        });
+
         match usr_bld.upgrade_time {
             Some(_) => Ok(()),
             None => Err(EmpError::from((
