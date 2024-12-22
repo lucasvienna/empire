@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{error, fmt, io};
 
 pub type EmpResult<T> = Result<T, EmpError>;

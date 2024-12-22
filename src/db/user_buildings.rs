@@ -1,12 +1,13 @@
-use diesel::prelude::*;
-
 use crate::db::{DbConn, Repository};
-use crate::models::{building, user, user_building};
 use crate::models::building::Building;
 use crate::models::error::EmpResult;
 use crate::models::user_building::{NewUserBuilding, UserBuilding};
+use crate::models::{building, user, user_building};
 use crate::schema::{buildings, user_buildings};
+use diesel::prelude::*;
+use tracing::info;
 
+#[derive(Debug)]
 pub struct UserBuildingRepository {}
 
 impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBuildingRepository {
@@ -70,10 +71,9 @@ impl UserBuildingRepository {
         usr_id: &user::PK,
         bld_id: &building::PK,
     ) -> EmpResult<bool> {
-        log::info!(
+        info!(
             "Checking if user {} can construct building: {}",
-            usr_id,
-            bld_id
+            usr_id, bld_id
         );
         let bld = buildings::table
             .find(bld_id)
@@ -84,12 +84,9 @@ impl UserBuildingRepository {
             .filter(user_buildings::building_id.eq(bld_id))
             .count()
             .get_result::<i64>(connection)?;
-        log::info!(
+        info!(
             "User {} has {} buildings of type {}. Maximum is {}",
-            usr_id,
-            count,
-            bld_id,
-            bld.max_count
+            usr_id, count, bld_id, bld.max_count
         );
 
         Ok(count < bld.max_count as i64)

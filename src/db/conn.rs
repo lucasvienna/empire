@@ -7,7 +7,7 @@ use diesel::r2d2;
 use diesel::r2d2::{ConnectionManager, CustomizeConnection, Pool};
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
-use log;
+use tracing::info;
 
 pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -73,7 +73,7 @@ impl DbExecutor {
 
     fn new_with_pool_size<S: Display>(database_url: S, pool_size: Option<u32>) -> Result<Self> {
         let database_url = format!("{}", database_url);
-        log::info!("using database at: {}", database_url);
+        info!("using database at: {}", database_url);
 
         let manager = ConnectionManager::<SqliteConnection>::new(database_url.clone());
         let builder = Pool::builder()

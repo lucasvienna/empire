@@ -1,29 +1,29 @@
-use std::net;
-use std::net::UdpSocket;
-use std::thread;
-
 use crate::models::error::EmpResult;
 use crate::net::buffer::Buffer;
 use crate::net::packet::get_packet;
+use std::net;
+use std::net::UdpSocket;
+use std::thread;
+use tracing::{error, info};
 
 fn listen(socket: &UdpSocket, mut buffer: &mut [u8]) -> EmpResult<(usize, net::SocketAddr)> {
     let (number_of_bytes, src_addr) = socket.recv_from(&mut buffer)?;
 
-    log::info!("{:?}", number_of_bytes);
-    log::info!("{:?}", src_addr);
+    info!("{:?}", number_of_bytes);
+    info!("{:?}", src_addr);
 
     Ok((number_of_bytes, src_addr))
 }
 
 fn send(socket: &UdpSocket, receiver: &str, msg: &[u8]) -> EmpResult<usize> {
-    log::info!("sending data");
+    info!("sending data");
     let result = socket.send_to(msg, receiver)?;
 
     Ok(result)
 }
 
 fn init_host(host: &str) -> UdpSocket {
-    log::info!("initializing host: {:?}", host);
+    info!("initializing host: {:?}", host);
     let socket = UdpSocket::bind(host).expect("failed to bind host socket");
 
     socket
@@ -39,16 +39,16 @@ pub fn start() -> EmpResult<()> {
             Ok((amt, src)) => {
                 let res = buf[..amt].to_vec();
                 thread::spawn(move || {
-                    log::info!("Handling connection from {}", &src);
+                    info!("Handling connection from {}", &src);
                     let packet =
                         get_packet(&mut Buffer::from(res.to_vec())).expect("error getting packet");
-                    log::info!("Received packet: {:?}", packet);
+                    info!("Received packet: {:?}", packet);
                     send(&sock, &src.to_string(), &[])
                 });
             }
             Err(err) => {
-                log::error!("Err: {}", err);
-                log::error!("Buffer: {:?}", &buf);
+                error!("Err: {}", err);
+                error!("Buffer: {:?}", &buf);
             }
         }
     }

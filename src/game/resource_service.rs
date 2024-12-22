@@ -1,9 +1,16 @@
-use crate::db::DbConn;
 use crate::db::resources::ResourcesRepository;
+use crate::db::DbConn;
+use std::fmt;
 
 pub struct ResourceService<'a> {
     connection: &'a mut DbConn,
     res_repo: ResourcesRepository,
+}
+
+impl fmt::Debug for ResourceService<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ResourceService")
+    }
 }
 
 impl ResourceService<'_> {

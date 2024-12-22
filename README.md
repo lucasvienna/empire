@@ -6,5 +6,6 @@
     - SQL trigger
 - [x] Insert default buildings when creating a user
     - SQL trigger (again :D)
-- [ ] Figure out serialization of upgrade durations
+- [x] Figure out serialization of upgrade durations
+    - UTC string
 - [ ] Figure out resource generation (chron job? server ticks?)

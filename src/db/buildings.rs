@@ -6,6 +6,7 @@ use crate::models::building::{Building, NewBuilding};
 use crate::models::error::EmpResult;
 use crate::schema::buildings;
 
+#[derive(Debug)]
 pub struct BuildingRepository {}
 
 impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingRepository {

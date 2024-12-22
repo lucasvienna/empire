@@ -1,7 +1,9 @@
+use std::fmt;
 use std::str::FromStr;
 
 use chrono::prelude::*;
 use diesel::Connection;
+use tracing::{debug, info};
 
 use crate::db::building_levels::BuildingLevelRepository;
 use crate::db::buildings::BuildingRepository;
@@ -21,6 +23,39 @@ pub struct BuildingService<'a> {
     res_repo: ResourcesRepository,
 }
 
+impl fmt::Debug for BuildingService<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        /* this is an alternative, lazy implementation:
+        #[derive(Debug)]
+        struct BuildingService<'a> {
+            bld_repo: &'a BuildingRepository,
+            usr_bld_repo: &'a UserBuildingRepository,
+            bld_lvl_repo: &'a BuildingLevelRepository,
+            res_repo: &'a ResourcesRepository,
+        }
+
+        let Self {
+            connection: _,
+            bld_repo,
+            usr_bld_repo,
+            bld_lvl_repo,
+            res_repo,
+        } = self;
+
+        fmt::Debug::fmt(
+            &BuildingService {
+                bld_repo,
+                usr_bld_repo,
+                bld_lvl_repo,
+                res_repo,
+            },
+            f,
+        )
+        */
+        write!(f, "BuildingService")
+    }
+}
+
 impl BuildingService<'_> {
     pub fn new(connection: &mut DbConn) -> BuildingService {
         BuildingService {
@@ -32,12 +67,13 @@ impl BuildingService<'_> {
         }
     }
 
+    #[tracing::instrument]
     pub fn construct_building(
         &mut self,
         usr_id: &user::PK,
         bld_id: &building::PK,
     ) -> EmpResult<UserBuilding> {
-        log::info!("Constructing building: {} for user: {}", bld_id, usr_id);
+        info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self
             .bld_lvl_repo
             .get_next_upgrade(&mut *self.connection, bld_id, &0)?;
@@ -62,7 +98,7 @@ impl BuildingService<'_> {
         }
 
         let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
-            log::info!("Initiating construction transaction");
+            info!("Initiating construction transaction");
             // deduct resources
             self.res_repo.deduct(
                 connection,
@@ -84,7 +120,7 @@ impl BuildingService<'_> {
                     upgrade_time: Some(bld_lvl.upgrade_time.as_str()),
                 },
             )?;
-            log::info!("Building constructed: {:?}", usr_bld);
+            info!("Building constructed: {:?}", usr_bld);
             Ok(usr_bld)
         });
 
@@ -97,6 +133,7 @@ impl BuildingService<'_> {
         }
     }
 
+    #[tracing::instrument]
     pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> EmpResult<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
@@ -124,7 +161,7 @@ impl BuildingService<'_> {
         }
 
         let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
-            log::info!("Initiating upgrade transaction");
+            info!("Initiating upgrade transaction");
             // deduct resources
             self.res_repo.deduct(
                 connection,
@@ -142,7 +179,7 @@ impl BuildingService<'_> {
                 usr_bld_id,
                 Some(&bld_lvl.upgrade_time.as_str()),
             )?;
-            log::info!("Building upgrade started: {:?}", usr_bld);
+            info!("Building upgrade started: {:?}", usr_bld);
             Ok(usr_bld)
         });
 
@@ -155,6 +192,7 @@ impl BuildingService<'_> {
         }
     }
 
+    #[tracing::instrument]
     pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> EmpResult<()> {
         let usr_bld = self.usr_bld_repo.get_by_id(&mut *self.connection, id)?;
         match usr_bld.upgrade_time {
@@ -184,18 +222,15 @@ impl BuildingService<'_> {
         user_id: &user::PK,
         bld_lvl: &BuildingLevel,
     ) -> EmpResult<bool> {
-        log::debug!("Checking resources for user: {}", user_id);
+        debug!("Checking resources for user: {}", user_id);
         let res = self.res_repo.get_by_id(&mut *self.connection, user_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);
         let has_enough_gold = res.gold >= bld_lvl.req_gold.unwrap_or(0);
-        log::debug!(
+        debug!(
             "Has enough resources: food({}) wood({}) stone({}) gold({})",
-            has_enough_food,
-            has_enough_wood,
-            has_enough_stone,
-            has_enough_gold
+            has_enough_food, has_enough_wood, has_enough_stone, has_enough_gold
         );
         Ok(has_enough_food && has_enough_wood && has_enough_stone && has_enough_gold)
     }
