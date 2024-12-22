@@ -2,7 +2,7 @@ use std::env;
 use std::fmt::Display;
 
 use anyhow::Result;
-use diesel::connection::SimpleConnection;
+use diesel::query_dsl::RunQueryDsl;
 use diesel::r2d2;
 use diesel::r2d2::{ConnectionManager, CustomizeConnection, Pool};
 use diesel::sqlite::SqliteConnection;
@@ -16,14 +16,46 @@ struct Customizer;
 
 impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for Customizer {
     fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
-        conn.batch_execute(
-            "\
-                    PRAGMA journal_mode = WAL;\
-                    PRAGMA busy_timeout = 1000;\
-                    PRAGMA foreign_keys = ON;\
-                ",
-        )
-        .map_err(r2d2::Error::QueryError)?;
+        // see https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/
+        // sleep if the database is busy
+        // this corresponds to 2 seconds
+        // if we ever see errors regarding busy_timeout in production
+        // we might want to consider to increase this time
+        diesel::sql_query("PRAGMA busy_timeout = 2000;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // better write-concurrency
+        diesel::sql_query("PRAGMA journal_mode = WAL;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // fsync only in critical moments
+        diesel::sql_query("PRAGMA synchronous = NORMAL;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // write WAL changes back every 1000 pages, for an in average 1MB WAL file. May affect readers if number is increased
+        diesel::sql_query("PRAGMA wal_autocheckpoint = 1000;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // free some space by truncating possibly massive WAL files from the last run
+        diesel::sql_query("PRAGMA wal_checkpoint(TRUNCATE);")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // maximum size of the WAL file, corresponds to 64MB
+        diesel::sql_query("PRAGMA journal_size_limit = 67108864;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // maximum size of the internal mmap pool. Corresponds to 128MB, matches postgres default settings
+        diesel::sql_query("PRAGMA mmap_size = 134217728;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        // maximum number of database disk pages that will be hold in memory. Corresponds to ~8MB
+        diesel::sql_query("PRAGMA cache_size = 2000;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
+        //enforce foreign keys
+        diesel::sql_query("PRAGMA foreign_keys = ON;")
+            .execute(conn)
+            .map_err(r2d2::Error::QueryError)?;
 
         Ok(())
     }
