@@ -8,7 +8,7 @@ use crate::schema::users;
 
 pub struct UserRepository {}
 
-impl Repository<User, NewUser<'static>, user::PK> for UserRepository {
+impl Repository<User, NewUser<'_>, user::PK> for UserRepository {
     fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<User>> {
         let users = users::table.select(User::as_select()).load(connection)?;
         Ok(users)
@@ -19,7 +19,7 @@ impl Repository<User, NewUser<'static>, user::PK> for UserRepository {
         Ok(user)
     }
 
-    fn create(&mut self, connection: &mut DbConn, entity: &NewUser<'static>) -> EmpResult<User> {
+    fn create(&self, connection: &mut DbConn, entity: &NewUser<'_>) -> EmpResult<User> {
         let user = diesel::insert_into(users::table)
             .values(entity)
             .returning(User::as_returning())
@@ -27,14 +27,14 @@ impl Repository<User, NewUser<'static>, user::PK> for UserRepository {
         Ok(user)
     }
 
-    fn update(&mut self, connection: &mut DbConn, entity: &User) -> EmpResult<User> {
+    fn update(&self, connection: &mut DbConn, entity: &User) -> EmpResult<User> {
         let user = diesel::update(users::table.find(entity.id))
             .set(entity)
             .get_result(connection)?;
         Ok(user)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &user::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &user::PK) -> EmpResult<usize> {
         let res = diesel::delete(users::table.find(id)).execute(connection)?;
         Ok(res)
     }

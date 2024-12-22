@@ -9,7 +9,7 @@ use crate::schema::buildings;
 #[derive(Debug)]
 pub struct BuildingRepository {}
 
-impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingRepository {
+impl Repository<Building, NewBuilding<'_>, building::PK> for BuildingRepository {
     fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<Building>> {
         let buildings = buildings::table
             .select(Building::as_select())
@@ -22,11 +22,7 @@ impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingReposi
         Ok(building)
     }
 
-    fn create(
-        &mut self,
-        connection: &mut DbConn,
-        entity: &NewBuilding<'static>,
-    ) -> EmpResult<Building> {
+    fn create(&self, connection: &mut DbConn, entity: &NewBuilding<'_>) -> EmpResult<Building> {
         let building = diesel::insert_into(buildings::table)
             .values(entity)
             .returning(Building::as_returning())
@@ -34,14 +30,14 @@ impl Repository<Building, NewBuilding<'static>, building::PK> for BuildingReposi
         Ok(building)
     }
 
-    fn update(&mut self, connection: &mut DbConn, entity: &Building) -> EmpResult<Building> {
+    fn update(&self, connection: &mut DbConn, entity: &Building) -> EmpResult<Building> {
         let building = diesel::update(buildings::table.find(entity.id))
             .set(entity)
             .get_result(connection)?;
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &building::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &building::PK) -> EmpResult<usize> {
         let res = diesel::delete(buildings::table.find(&id)).execute(connection)?;
         Ok(res)
     }

@@ -7,12 +7,17 @@ repository = "https://github.com/lucasvienna/empire.git"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dotenvy = "0.15.7"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
-logs-wheel = "0.3.1"
+anyhow = "1.0.95"
+axum = { version = "0.7.9", features = ["query"] }
+chrono = "0.4.39"
 diesel = { version = "2.2.6", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
 diesel_migrations = "2.2.0"
+dotenvy = "0.15.7"
 libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
-chrono = "0.4.39"
-anyhow = "1.0.94"
+logs-wheel = "0.3.1"
+serde = { version = "1.0.216", features = ["derive"] }
+tokio = { version = "1.42.0", features = ["full"] }
+tower = { version = "0.5.2", features = ["full"] }
+tower-http = { version = "0.6.2", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

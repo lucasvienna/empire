@@ -25,7 +25,7 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(resource)
     }
 
-    fn create(&mut self, connection: &mut DbConn, entity: &NewResource) -> EmpResult<Resource> {
+    fn create(&self, connection: &mut DbConn, entity: &NewResource) -> EmpResult<Resource> {
         debug!("Creating resource: {:?}", entity);
         let resource = diesel::insert_into(resources::table)
             .values(entity)
@@ -35,7 +35,7 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(resource)
     }
 
-    fn update(&mut self, connection: &mut DbConn, entity: &Resource) -> EmpResult<Resource> {
+    fn update(&self, connection: &mut DbConn, entity: &Resource) -> EmpResult<Resource> {
         debug!("Updating resource: {:?}", entity);
         let resource = diesel::update(resources::table.find(entity.user_id))
             .set(entity)
@@ -44,7 +44,7 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(resource)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &resource::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &resource::PK) -> EmpResult<usize> {
         debug!("Deleting resource: {}", id);
         let res = diesel::delete(resources::table.find(id)).execute(connection)?;
         debug!("Deleted resource: {}", res);
@@ -57,7 +57,7 @@ pub type Deduction = (i32, i32, i32, i32);
 
 impl ResourcesRepository {
     pub fn deduct(
-        &mut self,
+        &self,
         connection: &mut DbConn,
         user_id: &resource::PK,
         amounts: &Deduction,

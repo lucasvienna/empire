@@ -27,11 +27,7 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn create(
-        &mut self,
-        connection: &mut DbConn,
-        entity: &NewUserBuilding,
-    ) -> EmpResult<UserBuilding> {
+    fn create(&self, connection: &mut DbConn, entity: &NewUserBuilding) -> EmpResult<UserBuilding> {
         let building = diesel::insert_into(user_buildings::table)
             .values(entity)
             .returning(UserBuilding::as_returning())
@@ -39,18 +35,14 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn update(
-        &mut self,
-        connection: &mut DbConn,
-        entity: &UserBuilding,
-    ) -> EmpResult<UserBuilding> {
+    fn update(&self, connection: &mut DbConn, entity: &UserBuilding) -> EmpResult<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(entity.id))
             .set(entity)
             .get_result(connection)?;
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<usize> {
         let res = diesel::delete(user_buildings::table.find(id)).execute(connection)?;
         Ok(res)
     }

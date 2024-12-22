@@ -73,7 +73,7 @@ impl DbExecutor {
 
     fn new_with_pool_size<S: Display>(database_url: S, pool_size: Option<u32>) -> Result<Self> {
         let database_url = format!("{}", database_url);
-        info!("using database at: {}", database_url);
+        info!("Connecting to database at: {}", database_url);
 
         let manager = ConnectionManager::<SqliteConnection>::new(database_url.clone());
         let builder = Pool::builder()

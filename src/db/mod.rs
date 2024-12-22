@@ -22,11 +22,11 @@ pub trait Repository<Entity, NewEntity, PK = i32> {
     fn get_by_id(&self, connection: &mut DbConn, id: &PK) -> EmpResult<Entity>;
 
     /// add an entity to the database
-    fn create(&mut self, connection: &mut DbConn, entity: &NewEntity) -> EmpResult<Entity>;
+    fn create(&self, connection: &mut DbConn, entity: &NewEntity) -> EmpResult<Entity>;
 
     /// update an entity
-    fn update(&mut self, connection: &mut DbConn, entity: &Entity) -> EmpResult<Entity>;
+    fn update(&self, connection: &mut DbConn, entity: &Entity) -> EmpResult<Entity>;
 
     /// delete an entity by its id
-    fn delete(&mut self, connection: &mut DbConn, id: &PK) -> EmpResult<usize>;
+    fn delete(&self, connection: &mut DbConn, id: &PK) -> EmpResult<usize>;
 }

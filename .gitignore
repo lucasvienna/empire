@@ -137,4 +137,7 @@ target/
 # Logs folder
 log/
 
+# Testing requests
+test.http
+
 # End of https://www.toptal.com/developers/gitignore/api/rust,jetbrains

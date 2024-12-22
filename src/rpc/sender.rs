@@ -28,7 +28,7 @@ fn listen(socket: &UdpSocket) -> Vec<u8> {
 fn send(socket: &UdpSocket, receiver: &str, msg: &Vec<u8>) -> usize {
     info!("sending message: {:?}", msg);
     let result: usize = 0;
-    match socket.send_to(&msg, receiver) {
+    match socket.send_to(msg, receiver) {
         Ok(number_of_bytes) => info!("{:?}", number_of_bytes),
         Err(fail) => info!("failed sending {:?}", fail),
     }
@@ -38,9 +38,7 @@ fn send(socket: &UdpSocket, receiver: &str, msg: &Vec<u8>) -> usize {
 
 fn init_host(host: &str) -> UdpSocket {
     info!("initializing host: {:?}", host);
-    let socket = UdpSocket::bind(host).expect("failed to bind host socket");
-
-    socket
+    UdpSocket::bind(host).expect("failed to bind host socket")
 }
 
 fn show_menu(config: &HostConfig, message: &str) {
@@ -106,7 +104,7 @@ fn read_console() -> CommandInput {
             let cmd = split_input.next().unwrap();
             let data = split_input.collect::<String>();
             info!("cmd: {} ------ data: {}", cmd, data);
-            identify_command(&cmd, &data)
+            identify_command(cmd, &data)
         }
         Err(fail) => {
             info!("Failed to read console: {}", fail);
@@ -119,7 +117,7 @@ fn read_console() -> CommandInput {
 fn set_host_parameters(ip: &str, port: &str) -> String {
     let mut host = String::with_capacity(STRING_CAPACITY);
     host.push_str(ip);
-    host.push_str(":");
+    host.push(':');
     host.push_str(port);
 
     host

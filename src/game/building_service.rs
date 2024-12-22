@@ -97,7 +97,7 @@ impl BuildingService<'_> {
             )));
         }
 
-        let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
+        let res: EmpResult<UserBuilding> = self.connection.transaction(|connection| {
             info!("Initiating construction transaction");
             // deduct resources
             self.res_repo.deduct(
@@ -160,7 +160,7 @@ impl BuildingService<'_> {
             )));
         }
 
-        let res: EmpResult<UserBuilding> = (&mut self.connection).transaction(|connection| {
+        let res: EmpResult<UserBuilding> = self.connection.transaction(|connection| {
             info!("Initiating upgrade transaction");
             // deduct resources
             self.res_repo.deduct(
@@ -177,7 +177,7 @@ impl BuildingService<'_> {
             let usr_bld = self.usr_bld_repo.set_upgrade_time(
                 connection,
                 usr_bld_id,
-                Some(&bld_lvl.upgrade_time.as_str()),
+                Some(bld_lvl.upgrade_time.as_str()),
             )?;
             info!("Building upgrade started: {:?}", usr_bld);
             Ok(usr_bld)
@@ -201,7 +201,7 @@ impl BuildingService<'_> {
                 "Building is not upgrading",
             ))),
             Some(t) => {
-                let time = DateTime::<Utc>::from_str(&t.as_str()).map_err(|_| {
+                let time = DateTime::<Utc>::from_str(t.as_str()).map_err(|_| {
                     EmpError::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
                 })?;
                 if time <= Utc::now() {

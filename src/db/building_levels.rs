@@ -29,7 +29,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
     }
 
     fn create(
-        &mut self,
+        &self,
         connection: &mut DbConn,
         entity: &NewBuildingLevel,
     ) -> EmpResult<BuildingLevel> {
@@ -42,11 +42,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn update(
-        &mut self,
-        connection: &mut DbConn,
-        entity: &BuildingLevel,
-    ) -> EmpResult<BuildingLevel> {
+    fn update(&self, connection: &mut DbConn, entity: &BuildingLevel) -> EmpResult<BuildingLevel> {
         debug!("Updating building level {}", entity.id);
         let building = diesel::update(building_levels::table.find(entity.id))
             .set(entity)
@@ -55,7 +51,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn delete(&mut self, connection: &mut DbConn, id: &building_level::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &building_level::PK) -> EmpResult<usize> {
         debug!("Deleting building level {}", id);
         let res = diesel::delete(building_levels::table.find(id)).execute(connection)?;
         debug!("Deleted {} building levels", res);

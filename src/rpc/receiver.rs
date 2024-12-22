@@ -6,8 +6,8 @@ use std::net::UdpSocket;
 use std::thread;
 use tracing::{error, info};
 
-fn listen(socket: &UdpSocket, mut buffer: &mut [u8]) -> EmpResult<(usize, net::SocketAddr)> {
-    let (number_of_bytes, src_addr) = socket.recv_from(&mut buffer)?;
+fn listen(socket: &UdpSocket, buffer: &mut [u8]) -> EmpResult<(usize, net::SocketAddr)> {
+    let (number_of_bytes, src_addr) = socket.recv_from(buffer)?;
 
     info!("{:?}", number_of_bytes);
     info!("{:?}", src_addr);
@@ -24,9 +24,7 @@ fn send(socket: &UdpSocket, receiver: &str, msg: &[u8]) -> EmpResult<usize> {
 
 fn init_host(host: &str) -> UdpSocket {
     info!("initializing host: {:?}", host);
-    let socket = UdpSocket::bind(host).expect("failed to bind host socket");
-
-    socket
+    UdpSocket::bind(host).expect("failed to bind host socket")
 }
 
 pub fn start() -> EmpResult<()> {

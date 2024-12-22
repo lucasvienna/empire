@@ -11,8 +11,7 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn new() -> Buffer {
-        let mut vec = Vec::with_capacity(2048);
-        vec.resize(2048, 0);
+        let vec = vec![0; 2048];
         Buffer {
             data: vec,
             size: 0,
@@ -89,19 +88,19 @@ pub fn write_string(buffer: &mut Buffer, value: &str) -> std::io::Result<usize> 
 }
 pub fn write_long(buffer: &mut Buffer, value: &u64) -> std::io::Result<usize> {
     assert!(buffer.index + 8 <= buffer.data.len());
-    buffer.write(unsafe { &mem::transmute::<u64, [u8; 8]>(value.to_le()) })
+    buffer.write(&value.to_le_bytes())
 }
 pub fn write_integer(buffer: &mut Buffer, value: &u32) -> std::io::Result<usize> {
     assert!(buffer.index + 4 <= buffer.data.len());
-    buffer.write(unsafe { &mem::transmute::<u32, [u8; 4]>(value.to_le()) })
+    buffer.write(&value.to_le_bytes())
 }
 pub fn write_short(buffer: &mut Buffer, value: &u16) -> std::io::Result<usize> {
     assert!(buffer.index + 2 <= buffer.data.len());
-    buffer.write(unsafe { &mem::transmute::<u16, [u8; 2]>(value.to_le()) })
+    buffer.write(&value.to_le_bytes())
 }
 pub fn write_byte(buffer: &mut Buffer, value: &u8) -> std::io::Result<usize> {
-    assert!(buffer.index + 1 <= buffer.data.len());
-    buffer.write(&[*value])
+    assert!(buffer.index < buffer.data.len());
+    buffer.write(&value.to_le_bytes())
 }
 
 pub fn read_string(buffer: &mut Buffer) -> EmpResult<String> {
