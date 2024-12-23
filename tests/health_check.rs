@@ -1,0 +1,44 @@
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use empire::controllers::health_controller::HealthCheckResponse;
+use http_body_util::BodyExt;
+use tower::ServiceExt;
+
+mod common;
+
+#[tokio::test]
+async fn health_check_works() {
+    let router = common::get_app().expect("Failed to spawn our app.");
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body: HealthCheckResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body.status, "OK");
+}
+
+#[tokio::test]
+async fn health_check_with_server() {
+    let address = common::spawn_app();
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(format!("{}/health", &address))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: HealthCheckResponse = response.json().await.unwrap();
+    assert_eq!(body.status, "OK");
+}

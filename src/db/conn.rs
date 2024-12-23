@@ -109,3 +109,6 @@ pub fn get_env_pool() -> DbPool {
     let executor = DbExecutor::from_env();
     executor.unwrap().pool
 }
+pub fn get_test_pool() -> DbPool {
+    DbExecutor::in_memory("test.db").unwrap().pool
+}
