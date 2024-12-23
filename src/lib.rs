@@ -3,8 +3,17 @@ use logs_wheel::LogFileInitializer;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use tokio::signal;
 use tracing_subscriber::fmt;
 use tracing_subscriber::layer::SubscriberExt;
+
+pub mod controllers;
+pub mod db;
+mod game;
+pub mod models;
+pub mod net;
+mod rpc;
+pub mod schema;
 
 pub fn setup_tracing() -> Result<()> {
     let tmp_dir = PathBuf::new().join("log");
@@ -25,4 +34,28 @@ pub fn setup_tracing() -> Result<()> {
     tracing::subscriber::set_global_default(subscriber).expect("Failed to setup tracing");
 
     Ok(())
+}
+
+pub async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }

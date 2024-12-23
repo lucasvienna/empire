@@ -13,21 +13,21 @@ use crate::models::user::{NewUser, User};
 use crate::net::server::AppState;
 
 /// Struct for creating a new user
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateUserRequest {
     pub username: String,
     pub faction: i32,
 }
 
 /// Struct for updating user details
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UpdateUserRequest {
     pub username: String,
     pub faction: i32,
 }
 
 /// Struct for response data
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UserResponse {
     pub id: i32,
     pub username: String,
@@ -37,7 +37,7 @@ pub struct UserResponse {
 // === CRUD HANDLERS === //
 
 // Get all users
-async fn get_users(state: State<AppState>) -> Result<Json<Vec<UserResponse>>, StatusCode> {
+async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserResponse>>, StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {
         error!("Failed to get a database connection: {}", err);
@@ -63,7 +63,7 @@ async fn get_users(state: State<AppState>) -> Result<Json<Vec<UserResponse>>, St
 
 // Get a user by ID
 async fn get_user_by_id(
-    state: State<AppState>,
+    State(state): State<AppState>,
     Path(user_id): Path<i32>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
@@ -86,9 +86,9 @@ async fn get_user_by_id(
 
 // Create a new user
 async fn create_user(
-    state: State<AppState>,
+    State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
-) -> Result<Json<UserResponse>, StatusCode> {
+) -> Result<(StatusCode, Json<UserResponse>), StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {
         error!("Failed to get a database connection: {}", err);
@@ -106,16 +106,19 @@ async fn create_user(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(Json(UserResponse {
-        id: created_user.id,
-        username: created_user.name,
-        faction: created_user.faction,
-    }))
+    Ok((
+        StatusCode::CREATED,
+        Json(UserResponse {
+            id: created_user.id,
+            username: created_user.name,
+            faction: created_user.faction,
+        }),
+    ))
 }
 
 // Update an existing user
 async fn update_user(
-    state: State<AppState>,
+    State(state): State<AppState>,
     Path(user_id): Path<i32>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, StatusCode> {
@@ -146,7 +149,7 @@ async fn update_user(
 
 // Delete a user
 async fn delete_user(
-    state: State<AppState>,
+    State(state): State<AppState>,
     Path(user_id): Path<i32>,
 ) -> Result<StatusCode, StatusCode> {
     let repo = UserRepository {};

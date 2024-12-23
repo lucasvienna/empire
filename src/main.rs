@@ -2,24 +2,15 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use crate::db::conn::get_connection_pool;
-use crate::db::migrations::run_migrations;
-use crate::net::server;
-use crate::net::server::AppState;
 use anyhow::Result;
-use empire::setup_tracing;
+use empire::db::conn::get_env_pool;
+use empire::db::migrations::run_migrations;
+use empire::net::server;
+use empire::net::server::AppState;
+use empire::{setup_tracing, shutdown_signal};
 use std::env;
 use std::sync::Arc;
-use tokio::signal;
 use tracing::info;
-
-mod controllers;
-mod db;
-mod game;
-mod models;
-mod net;
-mod rpc;
-mod schema;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -36,7 +27,7 @@ async fn main() -> Result<()> {
     setup_tracing()?;
     info!("Starting Empire server...");
 
-    let pool = get_connection_pool();
+    let pool = get_env_pool();
     {
         let mut conn = pool.get()?;
         run_migrations(&mut conn).expect("Should execute pending migrations");
@@ -55,28 +46,4 @@ async fn main() -> Result<()> {
         .await?;
 
     Ok(())
-}
-
-async fn shutdown_signal() {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
-
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
-    }
 }

@@ -183,9 +183,9 @@ impl BuildingService<'_> {
             Ok(usr_bld)
         });
 
-        match usr_bld.upgrade_time {
-            Some(_) => Ok(()),
-            None => Err(EmpError::from((
+        match res {
+            Ok(_) => Ok(()),
+            Err(_) => Err(EmpError::from((
                 ErrorKind::UpgradeBuildingError,
                 "Failed to upgrade building",
             ))),

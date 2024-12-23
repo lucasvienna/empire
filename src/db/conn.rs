@@ -105,7 +105,7 @@ impl DbExecutor {
     }
 }
 
-pub fn get_connection_pool() -> DbPool {
+pub fn get_env_pool() -> DbPool {
     let executor = DbExecutor::from_env();
     executor.unwrap().pool
 }
