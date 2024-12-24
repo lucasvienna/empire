@@ -1,5 +1,5 @@
 use crate::db::{DbConn, Repository};
-use crate::models::error::EmpResult;
+use crate::models::error::Result;
 use crate::models::resource;
 use crate::models::resource::{NewResource, Resource};
 use crate::schema::resources;
@@ -10,7 +10,7 @@ use tracing::debug;
 pub struct ResourcesRepository {}
 
 impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
-    fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<Resource>> {
+    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Resource>> {
         debug!("Getting all resources");
         let buildings = resources::table
             .select(Resource::as_select())
@@ -18,14 +18,14 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(buildings)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, user_id: &resource::PK) -> EmpResult<Resource> {
+    fn get_by_id(&self, connection: &mut DbConn, user_id: &resource::PK) -> Result<Resource> {
         debug!("Getting resource by ID: {}", user_id);
         let resource = resources::table.find(user_id).first(connection)?;
         debug!("Got resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewResource) -> EmpResult<Resource> {
+    fn create(&self, connection: &mut DbConn, entity: &NewResource) -> Result<Resource> {
         debug!("Creating resource: {:?}", entity);
         let resource = diesel::insert_into(resources::table)
             .values(entity)
@@ -35,7 +35,7 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(resource)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &Resource) -> EmpResult<Resource> {
+    fn update(&self, connection: &mut DbConn, entity: &Resource) -> Result<Resource> {
         debug!("Updating resource: {:?}", entity);
         let resource = diesel::update(resources::table.find(entity.user_id))
             .set(entity)
@@ -44,7 +44,7 @@ impl Repository<Resource, NewResource, resource::PK> for ResourcesRepository {
         Ok(resource)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &resource::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &resource::PK) -> Result<usize> {
         debug!("Deleting resource: {}", id);
         let res = diesel::delete(resources::table.find(id)).execute(connection)?;
         debug!("Deleted resource: {}", res);
@@ -61,7 +61,7 @@ impl ResourcesRepository {
         connection: &mut DbConn,
         user_id: &resource::PK,
         amounts: &Deduction,
-    ) -> EmpResult<Resource> {
+    ) -> Result<Resource> {
         debug!("Deducting resources {:?} from user {}", amounts, user_id);
         let res: Resource = resources::table.find(user_id).first(connection)?;
         debug!("Current resources: {:?}", res);

@@ -1,6 +1,6 @@
-use crate::models::error::{EmpError, EmpResult, ErrorKind};
-use crate::net::buffer;
-use crate::net::buffer::Buffer;
+use crate::buffer;
+use crate::buffer::Buffer;
+use empire::{Error, ErrorKind, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum Packet {
@@ -27,7 +27,7 @@ fn get_packet_type(packet: &Packet) -> u8 {
     }
 }
 
-fn get_packet_by_bit(bit: u8) -> EmpResult<Packet> {
+fn get_packet_by_bit(bit: u8) -> Result<Packet> {
     match bit {
         0 => Ok(Packet::Login {
             username: String::new(),
@@ -42,14 +42,14 @@ fn get_packet_by_bit(bit: u8) -> EmpResult<Packet> {
         7 => Ok(Packet::Error {
             message: String::new(),
         }),
-        _ => Err(EmpError::from((
+        _ => Err(Error::from((
             ErrorKind::InvalidPacket,
             "Invalid packet type",
         ))),
     }
 }
 
-pub fn get_packet(buffer: &mut Buffer) -> EmpResult<Packet> {
+pub fn get_packet(buffer: &mut Buffer) -> Result<Packet> {
     let byte = buffer::read_byte(buffer)?;
     let packet = get_packet_by_bit(byte)?;
     match packet {

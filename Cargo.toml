@@ -1,8 +1,17 @@
-[package]
-name = "empire"
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/lucasvienna/empire.git"
+readme = "README.md"
+publish = false
+
+[package]
+name = "empire"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+publish.workspace = true
 
 [lib]
 path = "src/lib.rs"
@@ -11,10 +20,8 @@ path = "src/lib.rs"
 path = "src/main.rs"
 name = "empire"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "1.0.95"
+anyhow = { workspace = true }
 axum = { version = "0.7.9", features = ["query", "macros"] }
 axum-test = { version = "16.4.1", features = ["all"] }
 chrono = "0.4.39"
@@ -28,8 +35,21 @@ mime = "0.3.17"
 reqwest = { version = "0.12.9", features = ["json"] }
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.134"
-tokio = { version = "1.42.0", features = ["full"] }
+tokio = { workspace = true }
 tower = { version = "0.5.2", features = ["full"] }
 tower-http = { version = "0.6.2", features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[workspace]
+members = [
+    ".",
+    "crates/rpc"
+]
+
+[workspace.dependencies]
+anyhow = "1.0.95"
+empire = { path = "." }
+tokio = { version = "1.42.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

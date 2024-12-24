@@ -1,6 +1,6 @@
 use crate::db::{DbConn, Repository};
 use crate::models::building_level::{BuildingLevel, NewBuildingLevel};
-use crate::models::error::EmpResult;
+use crate::models::error::Result;
 use crate::models::{building, building_level};
 use crate::schema::building_levels;
 use diesel::prelude::*;
@@ -12,27 +12,19 @@ pub struct BuildingLevelRepository {}
 impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
     for BuildingLevelRepository
 {
-    fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<BuildingLevel>> {
+    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<BuildingLevel>> {
         let buildings = building_levels::table
             .select(BuildingLevel::as_select())
             .load(connection)?;
         Ok(buildings)
     }
 
-    fn get_by_id(
-        &self,
-        connection: &mut DbConn,
-        id: &building_level::PK,
-    ) -> EmpResult<BuildingLevel> {
+    fn get_by_id(&self, connection: &mut DbConn, id: &building_level::PK) -> Result<BuildingLevel> {
         let building = building_levels::table.find(id).first(connection)?;
         Ok(building)
     }
 
-    fn create(
-        &self,
-        connection: &mut DbConn,
-        entity: &NewBuildingLevel,
-    ) -> EmpResult<BuildingLevel> {
+    fn create(&self, connection: &mut DbConn, entity: &NewBuildingLevel) -> Result<BuildingLevel> {
         debug!("Creating building level {:?}", entity);
         let building = diesel::insert_into(building_levels::table)
             .values(entity)
@@ -42,7 +34,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &BuildingLevel) -> EmpResult<BuildingLevel> {
+    fn update(&self, connection: &mut DbConn, entity: &BuildingLevel) -> Result<BuildingLevel> {
         debug!("Updating building level {}", entity.id);
         let building = diesel::update(building_levels::table.find(entity.id))
             .set(entity)
@@ -51,7 +43,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &building_level::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &building_level::PK) -> Result<usize> {
         debug!("Deleting building level {}", id);
         let res = diesel::delete(building_levels::table.find(id)).execute(connection)?;
         debug!("Deleted {} building levels", res);
@@ -64,7 +56,7 @@ impl BuildingLevelRepository {
         &self,
         connection: &mut DbConn,
         building_id: &building::PK,
-    ) -> EmpResult<Vec<BuildingLevel>> {
+    ) -> Result<Vec<BuildingLevel>> {
         debug!("Getting levels for building {}", building_id);
         let buildings = building_levels::table
             .filter(building_levels::building_id.eq(building_id))
@@ -78,7 +70,7 @@ impl BuildingLevelRepository {
         connection: &mut DbConn,
         building_id: &building::PK,
         level: &i32,
-    ) -> EmpResult<BuildingLevel> {
+    ) -> Result<BuildingLevel> {
         debug!(
             "Getting next upgrade for building {} at level {}",
             building_id, level

@@ -1,14 +1,12 @@
+use empire::models::error::{Error, ErrorKind};
 use std::io::{Read, Write};
 use std::{fmt, mem, ptr};
-
-use crate::models::error::{EmpResult, ErrorKind};
 
 pub struct Buffer {
     data: Vec<u8>, // buffer data
     size: usize,   // size of buffer data (bytes)
     index: usize,  // index of next byte to be read
 }
-
 impl Buffer {
     pub fn new() -> Buffer {
         let vec = vec![0; 2048];
@@ -38,6 +36,12 @@ impl Buffer {
 
     pub fn reset_read(&mut self) {
         self.index = 0;
+    }
+}
+
+impl Default for Buffer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -103,34 +107,34 @@ pub fn write_byte(buffer: &mut Buffer, value: &u8) -> std::io::Result<usize> {
     buffer.write(&value.to_le_bytes())
 }
 
-pub fn read_string(buffer: &mut Buffer) -> EmpResult<String> {
+pub fn read_string(buffer: &mut Buffer) -> anyhow::Result<String> {
     let len = read_short(buffer)? as usize;
     let value = String::from_utf8_lossy(&buffer.data[buffer.index..buffer.index + len]);
     buffer.index += len;
     Ok(value.to_string())
 }
-pub fn read_long(buffer: &mut Buffer) -> EmpResult<u64> {
+pub fn read_long(buffer: &mut Buffer) -> anyhow::Result<u64, Error> {
     let bytes: &mut [u8; 8] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
     try_read!(buffer.read(bytes), bytes.len());
     Ok(u64::from_le(unsafe {
         mem::transmute::<[u8; 8], u64>(*bytes)
     }))
 }
-pub fn read_integer(buffer: &mut Buffer) -> EmpResult<u32> {
+pub fn read_integer(buffer: &mut Buffer) -> anyhow::Result<u32, Error> {
     let bytes: &mut [u8; 4] = &mut [0, 0, 0, 0];
     try_read!(buffer.read(bytes), bytes.len());
     Ok(u32::from_le(unsafe {
         mem::transmute::<[u8; 4], u32>(*bytes)
     }))
 }
-pub fn read_short(buffer: &mut Buffer) -> EmpResult<u16> {
+pub fn read_short(buffer: &mut Buffer) -> anyhow::Result<u16, Error> {
     let bytes: &mut [u8; 2] = &mut [0, 0];
     try_read!(buffer.read(bytes), bytes.len());
     Ok(u16::from_le(unsafe {
         mem::transmute::<[u8; 2], u16>(*bytes)
     }))
 }
-pub fn read_byte(buffer: &mut Buffer) -> EmpResult<u8> {
+pub fn read_byte(buffer: &mut Buffer) -> anyhow::Result<u8, Error> {
     let bytes: &mut [u8; 1] = &mut [0];
     try_read!(buffer.read(bytes), bytes.len());
     Ok(bytes[0])

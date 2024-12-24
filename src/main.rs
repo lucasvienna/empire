@@ -1,7 +1,3 @@
-// while in development, ignore dead code and unused variables warnings
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use anyhow::Result;
 use empire::db::conn::get_env_pool;
 use empire::db::migrations::run_migrations;

@@ -1,0 +1,16 @@
+[package]
+name = "empire_rpc"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+name = "erpc"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+empire = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }

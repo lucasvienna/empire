@@ -1,6 +1,6 @@
 use crate::db::{DbConn, Repository};
 use crate::models::building::Building;
-use crate::models::error::EmpResult;
+use crate::models::error::Result;
 use crate::models::user_building::{NewUserBuilding, UserBuilding};
 use crate::models::{building, user, user_building};
 use crate::schema::{buildings, user_buildings};
@@ -11,23 +11,19 @@ use tracing::info;
 pub struct UserBuildingRepository {}
 
 impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBuildingRepository {
-    fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<UserBuilding>> {
+    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<UserBuilding>> {
         let buildings = user_buildings::table
             .select(UserBuilding::as_select())
             .load(connection)?;
         Ok(buildings)
     }
 
-    fn get_by_id(
-        &self,
-        connection: &mut DbConn,
-        id: &user_building::PK,
-    ) -> EmpResult<UserBuilding> {
+    fn get_by_id(&self, connection: &mut DbConn, id: &user_building::PK) -> Result<UserBuilding> {
         let building = user_buildings::table.find(id).first(connection)?;
         Ok(building)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewUserBuilding) -> EmpResult<UserBuilding> {
+    fn create(&self, connection: &mut DbConn, entity: &NewUserBuilding) -> Result<UserBuilding> {
         let building = diesel::insert_into(user_buildings::table)
             .values(entity)
             .returning(UserBuilding::as_returning())
@@ -35,14 +31,14 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &UserBuilding) -> EmpResult<UserBuilding> {
+    fn update(&self, connection: &mut DbConn, entity: &UserBuilding) -> Result<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(entity.id))
             .set(entity)
             .get_result(connection)?;
         Ok(building)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &user_building::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &user_building::PK) -> Result<usize> {
         let res = diesel::delete(user_buildings::table.find(id)).execute(connection)?;
         Ok(res)
     }
@@ -62,7 +58,7 @@ impl UserBuildingRepository {
         connection: &mut DbConn,
         usr_id: &user::PK,
         bld_id: &building::PK,
-    ) -> EmpResult<bool> {
+    ) -> Result<bool> {
         info!(
             "Checking if user {} can construct building: {}",
             usr_id, bld_id
@@ -88,7 +84,7 @@ impl UserBuildingRepository {
         &self,
         connection: &mut DbConn,
         usr_bld_id: &user_building::PK,
-    ) -> EmpResult<UpgradeTuple> {
+    ) -> Result<UpgradeTuple> {
         let upgrade_tuple = user_buildings::table
             .left_join(buildings::table)
             .filter(user_buildings::id.eq(usr_bld_id))
@@ -102,7 +98,7 @@ impl UserBuildingRepository {
         connection: &mut DbConn,
         pk: &user_building::PK,
         upgrade_time: Option<&str>,
-    ) -> EmpResult<UserBuilding> {
+    ) -> Result<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(pk))
             .set(user_buildings::upgrade_time.eq(upgrade_time))
             .returning(UserBuilding::as_returning())
@@ -117,7 +113,7 @@ impl UserBuildingRepository {
         &self,
         connection: &mut DbConn,
         id: &user_building::PK,
-    ) -> EmpResult<UserBuilding> {
+    ) -> Result<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(id))
             .set((
                 user_buildings::level.eq(user_buildings::level + 1),

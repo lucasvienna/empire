@@ -11,7 +11,7 @@ use crate::db::resources::ResourcesRepository;
 use crate::db::user_buildings::UserBuildingRepository;
 use crate::db::{DbConn, Repository};
 use crate::models::building_level::BuildingLevel;
-use crate::models::error::{EmpError, EmpResult, ErrorKind};
+use crate::models::error::{Error, ErrorKind, Result};
 use crate::models::user_building::{NewUserBuilding, UserBuilding};
 use crate::models::{building, user, user_building};
 
@@ -72,7 +72,7 @@ impl BuildingService<'_> {
         &mut self,
         usr_id: &user::PK,
         bld_id: &building::PK,
-    ) -> EmpResult<UserBuilding> {
+    ) -> Result<UserBuilding> {
         info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self
             .bld_lvl_repo
@@ -80,7 +80,7 @@ impl BuildingService<'_> {
 
         // check for resources
         if !self.has_enough_resources(usr_id, &bld_lvl)? {
-            return Err(EmpError::from((
+            return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
                 "Not enough resources",
             )));
@@ -91,13 +91,13 @@ impl BuildingService<'_> {
             .usr_bld_repo
             .can_construct(&mut *self.connection, usr_id, bld_id)?
         {
-            return Err(EmpError::from((
+            return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
                 "Max buildings reached",
             )));
         }
 
-        let res: EmpResult<UserBuilding> = self.connection.transaction(|connection| {
+        let res: Result<UserBuilding> = self.connection.transaction(|connection| {
             info!("Initiating construction transaction");
             // deduct resources
             self.res_repo.deduct(
@@ -126,7 +126,7 @@ impl BuildingService<'_> {
 
         match res {
             Ok(usr_bld) => Ok(usr_bld),
-            Err(_) => Err(EmpError::from((
+            Err(_) => Err(Error::from((
                 ErrorKind::ConstructBuildingError,
                 "Failed to construct building",
             ))),
@@ -134,7 +134,7 @@ impl BuildingService<'_> {
     }
 
     #[tracing::instrument]
-    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> EmpResult<()> {
+    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> Result<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
             .get_upgrade_tuple(&mut *self.connection, usr_bld_id)?;
@@ -146,7 +146,7 @@ impl BuildingService<'_> {
 
         // check for resources
         if !self.has_enough_resources(&usr_bld.user_id, &bld_lvl)? {
-            return Err(EmpError::from((
+            return Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Not enough resources",
             )));
@@ -154,13 +154,13 @@ impl BuildingService<'_> {
 
         // check for max level constraints
         if usr_bld.level >= max_level.unwrap_or(0) {
-            return Err(EmpError::from((
+            return Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Building is at max level",
             )));
         }
 
-        let res: EmpResult<UserBuilding> = self.connection.transaction(|connection| {
+        let res: Result<UserBuilding> = self.connection.transaction(|connection| {
             info!("Initiating upgrade transaction");
             // deduct resources
             self.res_repo.deduct(
@@ -185,7 +185,7 @@ impl BuildingService<'_> {
 
         match res {
             Ok(_) => Ok(()),
-            Err(_) => Err(EmpError::from((
+            Err(_) => Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Failed to upgrade building",
             ))),
@@ -193,22 +193,22 @@ impl BuildingService<'_> {
     }
 
     #[tracing::instrument]
-    pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> EmpResult<()> {
+    pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> Result<()> {
         let usr_bld = self.usr_bld_repo.get_by_id(&mut *self.connection, id)?;
         match usr_bld.upgrade_time {
-            None => Err(EmpError::from((
+            None => Err(Error::from((
                 ErrorKind::ConfirmUpgradeError,
                 "Building is not upgrading",
             ))),
             Some(t) => {
                 let time = DateTime::<Utc>::from_str(t.as_str()).map_err(|_| {
-                    EmpError::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
+                    Error::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
                 })?;
                 if time <= Utc::now() {
                     self.usr_bld_repo.inc_level(&mut *self.connection, id)?;
                     Ok(())
                 } else {
-                    Err(EmpError::from((
+                    Err(Error::from((
                         ErrorKind::ConfirmUpgradeError,
                         "Upgrade time has not passed",
                     )))
@@ -221,7 +221,7 @@ impl BuildingService<'_> {
         &mut self,
         user_id: &user::PK,
         bld_lvl: &BuildingLevel,
-    ) -> EmpResult<bool> {
+    ) -> Result<bool> {
         debug!("Checking resources for user: {}", user_id);
         let res = self.res_repo.get_by_id(&mut *self.connection, user_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);

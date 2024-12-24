@@ -1,4 +1,7 @@
-use anyhow::Result;
+// while in development, ignore dead code and unused variables warnings
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use logs_wheel::LogFileInitializer;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -12,10 +15,12 @@ pub mod db;
 mod game;
 pub mod models;
 pub mod net;
-mod rpc;
 pub mod schema;
 
-pub fn setup_tracing() -> Result<()> {
+// re-export for ease of use in other private crates
+pub use models::error::{Error, ErrorKind, Result};
+
+pub fn setup_tracing() -> anyhow::Result<()> {
     let tmp_dir = PathBuf::new().join("log");
     create_dir_all(&tmp_dir)?;
     let log_file = LogFileInitializer {

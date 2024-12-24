@@ -1,7 +1,6 @@
-use anyhow::Result;
 use std::{error, fmt, io};
 
-pub type EmpResult<T> = Result<T, EmpError>;
+pub type Result<T> = anyhow::Result<T, Error>;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {
@@ -58,45 +57,54 @@ enum ErrorRepr {
     WithDescriptionAndDetail(ErrorKind, &'static str, String),
     IoError(io::Error),
     DbError(diesel::result::Error),
+    AnyhowError(anyhow::Error),
 }
 
-pub struct EmpError {
+pub struct Error {
     repr: ErrorRepr,
 }
 
-impl From<io::Error> for EmpError {
-    fn from(err: io::Error) -> EmpError {
-        EmpError {
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error {
             repr: ErrorRepr::IoError(err),
         }
     }
 }
 
-impl From<(ErrorKind, &'static str)> for EmpError {
-    fn from((kind, desc): (ErrorKind, &'static str)) -> EmpError {
-        EmpError {
-            repr: ErrorRepr::WithDescription(kind, desc),
-        }
-    }
-}
-
-impl From<(ErrorKind, &'static str, String)> for EmpError {
-    fn from((kind, desc, detail): (ErrorKind, &'static str, String)) -> EmpError {
-        EmpError {
-            repr: ErrorRepr::WithDescriptionAndDetail(kind, desc, detail),
-        }
-    }
-}
-
-impl From<diesel::result::Error> for EmpError {
-    fn from(err: diesel::result::Error) -> EmpError {
-        EmpError {
+impl From<diesel::result::Error> for Error {
+    fn from(err: diesel::result::Error) -> Error {
+        Error {
             repr: ErrorRepr::DbError(err),
         }
     }
 }
 
-impl error::Error for EmpError {
+impl From<anyhow::Error> for Error {
+    fn from(err: anyhow::Error) -> Error {
+        Error {
+            repr: ErrorRepr::AnyhowError(err),
+        }
+    }
+}
+
+impl From<(ErrorKind, &'static str)> for Error {
+    fn from((kind, desc): (ErrorKind, &'static str)) -> Error {
+        Error {
+            repr: ErrorRepr::WithDescription(kind, desc),
+        }
+    }
+}
+
+impl From<(ErrorKind, &'static str, String)> for Error {
+    fn from((kind, desc, detail): (ErrorKind, &'static str, String)) -> Error {
+        Error {
+            repr: ErrorRepr::WithDescriptionAndDetail(kind, desc, detail),
+        }
+    }
+}
+
+impl error::Error for Error {
     fn cause(&self) -> Option<&dyn error::Error> {
         match self.repr {
             ErrorRepr::IoError(ref err) => Some(err as &dyn error::Error),
@@ -105,8 +113,8 @@ impl error::Error for EmpError {
     }
 }
 
-impl fmt::Display for EmpError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.repr {
             ErrorRepr::WithDescription(_, desc) => desc.fmt(f),
             ErrorRepr::WithDescriptionAndDetail(_, desc, ref detail) => {
@@ -116,12 +124,13 @@ impl fmt::Display for EmpError {
             }
             ErrorRepr::IoError(ref err) => err.fmt(f),
             ErrorRepr::DbError(ref err) => err.fmt(f),
+            ErrorRepr::AnyhowError(ref err) => err.fmt(f),
         }
     }
 }
 
-impl fmt::Debug for EmpError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self, f)
     }
 }

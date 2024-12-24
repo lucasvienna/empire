@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::models::error::EmpResult;
+use crate::models::error::Result;
 use crate::models::faction;
 use crate::models::faction::{Faction, NewFaction};
 use crate::schema::factions;
@@ -9,19 +9,19 @@ use crate::schema::factions;
 pub struct FactionRepository {}
 
 impl Repository<Faction, NewFaction<'static>, faction::PK> for FactionRepository {
-    fn get_all(&self, connection: &mut DbConn) -> EmpResult<Vec<Faction>> {
+    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Faction>> {
         let factions = factions::table
             .select(Faction::as_select())
             .load(connection)?;
         Ok(factions)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<Faction> {
+    fn get_by_id(&self, connection: &mut DbConn, id: &faction::PK) -> Result<Faction> {
         let faction = factions::table.find(id).first(connection)?;
         Ok(faction)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewFaction<'static>) -> EmpResult<Faction> {
+    fn create(&self, connection: &mut DbConn, entity: &NewFaction<'static>) -> Result<Faction> {
         let faction = diesel::insert_into(factions::table)
             .values(entity)
             .returning(Faction::as_returning())
@@ -29,14 +29,14 @@ impl Repository<Faction, NewFaction<'static>, faction::PK> for FactionRepository
         Ok(faction)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &Faction) -> EmpResult<Faction> {
+    fn update(&self, connection: &mut DbConn, entity: &Faction) -> Result<Faction> {
         let faction = diesel::update(factions::table.find(&entity.id))
             .set(entity)
             .get_result(connection)?;
         Ok(faction)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &faction::PK) -> EmpResult<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &faction::PK) -> Result<usize> {
         let res = diesel::delete(factions::table.find(id)).execute(connection)?;
         Ok(res)
     }
