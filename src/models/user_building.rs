@@ -4,7 +4,7 @@ use crate::schema::user_buildings;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = user_buildings)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct UserBuilding {
     pub id: PK,
     pub user_id: i32,

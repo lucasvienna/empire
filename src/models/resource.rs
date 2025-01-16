@@ -5,7 +5,7 @@ use crate::schema::resources;
 #[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = resources)]
 #[diesel(primary_key(user_id))]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Resource {
     pub user_id: i32,
     pub food: i32,

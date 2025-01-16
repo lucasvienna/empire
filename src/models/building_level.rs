@@ -4,7 +4,7 @@ use crate::schema::building_levels;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = building_levels)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct BuildingLevel {
     pub id: PK,
     pub building_id: i32,

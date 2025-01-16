@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="PROJECT" dialect="SQLite" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-06-31-202715_ulid/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055918_users/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055924_resources/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055924_resources/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-063632_user_buildings/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-063927_building_levels/up.sql" dialect="PostgreSQL" />
+    <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>

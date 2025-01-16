@@ -1,9 +1,9 @@
 CREATE TABLE building_levels
 (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    building_id  INTEGER                           NOT NULL,
-    level        INTEGER                           NOT NULL,
-    upgrade_time TEXT                              NOT NULL, -- "%H:%M:%S"
+    id           SERIAL  NOT NULL PRIMARY KEY,
+    building_id  INTEGER NOT NULL,
+    level        INTEGER NOT NULL,
+    upgrade_time TEXT    NOT NULL, -- "%H:%M:%S"
     req_food     INTEGER,
     req_wood     INTEGER,
     req_stone    INTEGER,

@@ -1,5 +1,5 @@
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::SqliteConnection;
+use diesel::PgConnection;
 
 use crate::models::error::Result;
 
@@ -12,7 +12,7 @@ pub mod resources;
 pub mod user_buildings;
 pub mod users;
 
-pub type DbConn = PooledConnection<ConnectionManager<SqliteConnection>>;
+pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub trait Repository<Entity, NewEntity, PK = i32> {
     /// get all entities

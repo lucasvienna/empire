@@ -5,17 +5,17 @@ use anyhow::Result;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::r2d2;
 use diesel::r2d2::{ConnectionManager, CustomizeConnection, Pool};
-use diesel::sqlite::SqliteConnection;
+use diesel::PgConnection;
 use dotenvy::dotenv;
 use tracing::info;
 
-pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 #[derive(Debug)]
 struct Customizer;
 
-impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for Customizer {
-    fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
+impl CustomizeConnection<PgConnection, diesel::r2d2::Error> for Customizer {
+    fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), diesel::r2d2::Error> {
         // see https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/
         // sleep if the database is busy
         // this corresponds to 2 seconds
@@ -75,7 +75,7 @@ impl DbExecutor {
         let database_url = format!("{}", database_url);
         info!("Connecting to database at: {}", database_url);
 
-        let manager = ConnectionManager::<SqliteConnection>::new(database_url.clone());
+        let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
         let builder = Pool::builder()
             .connection_customizer(Box::new(Customizer))
             .test_on_check_out(true);
@@ -101,7 +101,7 @@ impl DbExecutor {
     }
 
     pub fn in_memory(name: &str) -> Result<Self> {
-        Self::new_with_pool_size(format!("file:{}?mode=memory&cache=shared", name), Some(1))
+        Self::new_with_pool_size(format!("file:{}?mode=memory&cache=shared", name), Some(10))
     }
 }
 
@@ -110,5 +110,5 @@ pub fn get_env_pool() -> DbPool {
     executor.unwrap().pool
 }
 pub fn get_test_pool() -> DbPool {
-    DbExecutor::in_memory("test.db").unwrap().pool
+    DbExecutor::from_env().unwrap().pool
 }

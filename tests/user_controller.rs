@@ -48,7 +48,11 @@ async fn create_and_get_by_id_works() {
 
     assert_eq!(response.status(), StatusCode::CREATED);
     let new_user: UserResponse = response.json().await.unwrap();
-    assert_eq!(new_user.id, 1);
+    assert_eq!(
+        new_user.username.as_str(),
+        req.username.as_str(),
+        "New username isn't equal to request username"
+    );
 
     let response = client
         .get(format!("{}/users/{}", &address, new_user.id))

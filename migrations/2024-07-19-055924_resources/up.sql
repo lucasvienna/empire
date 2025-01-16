@@ -1,6 +1,6 @@
 CREATE TABLE resources
 (
-    user_id INTEGER NOT NULL,
+    user_id UUID NOT NULL,
     food    INTEGER NOT NULL DEFAULT 100,
     wood    INTEGER NOT NULL DEFAULT 100,
     stone   INTEGER NOT NULL DEFAULT 100,
@@ -10,16 +10,38 @@ CREATE TABLE resources
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
+CREATE OR REPLACE FUNCTION new_user_resources_fn()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+AS
+$$
+BEGIN
+    INSERT INTO resources (user_id) VALUES (NEW.id);
+    RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER new_user_resources_trigger
     AFTER INSERT
     ON users
+    FOR EACH ROW
+EXECUTE FUNCTION new_user_resources_fn();
+
+CREATE OR REPLACE FUNCTION delete_user_resources_fn()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+AS
+$$
 BEGIN
-    INSERT INTO resources (user_id) VALUES (NEW.id);
+    DELETE
+    FROM resources
+    WHERE user_id = OLD.id;
+    RETURN OLD;
 END;
+$$;
 
 CREATE TRIGGER delete_user_resources_trigger
     AFTER DELETE
     ON users
-BEGIN
-    DELETE FROM resources WHERE user_id = OLD.id;
-END;
+    FOR EACH ROW
+EXECUTE FUNCTION delete_user_resources_fn();

@@ -1,15 +1,14 @@
-use diesel::prelude::*;
-
 use crate::schema::users;
+use diesel::prelude::*;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = users)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {
     pub id: PK,
     pub name: String,
     pub faction: i32,
-    pub data: Option<Vec<u8>>,
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Insertable, Debug)]
@@ -17,7 +16,7 @@ pub struct User {
 pub struct NewUser<'a> {
     pub name: &'a str,
     pub faction: i32,
-    pub data: Option<Vec<u8>>,
+    pub data: Option<serde_json::Value>,
 }
 
 pub type PK = i32;

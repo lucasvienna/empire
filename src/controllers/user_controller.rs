@@ -5,6 +5,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::error;
 
 use crate::db::users::UserRepository;
@@ -98,7 +99,7 @@ async fn create_user(
     let new_user = NewUser {
         name: payload.username.as_str(),
         faction: payload.faction,
-        data: None,
+        data: Some(Value::default()),
     };
 
     let created_user = repo.create(&mut conn, &new_user).map_err(|err| {
@@ -132,7 +133,7 @@ async fn update_user(
         id: user_id,
         name: payload.username.clone(),
         faction: payload.faction,
-        data: None,
+        data: Some(Value::default()),
     };
 
     let updated_user = repo.update(&mut conn, &user).map_err(|err| {
@@ -172,7 +173,7 @@ pub fn user_routes() -> Router<AppState> {
     Router::new()
         .route("/users", get(get_users).post(create_user))
         .route(
-            "/users/:id",
+            "/users/{id}",
             get(get_user_by_id).put(update_user).delete(delete_user),
         )
 }

@@ -2,61 +2,61 @@
 
 diesel::table! {
     building_levels (id) {
-        id -> Integer,
-        building_id -> Integer,
-        level -> Integer,
+        id -> Int4,
+        building_id -> Int4,
+        level -> Int4,
         upgrade_time -> Text,
-        req_food -> Nullable<Integer>,
-        req_wood -> Nullable<Integer>,
-        req_stone -> Nullable<Integer>,
-        req_gold -> Nullable<Integer>,
+        req_food -> Nullable<Int4>,
+        req_wood -> Nullable<Int4>,
+        req_stone -> Nullable<Int4>,
+        req_gold -> Nullable<Int4>,
     }
 }
 
 diesel::table! {
     buildings (id) {
-        id -> Integer,
+        id -> Int4,
         name -> Text,
-        max_level -> Integer,
-        max_count -> Integer,
-        faction -> Integer,
+        max_level -> Int4,
+        max_count -> Int4,
+        faction -> Int4,
         starter -> Bool,
     }
 }
 
 diesel::table! {
     factions (id) {
-        id -> Integer,
+        id -> Int4,
         name -> Text,
     }
 }
 
 diesel::table! {
     resources (user_id) {
-        user_id -> Integer,
-        food -> Integer,
-        wood -> Integer,
-        stone -> Integer,
-        gold -> Integer,
+        user_id -> Uuid,
+        food -> Int4,
+        wood -> Int4,
+        stone -> Int4,
+        gold -> Int4,
     }
 }
 
 diesel::table! {
     user_buildings (id) {
-        id -> Integer,
-        user_id -> Integer,
-        building_id -> Integer,
-        level -> Integer,
+        id -> Uuid,
+        user_id -> Uuid,
+        building_id -> Int4,
+        level -> Int4,
         upgrade_time -> Nullable<Text>,
     }
 }
 
 diesel::table! {
     users (id) {
-        id -> Integer,
+        id -> Uuid,
         name -> Text,
-        faction -> Integer,
-        data -> Nullable<Binary>,
+        faction -> Int4,
+        data -> Nullable<Jsonb>,
     }
 }
 

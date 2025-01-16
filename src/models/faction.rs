@@ -4,7 +4,7 @@ use crate::schema::factions;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = factions)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Faction {
     pub id: PK,
     pub name: String,
