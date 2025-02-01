@@ -1,6 +1,6 @@
+use crate::schema::user_buildings;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::schema::user_buildings;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = user_buildings)]

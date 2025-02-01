@@ -28,9 +28,7 @@ impl DbExecutor {
         let builder = Pool::builder().test_on_check_out(true);
 
         let pool = match pool_size {
-            Some(pool_size) => builder
-                .max_size(pool_size)
-                .build(manager)?,
+            Some(pool_size) => builder.max_size(pool_size).build(manager)?,
             None => builder.build(manager)?,
         };
 
