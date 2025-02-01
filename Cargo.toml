@@ -24,7 +24,7 @@ name = "empire"
 anyhow = { workspace = true }
 axum = { version = "0.8.1", features = ["query", "macros"] }
 axum-test = { version = "17.2.0", features = ["all"] }
-chrono = "0.4.39"
+chrono = { version = "0.4.39", features = ["serde"] }
 config = "0.15.7"
 diesel = { version = "2.2.7", features = ["postgres", "r2d2", "extras"] }
 diesel_migrations = "2.2.0"
@@ -40,7 +40,7 @@ tower = { version = "0.5.2", features = ["full"] }
 tower-http = { version = "0.6.2", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-uuid = { version = "1.12.1", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
+uuid = { version = "1.12.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 
 [workspace]
 members = [

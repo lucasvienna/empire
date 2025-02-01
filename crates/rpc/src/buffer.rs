@@ -140,18 +140,23 @@ pub fn read_byte(buffer: &mut Buffer) -> anyhow::Result<u8, Error> {
     Ok(bytes[0])
 }
 
-#[test]
-fn test_write_byte() {
-    let mut buffer = Buffer::new();
-    let value = 12u8;
-    write_byte(&mut buffer, &value).unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert_eq!(buffer.get_write_data(), [12]);
+    #[test]
+    fn test_write_byte() {
+        let mut buffer = Buffer::new();
+        let value = 12u8;
+        write_byte(&mut buffer, &value).unwrap();
 
-    write_byte(&mut buffer, &value).unwrap();
+        assert_eq!(buffer.get_write_data(), [12]);
 
-    let read_value = read_byte(&mut buffer).unwrap();
-    assert_eq!(read_value, value);
-    assert_eq!(buffer.index, 1);
-    assert_eq!(buffer.size, 2);
+        write_byte(&mut buffer, &value).unwrap();
+
+        let read_value = read_byte(&mut buffer).unwrap();
+        assert_eq!(read_value, value);
+        assert_eq!(buffer.index, 1);
+        assert_eq!(buffer.size, 2);
+    }
 }

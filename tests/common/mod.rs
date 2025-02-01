@@ -1,7 +1,6 @@
 use axum::Router;
 use axum_test::util::new_random_tokio_tcp_listener;
 use empire::db::connection::get_test_pool;
-use empire::db::migrations::run_migrations;
 use empire::net::router;
 use empire::net::server::AppState;
 use std::sync::Arc;
@@ -27,14 +26,11 @@ use std::sync::Arc;
 /// Typically used in testing or isolated environments where an
 /// independent instance of the app is required.
 pub fn get_app() -> anyhow::Result<Router> {
-    let db_pool = get_test_pool();
-    let conn = &mut db_pool.get()?;
     let state = AppState {
-        db_pool: Arc::new(db_pool),
+        db_pool: Arc::new(get_test_pool()),
     };
-    run_migrations(conn).expect("Failed to run migrations.");
-    let router = router::init();
-    Ok(router.with_state(state))
+
+    Ok(router::init().with_state(state))
 }
 
 /// Starts the application and returns the server's socket address.

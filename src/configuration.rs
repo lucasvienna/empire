@@ -1,12 +1,13 @@
 use crate::Result;
+use tracing::debug;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub server: ServerSettings,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: String,
@@ -25,7 +26,7 @@ impl DatabaseSettings {
     }
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct ServerSettings {
     pub rest_port: u16,
 }
@@ -37,5 +38,9 @@ pub fn get_configuration() -> Result<Settings> {
             config::FileFormat::Yaml,
         ))
         .build()?;
-    Ok(settings.try_deserialize::<Settings>()?)
+
+    let settings = settings.try_deserialize::<Settings>()?;
+    debug!("Loaded configuration from file. {:#?}", settings);
+
+    Ok(settings)
 }

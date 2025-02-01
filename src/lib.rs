@@ -3,6 +3,7 @@
 #![allow(unused_variables)]
 
 use logs_wheel::LogFileInitializer;
+use std::env;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -21,6 +22,20 @@ pub mod schema;
 // re-export for ease of use in other private crates
 pub use models::error::{Error, ErrorKind, Result};
 
+pub fn load_env() -> Result<()> {
+    dotenvy::dotenv().ok();
+    match env::var("RUST_LOG").ok() {
+        Some(v) => {
+            if !v.contains("diesel") {
+                env::set_var("RUST_LOG", format!("{},diesel=debug", v));
+            }
+        }
+        None => env::set_var("RUST_LOG", "empire=trace,diesel=debug"),
+    };
+
+    Ok(())
+}
+
 pub fn setup_tracing() -> anyhow::Result<()> {
     let tmp_dir = PathBuf::new().join("log");
     create_dir_all(&tmp_dir)?;
@@ -37,7 +52,7 @@ pub fn setup_tracing() -> anyhow::Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .finish()
         .with(fmt::Layer::default().with_writer(writer).with_ansi(false));
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to setup tracing");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set global default.");
 
     Ok(())
 }

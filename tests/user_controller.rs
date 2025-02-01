@@ -39,7 +39,6 @@ async fn create_and_get_by_id_works() {
         username: "test1".to_string(),
         faction: 2,
     };
-
     let response = client
         .post(format!("{}/users", &address))
         .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
@@ -49,6 +48,7 @@ async fn create_and_get_by_id_works() {
         .expect("Failed to execute request.");
 
     assert_eq!(response.status(), StatusCode::CREATED);
+
     let new_user: UserResponse = response.json().await.unwrap();
     assert_eq!(
         new_user.username.as_str(),
@@ -90,7 +90,6 @@ async fn delete_works() {
         .send()
         .await
         .expect("Failed to execute request.");
-    println!("Deleting user with id: {}", user.id);
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 

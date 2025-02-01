@@ -121,29 +121,36 @@ pub fn set_packet(buffer: &mut Buffer, p: &Packet) {
     }
 }
 
-#[test]
-fn test_write_packet() {
-    let mut buffer = Buffer::new();
-    let packet = Packet::Login {
-        username: "lorem".to_string(),
-        password: "ipsum".to_string(),
-    };
-    set_packet(&mut buffer, &packet);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::buffer::Buffer;
 
-    let buffer_len = 1 + 2 /* length flag */ + "lorem".len() + 2 /* length flag */ + "ipsum".len();
-    assert_eq!(buffer.get_size(), buffer_len);
-    assert_eq!(buffer.get_write_data().len(), buffer_len);
-}
+    #[test]
+    fn test_write_packet() {
+        let mut buffer = Buffer::new();
+        let packet = Packet::Login {
+            username: "lorem".to_string(),
+            password: "ipsum".to_string(),
+        };
+        set_packet(&mut buffer, &packet);
 
-#[test]
-fn test_read_packet() {
-    let mut buffer = Buffer::new();
-    let packet = Packet::Login {
-        username: "lorem".to_string(),
-        password: "ipsum".to_string(),
-    };
-    set_packet(&mut buffer, &packet);
+        let buffer_len =
+            1 + 2 /* length flag */ + "lorem".len() + 2 /* length flag */ + "ipsum".len();
+        assert_eq!(buffer.get_size(), buffer_len);
+        assert_eq!(buffer.get_write_data().len(), buffer_len);
+    }
 
-    let read_packet = get_packet(&mut buffer).unwrap();
-    assert_eq!(packet, read_packet);
+    #[test]
+    fn test_read_packet() {
+        let mut buffer = Buffer::new();
+        let packet = Packet::Login {
+            username: "lorem".to_string(),
+            password: "ipsum".to_string(),
+        };
+        set_packet(&mut buffer, &packet);
+
+        let read_packet = get_packet(&mut buffer).unwrap();
+        assert_eq!(packet, read_packet);
+    }
 }

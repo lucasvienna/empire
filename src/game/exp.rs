@@ -27,20 +27,25 @@ fn xp_lvl(xp: i32) -> i32 {
     (((BASE * (2 * (xp + 25)) as f32).sqrt()) / BASE).ceil() as i32
 }
 
-#[test]
-fn test_level_from_xp() {
-    for level in 1..100 {
-        let xp = xp_from_level(level);
-        let new_level = level_from_xp(xp);
-        assert_eq!(level, new_level);
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_xp_from_level() {
-    for level in 1..100 {
-        let xp = lvl_xp(level);
-        let new_level = xp_lvl(xp);
-        assert_eq!(level, new_level);
+    #[test]
+    fn test_level_from_xp() {
+        for level in 1..100 {
+            let xp = xp_from_level(level);
+            let new_level = level_from_xp(xp);
+            assert_eq!(level, new_level);
+        }
+    }
+
+    #[test]
+    fn test_xp_from_level() {
+        for level in 1..100 {
+            let xp = lvl_xp(level);
+            let new_level = xp_lvl(xp);
+            assert_eq!(level, new_level);
+        }
     }
 }
