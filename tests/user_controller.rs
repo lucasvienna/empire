@@ -1,10 +1,11 @@
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
-use empire::controllers::user_controller::{CreateUserRequest, UserResponse};
-use empire::db::conn::get_test_pool;
+use empire::controllers::{CreateUserRequest, UserResponse};
+use empire::db::connection::get_test_pool;
 use empire::db::users::UserRepository;
 use empire::db::Repository;
+use empire::models::user;
 use empire::models::user::{NewUser, User};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -28,6 +29,7 @@ async fn get_all_works() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&body[..], b"[]");
 }
+
 #[tokio::test]
 async fn create_and_get_by_id_works() {
     let address = common::spawn_app();
@@ -65,6 +67,9 @@ async fn create_and_get_by_id_works() {
     assert_eq!(new_user.id, user.id);
     assert_eq!(new_user.username, user.username);
     assert_eq!(new_user.faction, user.faction);
+
+    let del = delete_test_user(user.id);
+    assert_eq!(del, 1, "Failed to delete user");
 }
 
 #[tokio::test]
@@ -89,6 +94,7 @@ async fn delete_works() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
+/// Create a user. Uses internal DB functions.
 fn create_test_user() -> User {
     let mut conn = get_test_pool().get().unwrap();
     let user_repo = UserRepository {};
@@ -102,4 +108,11 @@ fn create_test_user() -> User {
             },
         )
         .unwrap()
+}
+
+/// Delete a user. Uses internal DB functions.
+fn delete_test_user(user_id: user::PK) -> usize {
+    let mut conn = get_test_pool().get().unwrap();
+    let user_repo = UserRepository {};
+    user_repo.delete(&mut conn, &user_id).unwrap()
 }

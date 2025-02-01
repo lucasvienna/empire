@@ -1,5 +1,5 @@
-use crate::controllers::health_controller::health_check_routes;
-use crate::controllers::user_controller::user_routes;
+use crate::controllers::health_check_routes;
+use crate::controllers::user_routes;
 use crate::net::server::AppState;
 use axum::Router;
 use std::time::Duration;

@@ -1,5 +1,6 @@
 use anyhow::Result;
-use empire::db::conn::get_env_pool;
+use empire::configuration::get_configuration;
+use empire::db::connection;
 use empire::db::migrations::run_migrations;
 use empire::net::server;
 use empire::net::server::AppState;
@@ -20,10 +21,12 @@ async fn main() -> Result<()> {
         None => env::set_var("RUST_LOG", "empire=trace,diesel=debug"),
     }
 
+    let configuration = get_configuration().expect("Failed to read configuration.");
+
     setup_tracing()?;
     info!("Starting Empire server...");
 
-    let pool = get_env_pool();
+    let pool = connection::get_pool(configuration.database);
     {
         let mut conn = pool.get()?;
         run_migrations(&mut conn).expect("Should execute pending migrations");
@@ -33,7 +36,7 @@ async fn main() -> Result<()> {
         db_pool: Arc::new(pool),
     };
 
-    let (listener, router) = server::init().await?;
+    let (listener, router) = server::init(configuration.server).await?;
     let router = router.with_state(app_state);
 
     info!("Listening on {}", listener.local_addr()?);

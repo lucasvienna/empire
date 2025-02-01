@@ -1,6 +1,6 @@
 use axum::Router;
 use axum_test::util::new_random_tokio_tcp_listener;
-use empire::db::conn::get_test_pool;
+use empire::db::connection::get_test_pool;
 use empire::db::migrations::run_migrations;
 use empire::net::router;
 use empire::net::server::AppState;

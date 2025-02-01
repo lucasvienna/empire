@@ -11,15 +11,61 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  DIESEL_VERSION: 2.2.7
+  DIESEL_FEATURES: "postgres"
+  APP_USER: test
+  APP_USER_PWD: test
+  APP_DB_NAME: empire_test
+  PGPASSWORD: password
+
+# Reusable Steps Defined Here
+pq_diesel: &setup_steps
+  - name: Install diesel-cli
+    run: |
+      cargo install diesel_cli \
+        --version="${{ env.DIESEL_VERSION }}" \
+        --features "${{ env.DIESEL_FEATURES }}" \
+        --no-default-features \
+        --locked
+  - name: Install PostgreSQL Client
+    run: sudo apt-get update && sudo apt-get install -y postgresql-client
+  - name: Create Test User in PostgreSQL
+    env:
+      APP_USER: ${{ env.APP_USER }}
+      APP_USER_PWD: ${{ env.APP_USER_PWD }}
+      PGPASSWORD: ${{ env.PQPASSWORD }}
+    run: |
+      # Create the test user
+      CREATE_QUERY="CREATE USER ${APP_USER} WITH PASSWORD '${APP_USER_PWD}';"
+      psql -U "postgres" -h "localhost" -c "${CREATE_QUERY}"
+      
+      # Grant create DB privileges to the test user
+      GRANT_QUERY="ALTER USER ${APP_USER} CREATEDB;"
+      psql -U "postgres" -h "localhost" -c "${GRANT_QUERY}"
+  - name: Migrate Database
+    env:
+      SKIP_DOCKER: true
+    run: ./scripts/init_db.sh
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - name: Install the Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Setup Test Environment
+        <<: *setup_steps
       - name: Run tests
         run: cargo test
 
@@ -50,12 +96,23 @@ jobs:
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - name: Install the Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: llvm-tools-preview
+      - name: Setup Test Environment
+        <<: *setup_steps
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate code coverage

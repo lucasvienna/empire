@@ -25,6 +25,7 @@ anyhow = { workspace = true }
 axum = { version = "0.8.1", features = ["query", "macros"] }
 axum-test = { version = "17.2.0", features = ["all"] }
 chrono = "0.4.39"
+config = "0.15.7"
 diesel = { version = "2.2.7", features = ["postgres", "r2d2", "extras"] }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"

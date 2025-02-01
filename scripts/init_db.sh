@@ -17,8 +17,7 @@ if ! [ -x "$(command -v diesel)" ]; then
 fi
 
 # Allow to skip Docker if a dockerized Postgres database is already running
-if [[ -z "${SKIP_DOCKER}" ]]
-then
+if [[ -z "${SKIP_DOCKER}" ]]; then
   # Launch postgres using Docker
   docker run \
   --env POSTGRES_USER="${SUPERUSER}" \
@@ -46,14 +45,8 @@ then
   # Grant create db privileges to the app user
   GRANT_QUERY="ALTER USER ${APP_USER} CREATEDB;"
   docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${GRANT_QUERY}"
-
-  # Enable the pqcrypto extension
-  CRYPTO_QUERY="CREATE EXTENSION IF NOT EXISTS pgcrypto;"
-  docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${CRYPTO_QUERY}"
 fi
-
 >&2 echo "Postgres is up and running on port ${DB_PORT}!"
 
 export DATABASE_URL=postgres://${APP_USER}:${APP_USER_PWD}@localhost:${DB_PORT}/${APP_DB_NAME}
-
 diesel setup

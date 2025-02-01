@@ -88,6 +88,14 @@ impl From<anyhow::Error> for Error {
     }
 }
 
+impl From<config::ConfigError> for Error {
+    fn from(err: config::ConfigError) -> Error {
+        Error {
+            repr: ErrorRepr::AnyhowError(err.into()),
+        }
+    }
+}
+
 impl From<(ErrorKind, &'static str)> for Error {
     fn from((kind, desc): (ErrorKind, &'static str)) -> Error {
         Error {

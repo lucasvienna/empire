@@ -10,9 +10,10 @@ use tokio::signal;
 use tracing_subscriber::fmt;
 use tracing_subscriber::layer::SubscriberExt;
 
+pub mod configuration;
 pub mod controllers;
 pub mod db;
-mod game;
+pub mod game;
 pub mod models;
 pub mod net;
 pub mod schema;

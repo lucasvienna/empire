@@ -5,7 +5,7 @@ use crate::models::error::Result;
 
 pub mod building_levels;
 pub mod buildings;
-pub mod conn;
+pub mod connection;
 pub mod factions;
 pub mod migrations;
 pub mod resources;
