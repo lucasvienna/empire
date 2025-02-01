@@ -8,7 +8,7 @@ use crate::schema::users;
 
 pub struct UserRepository {}
 
-impl Repository<User, NewUser<'_>, user::PK> for UserRepository {
+impl Repository<User, NewUser, user::PK> for UserRepository {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<User>> {
         let users = users::table.select(User::as_select()).load(connection)?;
         Ok(users)
@@ -19,7 +19,7 @@ impl Repository<User, NewUser<'_>, user::PK> for UserRepository {
         Ok(user)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewUser<'_>) -> Result<User> {
+    fn create(&self, connection: &mut DbConn, entity: &NewUser) -> Result<User> {
         let user = diesel::insert_into(users::table)
             .values(entity)
             .returning(User::as_returning())

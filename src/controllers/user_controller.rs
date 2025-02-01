@@ -1,3 +1,8 @@
+use crate::db::users::UserRepository;
+use crate::db::Repository;
+use crate::models::user;
+use crate::models::user::{NewUser, User};
+use crate::net::server::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -6,87 +11,97 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::error;
-
-use crate::db::users::UserRepository;
-use crate::db::Repository;
-use crate::models::user;
-use crate::models::user::{NewUser, User};
-use crate::net::server::AppState;
+use tracing::{debug, error, info, instrument, trace};
 
 /// Struct for creating a new user
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CreateUserRequest {
     pub username: String,
     pub faction: i32,
 }
 
+impl From<CreateUserRequest> for NewUser {
+    fn from(user: CreateUserRequest) -> Self {
+        Self {
+            name: user.username,
+            faction: user.faction,
+            data: Some(Value::default()),
+        }
+    }
+}
+
 /// Struct for updating user details
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateUserRequest {
     pub username: String,
     pub faction: i32,
 }
 
 /// Struct for response data
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UserResponse {
     pub id: user::PK,
     pub username: String,
     pub faction: i32,
 }
 
+impl From<User> for UserResponse {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            username: user.name,
+            faction: user.faction,
+        }
+    }
+}
+
 // === CRUD HANDLERS === //
 
-// Get all users
+#[instrument(skip(state))]
 async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserResponse>>, StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {
         error!("Failed to get a database connection: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    trace!("Acquired a database connection.");
 
     let result = repo.get_all(&mut conn).map_err(|err| {
         error!("Failed to fetch users: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    debug!("Fetched {} users successfully", result.len());
 
     let response: Vec<UserResponse> = result
         .into_iter()
-        .map(|user| UserResponse {
-            id: user.id,
-            username: user.name,
-            faction: user.faction,
-        })
+        .map(UserResponse::from)
         .collect();
 
     Ok(Json(response))
 }
 
-// Get a user by ID
+#[instrument(skip(state))]
 async fn get_user_by_id(
     State(state): State<AppState>,
     Path(user_id): Path<user::PK>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to get a database connection: {}", err);
+        error!("Failed to acquire a database connection: {:#?}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    trace!("Acquired a database connection.");
 
     let user = repo.get_by_id(&mut conn, &user_id).map_err(|err| {
         error!("Failed to fetch user: {}", err);
         StatusCode::NOT_FOUND
     })?;
+    debug!(?user, "Fetched user successfully");
 
-    Ok(Json(UserResponse {
-        id: user.id,
-        username: user.name,
-        faction: user.faction,
-    }))
+    Ok(Json(user.into()))
 }
 
-// Create a new user
+#[instrument(skip(state))]
 async fn create_user(
     State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
@@ -96,29 +111,21 @@ async fn create_user(
         error!("Failed to get a database connection: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    trace!("Acquired a database connection.");
 
-    let new_user = NewUser {
-        name: payload.username.as_str(),
-        faction: payload.faction,
-        data: Some(Value::default()),
-    };
-
-    let created_user = repo.create(&mut conn, &new_user).map_err(|err| {
-        error!("Failed to create user: {}", err);
+    let created_user = repo.create(&mut conn, &payload.into()).map_err(|err| {
+        error!("Failed to insert user: {:#?}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    info!(
+        user_id = created_user.id.to_string(),
+        "Created user successfully"
+    );
 
-    Ok((
-        StatusCode::CREATED,
-        Json(UserResponse {
-            id: created_user.id,
-            username: created_user.name,
-            faction: created_user.faction,
-        }),
-    ))
+    Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-// Update an existing user
+#[instrument(skip(state))]
 async fn update_user(
     State(state): State<AppState>,
     Path(user_id): Path<user::PK>,
@@ -129,10 +136,11 @@ async fn update_user(
         error!("Failed to get a database connection: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    trace!("Acquired a database connection.");
 
     let user = User {
         id: user_id,
-        name: payload.username.clone(),
+        name: payload.username,
         faction: payload.faction,
         data: Some(Value::default()),
     };
@@ -141,15 +149,15 @@ async fn update_user(
         error!("Failed to update user: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    info!(
+        ?updated_user,
+        "Updated user successfully"
+    );
 
-    Ok(Json(UserResponse {
-        id: updated_user.id,
-        username: updated_user.name,
-        faction: updated_user.faction,
-    }))
+    Ok(Json(updated_user.into()))
 }
 
-// Delete a user
+#[instrument(skip(state))]
 async fn delete_user(
     State(state): State<AppState>,
     Path(user_id): Path<user::PK>,
@@ -159,11 +167,13 @@ async fn delete_user(
         error!("Failed to get a database connection: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+    trace!("Acquired a database connection.");
 
-    repo.delete(&mut conn, &user_id).map_err(|err| {
+    let count = repo.delete(&mut conn, &user_id).map_err(|err| {
         error!("Failed to delete user: {}", err);
         StatusCode::NOT_FOUND
     })?;
+    info!(count, "Deleted user successfully");
 
     Ok(StatusCode::NO_CONTENT)
 }

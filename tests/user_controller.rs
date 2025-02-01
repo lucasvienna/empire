@@ -101,7 +101,7 @@ fn create_test_user() -> User {
         .create(
             &mut conn,
             &NewUser {
-                name: "test_user",
+                name: "test_user".to_string(),
                 faction: 2,
                 data: None,
             },

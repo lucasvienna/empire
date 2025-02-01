@@ -14,8 +14,8 @@ pub struct User {
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = users)]
-pub struct NewUser<'a> {
-    pub name: &'a str,
+pub struct NewUser {
+    pub name: String,
     pub faction: i32,
     pub data: Option<serde_json::Value>,
 }

@@ -36,7 +36,7 @@ pub fn load_env() -> Result<()> {
     Ok(())
 }
 
-pub fn setup_tracing() -> anyhow::Result<()> {
+pub fn setup_tracing() -> Result<()> {
     let tmp_dir = PathBuf::new().join("log");
     create_dir_all(&tmp_dir)?;
     let log_file = LogFileInitializer {
