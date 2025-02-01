@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -x
+set -eo pipefail
+
+PATTERN="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+CONTAINER_NAME="${POSTGRES_PORT:=postgres}"
+SUPERUSER="${SUPERUSER:=postgres}"
+SUPERUSER_PWD="${SUPERUSER_PWD:=password}"
+
+QUERY="SELECT 'DROP DATABASE ' || quote_ident(datname) || ';' FROM pg_database WHERE datname ~ '${PATTERN}';"
+docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -Atqc "${QUERY}"
