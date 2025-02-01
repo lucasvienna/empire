@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     info!("Starting Empire server...");
 
     let configuration = get_configuration().expect("Failed to read configuration.");
-    let pool = connection::get_pool(&configuration.database);
+    let pool = connection::initialize_pool(&configuration.database);
     {
         let mut conn = pool.get()?;
         run_migrations(&mut conn).expect("Failed to execute pending migrations.");

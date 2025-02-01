@@ -1,8 +1,8 @@
+use crate::common::initialize_test_pool;
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
 use empire::controllers::{CreateUserRequest, UserResponse};
-use empire::db::connection::get_test_pool;
 use empire::db::users::UserRepository;
 use empire::db::Repository;
 use empire::models::user;
@@ -95,7 +95,7 @@ async fn delete_works() {
 
 /// Create a user. Uses internal DB functions.
 fn create_test_user() -> User {
-    let mut conn = get_test_pool().get().unwrap();
+    let mut conn = initialize_test_pool().get().unwrap();
     let user_repo = UserRepository {};
     user_repo
         .create(
@@ -111,7 +111,7 @@ fn create_test_user() -> User {
 
 /// Delete a user. Uses internal DB functions.
 fn delete_test_user(user_id: user::PK) -> usize {
-    let mut conn = get_test_pool().get().unwrap();
+    let mut conn = initialize_test_pool().get().unwrap();
     let user_repo = UserRepository {};
     user_repo.delete(&mut conn, &user_id).unwrap()
 }
