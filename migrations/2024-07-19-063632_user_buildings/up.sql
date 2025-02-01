@@ -7,7 +7,7 @@ CREATE TABLE user_buildings
     upgrade_time TEXT    NULL     DEFAULT NULL, -- RFC 3339
 
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id) REFERENCES buildings (id)
 );
 
@@ -21,7 +21,7 @@ BEGIN
     SELECT NEW.id, id, 1 -- pre-built buildings should be level 1
     FROM buildings
     WHERE faction = NEW.faction
-      AND starter = 1;
+      AND starter = TRUE;
     RETURN NEW;
 END;
 $$;
@@ -31,22 +31,3 @@ CREATE TRIGGER new_user_buildings_trigger
     ON users
     FOR EACH ROW
 EXECUTE FUNCTION new_user_buildings_fn();
-
-CREATE OR REPLACE FUNCTION delete_user_buildings_fn()
-    RETURNS TRIGGER
-    LANGUAGE PLPGSQL
-AS
-$$
-BEGIN
-    DELETE
-    FROM user_buildings
-    WHERE user_id = OLD.id;
-    RETURN OLD;
-END;
-$$;
-
-CREATE TRIGGER delete_user_buildings_trigger
-    AFTER DELETE
-    ON users
-    FOR EACH ROW
-EXECUTE FUNCTION delete_user_buildings_fn();

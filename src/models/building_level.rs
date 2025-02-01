@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-
+use uuid::Uuid;
 use crate::schema::building_levels;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
@@ -28,4 +28,4 @@ pub struct NewBuildingLevel<'a> {
     pub req_gold: Option<i32>,
 }
 
-pub type PK = i32;
+pub type PK = Uuid;

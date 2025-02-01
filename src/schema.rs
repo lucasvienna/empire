@@ -2,7 +2,7 @@
 
 diesel::table! {
     building_levels (id) {
-        id -> Int4,
+        id -> Uuid,
         building_id -> Int4,
         level -> Int4,
         upgrade_time -> Text,

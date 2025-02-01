@@ -1,5 +1,6 @@
 use crate::schema::users;
 use diesel::prelude::*;
+use uuid::Uuid;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = users)]
@@ -19,4 +20,4 @@ pub struct NewUser<'a> {
     pub data: Option<serde_json::Value>,
 }
 
-pub type PK = i32;
+pub type PK = Uuid;

@@ -1,6 +1,6 @@
 CREATE TABLE building_levels
 (
-    id           SERIAL  NOT NULL PRIMARY KEY,
+    id           UUID    NOT NULL DEFAULT generate_ulid(),
     building_id  INTEGER NOT NULL,
     level        INTEGER NOT NULL,
     upgrade_time TEXT    NOT NULL, -- "%H:%M:%S"
@@ -9,6 +9,7 @@ CREATE TABLE building_levels
     req_stone    INTEGER,
     req_gold     INTEGER,
 
+    PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES buildings (id)
 );
 

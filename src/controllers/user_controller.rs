@@ -10,6 +10,7 @@ use tracing::error;
 
 use crate::db::users::UserRepository;
 use crate::db::Repository;
+use crate::models::user;
 use crate::models::user::{NewUser, User};
 use crate::net::server::AppState;
 
@@ -30,7 +31,7 @@ pub struct UpdateUserRequest {
 /// Struct for response data
 #[derive(Serialize, Deserialize)]
 pub struct UserResponse {
-    pub id: i32,
+    pub id: user::PK,
     pub username: String,
     pub faction: i32,
 }
@@ -65,7 +66,7 @@ async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserRespons
 // Get a user by ID
 async fn get_user_by_id(
     State(state): State<AppState>,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<user::PK>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {
@@ -120,7 +121,7 @@ async fn create_user(
 // Update an existing user
 async fn update_user(
     State(state): State<AppState>,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<user::PK>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
@@ -151,7 +152,7 @@ async fn update_user(
 // Delete a user
 async fn delete_user(
     State(state): State<AppState>,
-    Path(user_id): Path<i32>,
+    Path(user_id): Path<user::PK>,
 ) -> Result<StatusCode, StatusCode> {
     let repo = UserRepository {};
     let mut conn = state.db_pool.get().map_err(|err| {

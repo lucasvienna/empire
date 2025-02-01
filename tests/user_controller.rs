@@ -73,18 +73,19 @@ async fn delete_works() {
     let client = reqwest::Client::new();
     let user = create_test_user();
 
-    let response = client
+    let del_res = client
         .delete(format!("{}/users/{}", &address, user.id))
         .send()
         .await
         .expect("Failed to execute request.");
-    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert_eq!(del_res.status(), StatusCode::NO_CONTENT);
 
     let response = client
         .get(format!("{}/users/{}", &address, user.id))
         .send()
         .await
         .expect("Failed to execute request.");
+    println!("Deleting user with id: {}", user.id);
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
@@ -95,7 +96,7 @@ fn create_test_user() -> User {
         .create(
             &mut conn,
             &NewUser {
-                name: "test1",
+                name: "test_user",
                 faction: 2,
                 data: None,
             },
