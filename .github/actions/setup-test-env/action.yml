@@ -1,0 +1,62 @@
+name: Setup Test Environment
+description: |
+  Installs diesel-cli, PostgreSQL client, creates a test user in PostgreSQL, and migrates the database.
+
+inputs:
+  diesel_version:
+    description: 'Version of diesel-cli to install'
+    required: true
+    type: string
+  diesel_features:
+    description: 'Features to enable for diesel-cli'
+    required: true
+    type: string
+  app_user:
+    description: 'Database application user'
+    required: true
+    type: string
+  app_user_pwd:
+    description: 'Password for the database application user'
+    required: true
+    type: string
+  pgpassword:
+    description: 'PostgreSQL superuser password'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install diesel-cli
+      shell: bash
+      run: |
+        cargo install diesel_cli \
+          --version="${{ inputs.diesel_version }}" \
+          --features "${{ inputs.diesel_features }}" \
+          --no-default-features \
+          --locked
+
+    - name: Install PostgreSQL Client
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+    - name: Create Test User in PostgreSQL
+      shell: bash
+      env:
+        APP_USER: ${{ inputs.app_user }}
+        APP_USER_PWD: ${{ inputs.app_user_pwd }}
+        PGPASSWORD: ${{ inputs.pgpassword }}
+      run: |
+        # Create the test user
+        CREATE_QUERY="CREATE USER ${APP_USER} WITH PASSWORD '${APP_USER_PWD}';"
+        psql -U "postgres" -h "localhost" -c "${CREATE_QUERY}"
+        
+        # Grant create DB privileges to the test user
+        GRANT_QUERY="ALTER USER ${APP_USER} CREATEDB;"
+        psql -U "postgres" -h "localhost" -c "${GRANT_QUERY}"
+
+    - name: Migrate Database
+      shell: bash
+      env:
+        SKIP_DOCKER: true
+      run: ./scripts/init_db.sh
