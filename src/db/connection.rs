@@ -51,7 +51,7 @@ fn new_with_pool_size<S: Display>(database_url: S, pool_size: Option<u32>) -> Re
     Ok(pool)
 }
 
-pub fn get_pool(settings: DatabaseSettings) -> DbPool {
+pub fn get_pool(settings: &DatabaseSettings) -> DbPool {
     match settings.pool_size {
         Some(pool_size) => {
             debug!("Creating connection pool with size: {}", pool_size);

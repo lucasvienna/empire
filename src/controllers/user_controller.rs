@@ -72,10 +72,7 @@ async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserRespons
     })?;
     debug!("Fetched {} users successfully", result.len());
 
-    let response: Vec<UserResponse> = result
-        .into_iter()
-        .map(UserResponse::from)
-        .collect();
+    let response: Vec<UserResponse> = result.into_iter().map(UserResponse::from).collect();
 
     Ok(Json(response))
 }
@@ -149,10 +146,7 @@ async fn update_user(
         error!("Failed to update user: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    info!(
-        ?updated_user,
-        "Updated user successfully"
-    );
+    info!(?updated_user, "Updated user successfully");
 
     Ok(Json(updated_user.into()))
 }
