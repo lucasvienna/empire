@@ -44,7 +44,7 @@ fn create_pool_with_size<S: Display>(database_url: S, pool_size: Option<u32>) ->
         None => builder.build(manager)?,
     };
 
-    debug!("Connection pool created. {:#?}", pool.state());
+    debug!("Connection pool created. {:?}", pool.state());
     Ok(pool)
 }
 

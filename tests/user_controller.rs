@@ -1,10 +1,9 @@
-use crate::common::initialize_test_pool;
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
 use empire::controllers::{CreateUserRequest, UserResponse};
 use empire::db::users::UserRepository;
-use empire::db::Repository;
+use empire::db::{DbConn, Repository};
 use empire::models::user;
 use empire::models::user::{NewUser, User};
 use http_body_util::BodyExt;
@@ -14,7 +13,7 @@ mod common;
 
 #[tokio::test]
 async fn get_all_works() {
-    let router = common::get_app().expect("Failed to spawn our app.");
+    let router = common::init_server().router;
     let response = router
         .oneshot(
             Request::builder()
@@ -32,7 +31,7 @@ async fn get_all_works() {
 
 #[tokio::test]
 async fn create_and_get_by_id_works() {
-    let address = common::spawn_app();
+    let app = common::spawn_app();
     let client = reqwest::Client::new();
 
     let req = CreateUserRequest {
@@ -40,7 +39,7 @@ async fn create_and_get_by_id_works() {
         faction: 2,
     };
     let response = client
-        .post(format!("{}/users", &address))
+        .post(format!("{}/users", &app.address))
         .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&req)
         .send()
@@ -57,7 +56,7 @@ async fn create_and_get_by_id_works() {
     );
 
     let response = client
-        .get(format!("{}/users/{}", &address, new_user.id))
+        .get(format!("{}/users/{}", &app.address, new_user.id))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -68,25 +67,25 @@ async fn create_and_get_by_id_works() {
     assert_eq!(new_user.username, user.username);
     assert_eq!(new_user.faction, user.faction);
 
-    let del = delete_test_user(user.id);
+    let del = delete_test_user(user.id, app.db_pool.get().unwrap());
     assert_eq!(del, 1, "Failed to delete user");
 }
 
 #[tokio::test]
 async fn delete_works() {
-    let address = common::spawn_app();
+    let app = common::spawn_app();
     let client = reqwest::Client::new();
-    let user = create_test_user();
+    let user = create_test_user(app.db_pool.get().unwrap());
 
     let del_res = client
-        .delete(format!("{}/users/{}", &address, user.id))
+        .delete(format!("{}/users/{}", &app.address, user.id))
         .send()
         .await
         .expect("Failed to execute request.");
     assert_eq!(del_res.status(), StatusCode::NO_CONTENT);
 
     let response = client
-        .get(format!("{}/users/{}", &address, user.id))
+        .get(format!("{}/users/{}", &app.address, user.id))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -94,8 +93,7 @@ async fn delete_works() {
 }
 
 /// Create a user. Uses internal DB functions.
-fn create_test_user() -> User {
-    let mut conn = initialize_test_pool().get().unwrap();
+fn create_test_user(mut conn: DbConn) -> User {
     let user_repo = UserRepository {};
     user_repo
         .create(
@@ -110,8 +108,7 @@ fn create_test_user() -> User {
 }
 
 /// Delete a user. Uses internal DB functions.
-fn delete_test_user(user_id: user::PK) -> usize {
-    let mut conn = initialize_test_pool().get().unwrap();
+fn delete_test_user(user_id: user::PK, mut conn: DbConn) -> usize {
     let user_repo = UserRepository {};
     user_repo.delete(&mut conn, &user_id).unwrap()
 }

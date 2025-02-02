@@ -6,51 +6,81 @@ use empire::db::connection::{create_pool_from_settings, DbPool};
 use empire::db::migrations::run_migrations;
 use empire::net::router;
 use empire::net::server::AppState;
-use std::sync::Arc;
+use empire::Result;
+use std::sync::{Arc, LazyLock};
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::{fmt, registry, EnvFilter};
 use uuid::Uuid;
 
-/// Creates and initializes the application, returning an Axum `Router`.
-///
-/// This function performs the following steps:
-/// - Creates a test database connection pool and initializes the state.
-/// - Runs database migrations to ensure the schema is up-to-date.
-/// - Initializes the server and obtains the application router.
-/// - Associates the application state with the router.
-///
-/// # Returns
-/// A Result containing the initialized `Router` or an error if something fails.
-///
-/// # Errors
-/// This function will return an error if:
-/// - The database connection pool cannot be created.
-/// - Migrations fail to execute.
-/// - The server initialization fails.
-///
-/// # Usage
-/// Typically used in testing or isolated environments where an
-/// independent instance of the app is required.
-pub fn get_app() -> anyhow::Result<Router> {
-    let state = AppState {
-        db_pool: Arc::new(initialize_test_pool()),
-    };
-
-    Ok(router::init().with_state(state))
+pub struct TestServer {
+    pub router: Router,
+    pub db_pool: DbPool,
 }
 
-/// Starts the application and returns the server's socket address.
+#[allow(dead_code)]
+pub struct TestApp {
+    pub address: String,
+    pub db_pool: DbPool,
+}
+
+/// Creates and initializes the application, returning a `TestServer`.
 ///
-/// # Errors
-/// Returns an error if the database connection, migrations, or server initialization fails.
-pub fn spawn_app() -> String {
-    let router = get_app().unwrap();
+/// This function performs the following steps:
+/// - Creates a test database connection pool and initializes the application state.
+/// - Runs database migrations to ensure the schema is up-to-date.
+/// - Configures the application's router with the initialized state.
+///
+/// # Returns
+/// A [`TestServer`] containing the initialized `Router` and test database pool.
+///
+/// # Usage
+/// This function is typically used in testing environments where an
+/// independent instance of the application is required.
+///
+/// [`TestServer`]: TestServer
+pub fn init_server() -> TestServer {
+    LazyLock::force(&TRACING);
+
+    let pool = initialize_test_pool();
+    let state = AppState {
+        db_pool: Arc::new(pool.clone()),
+    };
+
+    TestServer {
+        router: router::init().with_state(state),
+        db_pool: pool,
+    }
+}
+
+/// Starts the application and returns the test application instance.
+///
+/// This function performs the following steps:
+/// - Initializes the test server, including a test database and app state.
+/// - Starts the Axum server on a randomly assigned local port.
+///
+/// # Returns
+/// A [`TestApp`] instance containing the server's address and database pool.
+///
+/// # Panics
+/// This function will panic if:
+/// - The test server initialization fails.
+/// - The server fails to start serving requests.
+///
+/// [`TestApp`]: TestApp
+pub fn spawn_app() -> TestApp {
+    let server = init_server();
     let listener = new_random_tokio_tcp_listener().expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(async move {
-        axum::serve(listener, router)
+        axum::serve(listener, server.router)
             .await
             .expect("Expect server to start serving");
     });
-    format!("http://127.0.0.1:{}", port)
+    TestApp {
+        address: format!("http://localhost:{}", port),
+        db_pool: server.db_pool,
+    }
 }
 
 /// Initializes the test database pool.
@@ -97,4 +127,21 @@ pub fn initialize_test_pool() -> DbPool {
 
     run_migrations(&mut conn).expect("Failed to run migrations.");
     create_pool_from_settings(db_settings).unwrap()
+}
+
+static TRACING: LazyLock<Result<()>> = LazyLock::new(init_test_tracing);
+
+fn init_test_tracing() -> Result<()> {
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = registry()
+            .with(EnvFilter::from_default_env().add_directive(LevelFilter::TRACE.into()))
+            .with(fmt::Layer::new().with_test_writer());
+        tracing::subscriber::set_global_default(subscriber).expect("Failed to set global default.");
+    } else {
+        let subscriber =
+            registry().with(EnvFilter::from_default_env().add_directive(LevelFilter::TRACE.into()));
+        tracing::subscriber::set_global_default(subscriber).expect("Failed to set global default.");
+    }
+
+    Ok(())
 }
