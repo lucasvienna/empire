@@ -106,9 +106,7 @@ pub fn spawn_app() -> TestApp {
 ///
 /// [`DbPool`]: DbPool
 pub fn initialize_test_pool() -> DbPool {
-    let mut config = get()
-        .expect("Failed to read configuration.")
-        .database;
+    let mut config = get().expect("Failed to read configuration.").database;
     config.database_name = Uuid::new_v4().to_string();
 
     let db_settings = DatabaseSettings {

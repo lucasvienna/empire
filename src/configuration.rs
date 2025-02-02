@@ -63,10 +63,7 @@ pub struct ServerSettings {
 pub fn get() -> Result<Settings> {
     let settings_path = "configuration.yaml";
     let settings = config::Config::builder()
-        .add_source(config::File::new(
-            settings_path,
-            config::FileFormat::Yaml,
-        ))
+        .add_source(config::File::new(settings_path, config::FileFormat::Yaml))
         .build()?;
 
     let settings = settings.try_deserialize::<Settings>()?;
