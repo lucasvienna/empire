@@ -4,7 +4,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use secrecy::ExposeSecret;
 use std::env;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -14,7 +14,20 @@ pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 /// Otherwise, it defaults to creating a pool with no size limit.
 ///
 /// Exits the process if the pool cannot be created.
+#[instrument(skip(settings))]
 pub fn initialize_pool(settings: &DatabaseSettings) -> DbPool {
+    info!("Initializing database pool...");
+    debug!(
+        "Connecting to {:#?}",
+        format!(
+            "postgres://{}:{:?}@{}:{}/{}",
+            settings.username,
+            settings.password,
+            settings.host,
+            settings.port,
+            settings.database_name
+        )
+    );
     let pool = match settings.pool_size {
         Some(size) => {
             debug!("Creating connection pool with size: {}", size);
@@ -44,13 +57,11 @@ pub fn initialize_pool(settings: &DatabaseSettings) -> DbPool {
 ///
 /// # Panics
 ///
-/// This function will terminate and exit the process if the `DATABASE_URL` is missing 
+/// This function will terminate and exit the process if the `DATABASE_URL` is missing
 /// or the connection pool initialization fails.
+#[instrument]
 pub fn initialize_pool_from_env(filename: Option<&str>) -> DbPool {
-    debug!(
-        "Creating connection with environment variables from: {:?}",
-        filename
-    );
+    debug!("Creating connection from environment variables");
     load_environment(filename);
     let database_url = env::var_os("DATABASE_URL").unwrap_or_else(|| "".into());
     create_pool(database_url.to_string_lossy()).unwrap_or_else(|err| {
@@ -71,15 +82,15 @@ fn create_pool_with_size<S: Into<String>>(
 ) -> Result<DbPool> {
     assert_ne!(pool_size, Some(0), "r2d2 pool size must be greater than 0");
 
-    info!("Connecting to database");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let builder = Pool::builder().test_on_check_out(true);
     let pool = match pool_size {
         Some(size) => builder.max_size(size).build(manager)?,
         None => builder.build(manager)?,
     };
+    debug!("Connection pool created: {:?}", pool.state());
+    info!("Database pool ready");
 
-    debug!("Connection pool created. {:?}", pool.state());
     Ok(pool)
 }
 

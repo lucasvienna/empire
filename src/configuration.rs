@@ -1,7 +1,7 @@
 use crate::Result;
 use secrecy::{ExposeSecret, SecretString};
 use std::env;
-use tracing::debug;
+use tracing::{debug, instrument, trace};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Settings {
@@ -21,10 +21,17 @@ pub struct DatabaseSettings {
 
 impl DatabaseSettings {
     pub fn connection_string(&self) -> SecretString {
-        SecretString::new(format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password.expose_secret(), self.host, self.port, self.database_name
-        ).into())
+        SecretString::new(
+            format!(
+                "postgres://{}:{}@{}:{}/{}",
+                self.username,
+                self.password.expose_secret(),
+                self.host,
+                self.port,
+                self.database_name
+            )
+                .into(),
+        )
     }
 }
 
@@ -52,16 +59,19 @@ pub struct ServerSettings {
 ///
 /// [`Settings`]: Settings
 /// [`Result`]: Result
-pub fn get_configuration() -> Result<Settings> {
+#[instrument(name = "configuration")]
+pub fn get() -> Result<Settings> {
+    let settings_path = "configuration.yaml";
     let settings = config::Config::builder()
         .add_source(config::File::new(
-            "configuration.yaml",
+            settings_path,
             config::FileFormat::Yaml,
         ))
         .build()?;
 
     let settings = settings.try_deserialize::<Settings>()?;
-    debug!("Loaded configuration from file. {:#?}", settings);
+    debug!("Loaded settings from file: {:#?}", settings_path);
+    trace!(?settings);
 
     Ok(settings)
 }

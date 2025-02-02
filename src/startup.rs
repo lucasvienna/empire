@@ -33,6 +33,7 @@ pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
         db_pool: Arc::new(pool),
     });
 
+    info!("Empire server started!");
     info!("Listening on {}", listener.local_addr()?);
 
     axum::serve(listener, router.into_make_service())
