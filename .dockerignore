@@ -1,0 +1,10 @@
+.idea/
+.github/
+scripts/
+tests/
+docs/
+target/
+log/
+*.http
+.env
+Dockerfile
