@@ -2,11 +2,12 @@ use axum::Router;
 use axum_test::util::new_random_tokio_tcp_listener;
 use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
 use empire::configuration::{get_configuration, DatabaseSettings};
-use empire::db::connection::{create_pool_from_settings, DbPool};
+use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_migrations;
 use empire::net::router;
 use empire::net::server::AppState;
 use empire::Result;
+use secrecy::{ExposeSecret, SecretString};
 use std::sync::{Arc, LazyLock};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -113,12 +114,12 @@ pub fn initialize_test_pool() -> DbPool {
     let db_settings = DatabaseSettings {
         database_name: "postgres".to_string(),
         username: "postgres".to_string(),
-        password: "password".to_string(),
+        password: SecretString::new("password".into()),
         pool_size: Some(1),
         ..config
     };
 
-    let mut conn = PgConnection::establish(&db_settings.connection_string())
+    let mut conn = PgConnection::establish(db_settings.connection_string().expose_secret())
         .expect("Failed to connect to database.");
 
     sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
@@ -126,7 +127,7 @@ pub fn initialize_test_pool() -> DbPool {
         .expect("Failed to create test schema");
 
     run_migrations(&mut conn).expect("Failed to run migrations.");
-    create_pool_from_settings(db_settings).unwrap()
+    initialize_pool(&db_settings)
 }
 
 static TRACING: LazyLock<Result<()>> = LazyLock::new(init_test_tracing);

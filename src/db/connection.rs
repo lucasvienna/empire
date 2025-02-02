@@ -2,42 +2,77 @@ use crate::configuration::DatabaseSettings;
 use anyhow::Result;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use secrecy::ExposeSecret;
 use std::env;
-use std::fmt::Display;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
-/// Creates a new database pool using the provided database URL.
-fn create_pool<S: Display>(database_url: S) -> Result<DbPool> {
-    create_pool_with_size(database_url, None)
+/// Initializes the database connection pool using the provided `DatabaseSettings`.
+///
+/// If a `pool_size` is specified in the settings, it will create a pool with the given size.
+/// Otherwise, it defaults to creating a pool with no size limit.
+///
+/// Exits the process if the pool cannot be created.
+pub fn initialize_pool(settings: &DatabaseSettings) -> DbPool {
+    let pool = match settings.pool_size {
+        Some(size) => {
+            debug!("Creating connection pool with size: {}", size);
+            create_pool_with_size(settings.connection_string().expose_secret(), Some(size))
+        }
+        None => {
+            debug!("Creating connection pool with default size");
+            create_pool(settings.connection_string().expose_secret())
+        }
+    };
+    pool.unwrap_or_else(|err| {
+        error!("Failed to initialize database pool: {}", err);
+        std::process::exit(1);
+    })
 }
 
-/// Creates a new database pool from the given `DatabaseSettings`.
-pub fn create_pool_from_settings(settings: DatabaseSettings) -> Result<DbPool> {
-    create_pool_with_size(settings.connection_string(), settings.pool_size)
-}
-
-/// Creates a new database pool using environment variables.
-/// Optionally loads variables from a specified filename.
-pub fn create_pool_from_env(filename: Option<&str>) -> Result<DbPool> {
+/// Initializes a database connection pool using environment variables.
+///
+/// This function optionally loads environment variables from a specified file.
+/// It retrieves the `DATABASE_URL` from the environment and uses it to
+/// establish the connection pool. If the environment variable or connection
+/// pool creation fails, the process will exit with an error message.
+///
+/// # Arguments
+///
+/// * `filename` - An optional path to a `.env` file to load environment variables from.
+///
+/// # Panics
+///
+/// This function will terminate and exit the process if the `DATABASE_URL` is missing 
+/// or the connection pool initialization fails.
+pub fn initialize_pool_from_env(filename: Option<&str>) -> DbPool {
     debug!(
         "Creating connection with environment variables from: {:?}",
         filename
     );
     load_environment(filename);
     let database_url = env::var_os("DATABASE_URL").unwrap_or_else(|| "".into());
-    create_pool(database_url.to_string_lossy())
+    create_pool(database_url.to_string_lossy()).unwrap_or_else(|err| {
+        error!("Failed to initialize database pool: {}", err);
+        std::process::exit(1);
+    })
+}
+
+/// Creates a new database pool using the provided database URL.
+fn create_pool<S: Into<String>>(database_url: S) -> Result<DbPool> {
+    create_pool_with_size(database_url, None)
 }
 
 /// Creates a new database pool with an optional pool size.
-fn create_pool_with_size<S: Display>(database_url: S, pool_size: Option<u32>) -> Result<DbPool> {
+fn create_pool_with_size<S: Into<String>>(
+    database_url: S,
+    pool_size: Option<u32>,
+) -> Result<DbPool> {
     assert_ne!(pool_size, Some(0), "r2d2 pool size must be greater than 0");
 
-    let database_url = format!("{}", database_url);
-    info!("Connecting to database at: {}", database_url);
-
-    let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
+    info!("Connecting to database");
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
     let builder = Pool::builder().test_on_check_out(true);
     let pool = match pool_size {
         Some(size) => builder.max_size(size).build(manager)?,
@@ -46,20 +81,6 @@ fn create_pool_with_size<S: Display>(database_url: S, pool_size: Option<u32>) ->
 
     debug!("Connection pool created. {:?}", pool.state());
     Ok(pool)
-}
-
-/// Initializes the database pool based on the provided settings.
-pub fn initialize_pool(settings: &DatabaseSettings) -> DbPool {
-    match settings.pool_size {
-        Some(size) => {
-            debug!("Creating connection pool with size: {}", size);
-            create_pool_with_size(settings.connection_string(), Some(size)).unwrap()
-        }
-        None => {
-            debug!("Creating connection pool with default size");
-            create_pool(settings.connection_string()).unwrap()
-        }
-    }
 }
 
 /// Loads environment variables from the specified filename or defaults.
