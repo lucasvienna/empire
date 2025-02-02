@@ -1,2 +1,2 @@
 server:
-  rest_host: 127.0.0.1
+  axum_host: 127.0.0.1

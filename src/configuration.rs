@@ -45,7 +45,7 @@ impl DatabaseSettings {
                 self.port,
                 self.database_name
             )
-                .into(),
+            .into(),
         )
     }
 }
@@ -79,7 +79,7 @@ impl TryFrom<String> for Environment {
                 "Invalid environment: {}. Use either `local` or `production`.",
                 other
             ))
-                .into()),
+            .into()),
         }
     }
 }
