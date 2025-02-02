@@ -1,7 +1,7 @@
 use axum::Router;
 use axum_test::util::new_random_tokio_tcp_listener;
 use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
-use empire::configuration::{get, DatabaseSettings};
+use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_migrations;
 use empire::net::router;
@@ -106,7 +106,9 @@ pub fn spawn_app() -> TestApp {
 ///
 /// [`DbPool`]: DbPool
 pub fn initialize_test_pool() -> DbPool {
-    let mut config = get().expect("Failed to read configuration.").database;
+    let mut config = get_settings()
+        .expect("Failed to read configuration.")
+        .database;
     config.database_name = Uuid::new_v4().to_string();
 
     let db_settings = DatabaseSettings {

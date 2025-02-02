@@ -14,7 +14,7 @@ async fn main() -> Result<ExitCode> {
 
     info!("Starting Empire server...");
 
-    let settings = configuration::get().expect("Failed to read configuration.");
+    let settings = configuration::get_settings().expect("Failed to read configuration.");
     let pool = connection::initialize_pool(&settings.database);
     {
         let mut conn = pool.get()?;

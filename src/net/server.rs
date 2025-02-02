@@ -26,7 +26,7 @@ impl Debug for AppState {
 }
 
 pub async fn init(settings: ServerSettings) -> Result<(TcpListener, Router<AppState>)> {
-    let addr = SocketAddr::from(([0, 0, 0, 0], settings.rest_port));
+    let addr = SocketAddr::from((settings.axum_host, settings.axum_port));
     let listener = TcpListener::bind(addr).await?;
     let router = router::init();
     Ok((listener, router))
