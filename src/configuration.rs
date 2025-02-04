@@ -1,5 +1,5 @@
 use crate::Result;
-use config::{Config, File};
+use config::{Config, Environment, File};
 use secrecy::{ExposeSecret, SecretString};
 use serde_aux::prelude::deserialize_number_from_string;
 use std::env;
@@ -32,7 +32,7 @@ pub struct ServerSettings {
 
 /// The possible runtime environment for our application.
 #[derive(Debug)]
-pub enum Environment {
+pub enum AppEnvironment {
     Development,
     Production,
 }
@@ -53,22 +53,22 @@ impl DatabaseSettings {
     }
 }
 
-impl Environment {
+impl AppEnvironment {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Environment::Development => "dev",
-            Environment::Production => "prod",
+            AppEnvironment::Development => "dev",
+            AppEnvironment::Production => "prod",
         }
     }
 }
 
-impl From<Environment> for String {
-    fn from(env: Environment) -> Self {
+impl From<AppEnvironment> for String {
+    fn from(env: AppEnvironment) -> Self {
         env.as_str().into()
     }
 }
 
-impl TryFrom<String> for Environment {
+impl TryFrom<String> for AppEnvironment {
     type Error = crate::Error;
 
     fn try_from(s: String) -> Result<Self> {
@@ -115,7 +115,7 @@ pub fn get_settings() -> Result<Settings> {
 
     // Detect the running environment.
     // Default to `development` if unspecified.
-    let environment: Environment = env::var("APP_ENVIRONMENT")
+    let environment: AppEnvironment = env::var("APP_ENVIRONMENT")
         .unwrap_or_else(|_| "development".into())
         .try_into()
         .expect("Failed to parse APP_ENVIRONMENT.");
@@ -127,6 +127,11 @@ pub fn get_settings() -> Result<Settings> {
     let settings = Config::builder()
         .add_source(File::from(config_dir.join("application.yaml")))
         .add_source(File::from(config_dir.join(env_filename)))
+        .add_source(
+            Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("__"),
+        )
         .build()?;
 
     let settings = settings.try_deserialize::<Settings>()?;
@@ -158,10 +163,7 @@ pub fn load_env() -> Result<()> {
                 env::set_var("RUST_LOG", format!("{},tower_http=debug", v));
             }
         }
-        None => env::set_var(
-            "RUST_LOG",
-            "empire=debug,tower_http=debug,diesel=debug",
-        ),
+        None => env::set_var("RUST_LOG", "empire=debug,tower_http=debug,diesel=debug"),
     };
 
     Ok(())
