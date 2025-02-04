@@ -83,10 +83,10 @@ fn create_pool_with_size<S: Into<String>>(
     assert_ne!(pool_size, Some(0), "r2d2 pool size must be greater than 0");
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    let builder = Pool::builder().min_idle(Some(0));
+    let builder = Pool::builder().test_on_check_out(true);
     let pool = match pool_size {
-        Some(size) => builder.max_size(size).build_unchecked(manager),
-        None => builder.build_unchecked(manager),
+        Some(size) => builder.max_size(size).build(manager)?,
+        None => builder.build(manager)?,
     };
     debug!("Connection pool created: {:?}", pool.state());
     info!("Database pool ready");

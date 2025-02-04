@@ -3,7 +3,7 @@ use axum_test::util::new_random_tokio_tcp_listener;
 use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
 use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
-use empire::db::migrations::run_migrations;
+use empire::db::migrations::run_pending;
 use empire::net::router;
 use empire::net::server::AppState;
 use empire::Result;
@@ -126,7 +126,7 @@ pub fn initialize_test_pool() -> DbPool {
         .execute(&mut conn)
         .expect("Failed to create test schema");
 
-    run_migrations(&mut conn).expect("Failed to run migrations.");
+    run_pending(&mut conn).expect("Failed to run migrations.");
     initialize_pool(&db_settings)
 }
 

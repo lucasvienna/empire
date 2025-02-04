@@ -1,2 +1,4 @@
 server:
   axum_host: 127.0.0.1
+database:
+  pool_size: 2

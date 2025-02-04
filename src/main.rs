@@ -1,6 +1,6 @@
 use anyhow::Result;
 use empire::configuration;
-use empire::db::connection;
+use empire::db::{connection, migrations};
 use empire::startup::launch;
 use empire::telemetry;
 use std::process::ExitCode;
@@ -15,10 +15,10 @@ async fn main() -> Result<ExitCode> {
 
     let settings = configuration::get_settings().expect("Failed to read configuration.");
     let pool = connection::initialize_pool(&settings.database);
-    // {
-    //     let mut conn = pool.get()?;
-    //     run_migrations(&mut conn).expect("Failed to execute pending migrations.");
-    // }
+    {
+        let mut conn = pool.get()?;
+        migrations::run_pending(&mut conn).expect("Failed to execute pending migrations.");
+    }
 
     launch(settings, pool).await?;
 
