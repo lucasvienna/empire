@@ -25,7 +25,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   --publish "${DB_PORT}":5432 \
   --detach \
   --name "${CONTAINER_NAME}" \
-  postgres -N 1000
+  postgres:14 -N 1000
   # ^ Increased maximum number of connections for testing purposes
   sleep 5
 

@@ -1,6 +1,7 @@
 use crate::Result;
 use config::{Config, File};
 use secrecy::{ExposeSecret, SecretString};
+use serde_aux::prelude::deserialize_number_from_string;
 use std::env;
 use std::net::Ipv4Addr;
 use tracing::{debug, instrument, trace};
@@ -15,6 +16,7 @@ pub struct Settings {
 pub struct DatabaseSettings {
     pub username: String,
     pub password: SecretString,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
     pub database_name: String,
@@ -24,6 +26,7 @@ pub struct DatabaseSettings {
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct ServerSettings {
     pub axum_host: Ipv4Addr,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub axum_port: u16,
 }
 
