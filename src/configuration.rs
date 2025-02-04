@@ -154,8 +154,14 @@ pub fn load_env() -> Result<()> {
             if !v.contains("diesel") {
                 env::set_var("RUST_LOG", format!("{},diesel=debug", v));
             }
+            if !v.contains("tower_http") {
+                env::set_var("RUST_LOG", format!("{},tower_http=debug", v));
+            }
         }
-        None => env::set_var("RUST_LOG", "empire=debug,diesel=debug"),
+        None => env::set_var(
+            "RUST_LOG",
+            "empire=debug,tower_http=debug,diesel=debug",
+        ),
     };
 
     Ok(())
