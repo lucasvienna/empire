@@ -1,17 +1,13 @@
+use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
 use crate::models::user;
 use crate::models::user::{NewUser, User};
 use crate::net::server::AppState;
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    routing::get,
-    Json, Router,
-};
+use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, error, info, instrument};
 
 /// Struct for creating a new user
 #[derive(Serialize, Deserialize, Debug)]
@@ -45,6 +41,8 @@ pub struct UserResponse {
     pub faction: i32,
 }
 
+pub type UsersResponse = Vec<UserResponse>;
+
 impl From<User> for UserResponse {
     fn from(user: User) -> Self {
         Self {
@@ -57,14 +55,11 @@ impl From<User> for UserResponse {
 
 // === CRUD HANDLERS === //
 
-#[instrument(skip(state))]
-async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserResponse>>, StatusCode> {
+#[instrument(skip(conn))]
+async fn get_users(
+    DatabaseConnection(mut conn): DatabaseConnection,
+) -> Result<Json<UsersResponse>, StatusCode> {
     let repo = UserRepository {};
-    let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to get a database connection: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    trace!("Acquired a database connection.");
 
     let result = repo.get_all(&mut conn).map_err(|err| {
         error!("Failed to fetch users: {}", err);
@@ -72,22 +67,17 @@ async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserRespons
     })?;
     debug!("Fetched {} users successfully", result.len());
 
-    let response: Vec<UserResponse> = result.into_iter().map(UserResponse::from).collect();
+    let response: UsersResponse = result.into_iter().map(UserResponse::from).collect();
 
     Ok(Json(response))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(conn))]
 async fn get_user_by_id(
-    State(state): State<AppState>,
+    DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
-    let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to acquire a database connection: {:#?}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    trace!("Acquired a database connection.");
 
     let user = repo.get_by_id(&mut conn, &user_id).map_err(|err| {
         error!("Failed to fetch user: {}", err);
@@ -98,17 +88,12 @@ async fn get_user_by_id(
     Ok(Json(user.into()))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(conn))]
 async fn create_user(
-    State(state): State<AppState>,
+    DatabaseConnection(mut conn): DatabaseConnection,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<UserResponse>), StatusCode> {
     let repo = UserRepository {};
-    let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to get a database connection: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    trace!("Acquired a database connection.");
 
     let created_user = repo.create(&mut conn, &payload.into()).map_err(|err| {
         error!("Failed to insert user: {:#?}", err);
@@ -122,18 +107,13 @@ async fn create_user(
     Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(conn))]
 async fn update_user(
-    State(state): State<AppState>,
+    DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
-    let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to get a database connection: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    trace!("Acquired a database connection.");
 
     let user = User {
         id: user_id,
@@ -151,17 +131,12 @@ async fn update_user(
     Ok(Json(updated_user.into()))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(conn))]
 async fn delete_user(
-    State(state): State<AppState>,
+    DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
 ) -> Result<StatusCode, StatusCode> {
     let repo = UserRepository {};
-    let mut conn = state.db_pool.get().map_err(|err| {
-        error!("Failed to get a database connection: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    trace!("Acquired a database connection.");
 
     let count = repo.delete(&mut conn, &user_id).map_err(|err| {
         error!("Failed to delete user: {}", err);
@@ -175,10 +150,13 @@ async fn delete_user(
 // === ROUTES === //
 
 pub fn user_routes() -> Router<AppState> {
-    Router::new()
-        .route("/users", get(get_users).post(create_user))
-        .route(
-            "/users/{id}",
-            get(get_user_by_id).put(update_user).delete(delete_user),
-        )
+    Router::new().nest(
+        "/users",
+        Router::new()
+            .route("/", get(get_users).post(create_user))
+            .route(
+                "/{id}",
+                get(get_user_by_id).put(update_user).delete(delete_user),
+            ),
+    )
 }

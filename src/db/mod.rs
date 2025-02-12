@@ -1,6 +1,3 @@
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::PgConnection;
-
 use crate::models::error::Result;
 
 pub mod building_levels;
@@ -11,8 +8,10 @@ pub mod migrations;
 pub mod resources;
 pub mod user_buildings;
 pub mod users;
+pub mod extractor;
 
-pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
+pub use connection::{DbConn, DbPool};
+
 
 pub trait Repository<Entity, NewEntity, PK = i32> {
     /// get all entities
