@@ -888,6 +888,7 @@ dependencies = [
  "tower-request-id",
  "tracing",
  "tracing-subscriber",
+ "unicode-segmentation",
  "uuid",
 ]
 

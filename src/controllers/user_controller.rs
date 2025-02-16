@@ -4,6 +4,7 @@ use crate::db::Repository;
 use crate::domain::user;
 use crate::domain::user::{NewUser, User};
 use crate::net::server::AppState;
+use crate::Error;
 use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -16,13 +17,16 @@ pub struct CreateUserRequest {
     pub faction: i32,
 }
 
-impl From<CreateUserRequest> for NewUser {
-    fn from(user: CreateUserRequest) -> Self {
-        Self {
-            name: user.username,
-            faction: user.faction,
+impl TryFrom<CreateUserRequest> for NewUser {
+    type Error = Error;
+
+    fn try_from(req: CreateUserRequest) -> Result<Self, Self::Error> {
+        let user = Self {
+            name: user::Username::parse(req.username)?,
+            faction: req.faction,
             data: Some(Value::default()),
-        }
+        };
+        Ok(user)
     }
 }
 
@@ -94,11 +98,20 @@ async fn create_user(
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<UserResponse>), StatusCode> {
     let repo = UserRepository {};
+    let new_user = match NewUser::try_from(payload) {
+        Ok(new_user) => new_user,
+        Err(err) => {
+            error!("Failed to parse user: {}", err);
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
 
-    let created_user = repo.create(&mut conn, &payload.into()).map_err(|err| {
-        error!("Failed to insert user: {:#?}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let created_user = repo
+        .create(&mut conn, &new_user)
+        .map_err(|err| {
+            error!("Failed to insert user: {:#?}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     info!(
         user_id = created_user.id.to_string(),
         "Created user successfully"

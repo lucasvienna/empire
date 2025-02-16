@@ -1,6 +1,6 @@
 use std::{error, fmt, io};
 
-pub type Result<T> = anyhow::Result<T, Error>;
+pub type Result<T, E = Error> = anyhow::Result<T, E>;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {

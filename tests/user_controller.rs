@@ -5,7 +5,7 @@ use empire::controllers::{CreateUserRequest, UserResponse};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::user;
-use empire::domain::user::{NewUser, User};
+use empire::domain::user::{NewUser, User, Username};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -99,7 +99,7 @@ fn create_test_user(mut conn: DbConn) -> User {
         .create(
             &mut conn,
             &NewUser {
-                name: "test_user".to_string(),
+                name: Username::parse("test_user".to_string()).unwrap(),
                 faction: 2,
                 data: None,
             },

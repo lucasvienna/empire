@@ -1,3 +1,4 @@
+use crate::domain::user::username::Username;
 use crate::schema::users;
 use diesel::prelude::*;
 use uuid::Uuid;
@@ -15,7 +16,7 @@ pub struct User {
 #[derive(Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser {
-    pub name: String,
+    pub name: Username,
     pub faction: i32,
     pub data: Option<serde_json::Value>,
 }
