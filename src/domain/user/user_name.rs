@@ -1,4 +1,4 @@
-use crate::{Error, ErrorKind};
+use crate::{ErrorKind, Result};
 use diesel::pg::Pg;
 use diesel::serialize::{Output, ToSql};
 use diesel::sql_types::Text;
@@ -12,9 +12,9 @@ use unicode_segmentation::UnicodeSegmentation;
 /// Implements `diesel::AsExpression` for database compatibility and uses `Text` as the SQL type.
 #[derive(AsExpression, Debug)]
 #[diesel(sql_type = Text)]
-pub struct Username(String);
+pub struct UserName(String);
 
-impl Username {
+impl UserName {
     /// Attempts to create a new `Username` from a string, validating the input.
     ///
     /// # Arguments
@@ -28,7 +28,7 @@ impl Username {
     /// - Must not be empty or only whitespace
     /// - Must not exceed 256 graphemes in length
     /// - Must not contain any of these characters: /, (, ), ", <, >, \, {, }
-    pub fn parse(s: String) -> crate::Result<Self, Error> {
+    pub fn parse(s: String) -> Result<UserName> {
         let is_empty_or_whitespace = s.trim().is_empty();
 
         // A grapheme is defined by the Unicode standard as a "user-perceived"
@@ -44,14 +44,14 @@ impl Username {
         let contains_forbidden_characters = s.chars().any(|g| forbidden_characters.contains(&g));
 
         if is_empty_or_whitespace || is_too_long || contains_forbidden_characters {
-            return Err((ErrorKind::InvalidUsername, "Invalid username").into());
+            Err((ErrorKind::InvalidUsername, "Invalid username").into())
+        } else {
+            Ok(Self(s))
         }
-
-        Ok(Self(s))
     }
 }
 
-impl AsRef<str> for Username {
+impl AsRef<str> for UserName {
     /// Returns a reference to the underlying string.
     ///
     /// # Returns
@@ -61,7 +61,7 @@ impl AsRef<str> for Username {
     }
 }
 
-impl ToSql<Text, Pg> for Username {
+impl ToSql<Text, Pg> for UserName {
     /// Converts the username to its SQL representation.
     ///
     /// # Arguments
@@ -69,48 +69,48 @@ impl ToSql<Text, Pg> for Username {
     ///
     /// # Returns
     /// * `diesel::serialize::Result` - The result of the SQL serialization
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> diesel::serialize::Result {
+    fn to_sql<'a>(&'a self, out: &mut Output<'a, '_, Pg>) -> diesel::serialize::Result {
         <String as ToSql<Text, Pg>>::to_sql(&self.0, out)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::user::username::*;
+    use crate::domain::user::user_name::*;
     use claims::{assert_err, assert_ok};
 
     #[test]
     fn a_256_grapheme_long_name_is_valid() {
         let name = "ё".repeat(256);
-        assert_ok!(Username::parse(name));
+        assert_ok!(UserName::parse(name));
     }
 
     #[test]
     fn a_name_longer_than_256_graphemes_is_rejected() {
         let name = "a".repeat(257);
-        assert_err!(Username::parse(name));
+        assert_err!(UserName::parse(name));
     }
 
     #[test]
     fn whitespace_only_names_are_rejected() {
         let name = " ".to_string();
-        assert_err!(Username::parse(name));
+        assert_err!(UserName::parse(name));
     }
     #[test]
     fn empty_string_is_rejected() {
         let name = "".to_string();
-        assert_err!(Username::parse(name));
+        assert_err!(UserName::parse(name));
     }
     #[test]
     fn names_containing_an_invalid_character_are_rejected() {
         for name in &['/', '(', ')', '"', '<', '>', '\\', '{', '}'] {
             let name = name.to_string();
-            assert_err!(Username::parse(name));
+            assert_err!(UserName::parse(name));
         }
     }
     #[test]
     fn a_valid_name_is_parsed_successfully() {
         let name = "Bruce Wayne".to_string();
-        assert_ok!(Username::parse(name));
+        assert_ok!(UserName::parse(name));
     }
 }

@@ -55,6 +55,8 @@ diesel::table! {
     users (id) {
         id -> Uuid,
         name -> Text,
+        #[max_length = 254]
+        email -> Nullable<Varchar>,
         faction -> Int4,
         data -> Nullable<Jsonb>,
     }

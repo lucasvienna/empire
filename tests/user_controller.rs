@@ -5,7 +5,7 @@ use empire::controllers::{CreateUserRequest, UserResponse};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::user;
-use empire::domain::user::{NewUser, User, Username};
+use empire::domain::user::{NewUser, User, UserName};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -36,6 +36,7 @@ async fn create_and_get_by_id_works() {
 
     let req = CreateUserRequest {
         username: "test1".to_string(),
+        email: None,
         faction: 2,
     };
     let response = client
@@ -99,7 +100,8 @@ fn create_test_user(mut conn: DbConn) -> User {
         .create(
             &mut conn,
             &NewUser {
-                name: Username::parse("test_user".to_string()).unwrap(),
+                name: UserName::parse("test_user".to_string()).unwrap(),
+                email: None,
                 faction: 2,
                 data: None,
             },

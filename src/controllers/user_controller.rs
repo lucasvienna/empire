@@ -4,7 +4,7 @@ use crate::db::Repository;
 use crate::domain::user;
 use crate::domain::user::{NewUser, User};
 use crate::net::server::AppState;
-use crate::Error;
+use crate::{Error, Result};
 use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -14,6 +14,7 @@ use tracing::{debug, error, info, instrument};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateUserRequest {
     pub username: String,
+    pub email: Option<String>,
     pub faction: i32,
 }
 
@@ -21,8 +22,13 @@ impl TryFrom<CreateUserRequest> for NewUser {
     type Error = Error;
 
     fn try_from(req: CreateUserRequest) -> Result<Self, Self::Error> {
+        let email: Option<user::UserEmail> = match req.email {
+            None => None,
+            Some(email) => Some(user::UserEmail::parse(email)?),
+        };
         let user = Self {
-            name: user::Username::parse(req.username)?,
+            name: user::UserName::parse(req.username)?,
+            email,
             faction: req.faction,
             data: Some(Value::default()),
         };
@@ -34,6 +40,7 @@ impl TryFrom<CreateUserRequest> for NewUser {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateUserRequest {
     pub username: String,
+    pub email: Option<String>,
     pub faction: i32,
 }
 
@@ -106,12 +113,10 @@ async fn create_user(
         }
     };
 
-    let created_user = repo
-        .create(&mut conn, &new_user)
-        .map_err(|err| {
-            error!("Failed to insert user: {:#?}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let created_user = repo.create(&mut conn, &new_user).map_err(|err| {
+        error!("Failed to insert user: {:#?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     info!(
         user_id = created_user.id.to_string(),
         "Created user successfully"
@@ -128,9 +133,20 @@ async fn update_user(
 ) -> Result<Json<UserResponse>, StatusCode> {
     let repo = UserRepository {};
 
+    let username = user::UserName::parse(payload.username).map_err(|_| StatusCode::BAD_REQUEST);
+    let name = username?.as_ref().to_string();
+    let email: Result<Option<user::UserEmail>, StatusCode> = match payload.email {
+        None => Ok(None),
+        Some(email) => Ok(Some(
+            user::UserEmail::parse(email).map_err(|_| StatusCode::BAD_REQUEST)?,
+        )),
+    };
+    let email = email?.map(|email| email.as_ref().to_string());
+
     let user = User {
         id: user_id,
-        name: payload.username,
+        name,
+        email,
         faction: payload.faction,
         data: Some(Value::default()),
     };

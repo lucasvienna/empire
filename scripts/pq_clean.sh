@@ -8,4 +8,6 @@ SUPERUSER="${SUPERUSER:=postgres}"
 SUPERUSER_PWD="${SUPERUSER_PWD:=password}"
 
 QUERY="SELECT 'DROP DATABASE ' || quote_ident(datname) || ';' FROM pg_database WHERE datname ~ '${PATTERN}';"
-docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -Atqc "${QUERY}"
+CMD="psql -U ${SUPERUSER} -Atqc \"${QUERY}\" | psql -U ${SUPERUSER}"
+
+docker exec -it "${CONTAINER_NAME}" bash -c "${CMD}"
