@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::models::error::Result;
-use crate::models::faction;
-use crate::models::faction::{Faction, NewFaction};
+use crate::domain::error::Result;
+use crate::domain::faction;
+use crate::domain::faction::{Faction, NewFaction};
 use crate::schema::factions;
 
 pub struct FactionRepository {}

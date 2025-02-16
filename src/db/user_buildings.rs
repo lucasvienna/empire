@@ -1,8 +1,8 @@
 use crate::db::{DbConn, Repository};
-use crate::models::building::Building;
-use crate::models::error::Result;
-use crate::models::user_building::{NewUserBuilding, UserBuilding};
-use crate::models::{building, user, user_building};
+use crate::domain::building::Building;
+use crate::domain::error::Result;
+use crate::domain::user_building::{NewUserBuilding, UserBuilding};
+use crate::domain::{building, user, user_building};
 use crate::schema::{buildings, user_buildings};
 use diesel::prelude::*;
 use tracing::info;

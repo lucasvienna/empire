@@ -1,7 +1,7 @@
 use crate::db::{DbConn, Repository};
-use crate::models::building_level::{BuildingLevel, NewBuildingLevel};
-use crate::models::error::Result;
-use crate::models::{building, building_level};
+use crate::domain::building_level::{BuildingLevel, NewBuildingLevel};
+use crate::domain::error::Result;
+use crate::domain::{building, building_level};
 use crate::schema::building_levels;
 use diesel::prelude::*;
 use tracing::debug;

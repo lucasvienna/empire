@@ -1,4 +1,4 @@
-use empire::models::error::{Error, ErrorKind};
+use empire::{Error, ErrorKind};
 use std::io::{Read, Write};
 use std::{fmt, mem, ptr};
 

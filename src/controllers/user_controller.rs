@@ -1,8 +1,8 @@
 use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
-use crate::models::user;
-use crate::models::user::{NewUser, User};
+use crate::domain::user;
+use crate::domain::user::{NewUser, User};
 use crate::net::server::AppState;
 use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};

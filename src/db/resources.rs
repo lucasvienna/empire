@@ -1,7 +1,7 @@
 use crate::db::{DbConn, Repository};
-use crate::models::error::Result;
-use crate::models::resource;
-use crate::models::resource::{NewResource, Resource};
+use crate::domain::error::Result;
+use crate::domain::resource;
+use crate::domain::resource::{NewResource, Resource};
 use crate::schema::resources;
 use diesel::prelude::*;
 use tracing::debug;

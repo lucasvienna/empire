@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::models::error::Result;
-use crate::models::user;
-use crate::models::user::{NewUser, User};
+use crate::domain::error::Result;
+use crate::domain::user;
+use crate::domain::user::{NewUser, User};
 use crate::schema::users;
 
 pub struct UserRepository {}

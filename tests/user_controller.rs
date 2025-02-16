@@ -4,8 +4,8 @@ use axum::http::{Request, StatusCode};
 use empire::controllers::{CreateUserRequest, UserResponse};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
-use empire::models::user;
-use empire::models::user::{NewUser, User};
+use empire::domain::user;
+use empire::domain::user::{NewUser, User};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 

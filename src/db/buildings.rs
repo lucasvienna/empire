@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::models::building;
-use crate::models::building::{Building, NewBuilding};
-use crate::models::error::Result;
+use crate::domain::building;
+use crate::domain::building::{Building, NewBuilding};
+use crate::domain::error::Result;
 use crate::schema::buildings;
 
 #[derive(Debug)]

@@ -10,10 +10,10 @@ use crate::db::buildings::BuildingRepository;
 use crate::db::resources::ResourcesRepository;
 use crate::db::user_buildings::UserBuildingRepository;
 use crate::db::{DbConn, Repository};
-use crate::models::building_level::BuildingLevel;
-use crate::models::error::{Error, ErrorKind, Result};
-use crate::models::user_building::{NewUserBuilding, UserBuilding};
-use crate::models::{building, user, user_building};
+use crate::domain::building_level::BuildingLevel;
+use crate::domain::error::{Error, ErrorKind, Result};
+use crate::domain::user_building::{NewUserBuilding, UserBuilding};
+use crate::domain::{building, user, user_building};
 
 pub struct BuildingService<'a> {
     connection: &'a mut DbConn,

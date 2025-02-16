@@ -1,4 +1,4 @@
-use crate::models::error::Result;
+use crate::domain::error::Result;
 
 pub mod building_levels;
 pub mod buildings;

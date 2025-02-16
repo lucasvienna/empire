@@ -6,11 +6,11 @@ pub mod configuration;
 pub mod controllers;
 pub mod db;
 pub mod game;
-pub mod models;
+pub mod domain;
 pub mod net;
 pub mod schema;
 pub mod startup;
 pub mod telemetry;
 
 // re-export for ease of use in other private crates
-pub use models::error::{Error, ErrorKind, Result};
+pub use domain::error::{Error, ErrorKind, Result};
