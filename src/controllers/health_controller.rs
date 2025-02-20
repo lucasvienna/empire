@@ -5,14 +5,14 @@ use serde::{Deserialize, Serialize};
 
 /// Struct representing the health check response
 #[derive(Serialize, Deserialize)]
-pub struct HealthCheckResponse {
+pub struct HealthCheckBody {
     pub status: String,
 }
 
 #[debug_handler]
 /// Health check handler
-async fn health_check() -> Result<Json<HealthCheckResponse>, StatusCode> {
-    let response = HealthCheckResponse {
+async fn health_check() -> Result<Json<HealthCheckBody>, StatusCode> {
+    let response = HealthCheckBody {
         status: "OK".to_string(),
     };
 

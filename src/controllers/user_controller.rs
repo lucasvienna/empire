@@ -12,16 +12,16 @@ use tracing::{debug, error, info, instrument};
 
 /// Struct for creating a new user
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CreateUserRequest {
+pub struct NewUserPayload {
     pub username: String,
     pub email: Option<String>,
     pub faction: i32,
 }
 
-impl TryFrom<CreateUserRequest> for NewUser {
+impl TryFrom<NewUserPayload> for NewUser {
     type Error = Error;
 
-    fn try_from(req: CreateUserRequest) -> Result<Self, Self::Error> {
+    fn try_from(req: NewUserPayload) -> Result<Self, Self::Error> {
         let email: Option<user::UserEmail> = match req.email {
             None => None,
             Some(email) => Some(user::UserEmail::parse(email)?),
@@ -38,7 +38,7 @@ impl TryFrom<CreateUserRequest> for NewUser {
 
 /// Struct for updating user details
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateUserRequest {
+pub struct UpdateUserPayload {
     pub username: String,
     pub email: Option<String>,
     pub faction: i32,
@@ -46,15 +46,15 @@ pub struct UpdateUserRequest {
 
 /// Struct for response data
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UserResponse {
+pub struct UserBody {
     pub id: user::PK,
     pub username: String,
     pub faction: i32,
 }
 
-pub type UsersResponse = Vec<UserResponse>;
+pub type UserListBody = Vec<UserBody>;
 
-impl From<User> for UserResponse {
+impl From<User> for UserBody {
     fn from(user: User) -> Self {
         Self {
             id: user.id,
@@ -69,7 +69,7 @@ impl From<User> for UserResponse {
 #[instrument(skip(conn))]
 async fn get_users(
     DatabaseConnection(mut conn): DatabaseConnection,
-) -> Result<Json<UsersResponse>, StatusCode> {
+) -> Result<Json<UserListBody>, StatusCode> {
     let repo = UserRepository {};
 
     let result = repo.get_all(&mut conn).map_err(|err| {
@@ -78,7 +78,7 @@ async fn get_users(
     })?;
     debug!("Fetched {} users successfully", result.len());
 
-    let response: UsersResponse = result.into_iter().map(UserResponse::from).collect();
+    let response: UserListBody = result.into_iter().map(UserBody::from).collect();
 
     Ok(Json(response))
 }
@@ -87,7 +87,7 @@ async fn get_users(
 async fn get_user_by_id(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
-) -> Result<Json<UserResponse>, StatusCode> {
+) -> Result<Json<UserBody>, StatusCode> {
     let repo = UserRepository {};
 
     let user = repo.get_by_id(&mut conn, &user_id).map_err(|err| {
@@ -102,8 +102,8 @@ async fn get_user_by_id(
 #[instrument(skip(conn))]
 async fn create_user(
     DatabaseConnection(mut conn): DatabaseConnection,
-    Json(payload): Json<CreateUserRequest>,
-) -> Result<(StatusCode, Json<UserResponse>), StatusCode> {
+    Json(payload): Json<NewUserPayload>,
+) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
     let repo = UserRepository {};
     let new_user = match NewUser::try_from(payload) {
         Ok(new_user) => new_user,
@@ -129,8 +129,8 @@ async fn create_user(
 async fn update_user(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
-    Json(payload): Json<UpdateUserRequest>,
-) -> Result<Json<UserResponse>, StatusCode> {
+    Json(payload): Json<UpdateUserPayload>,
+) -> Result<Json<UserBody>, StatusCode> {
     let repo = UserRepository {};
 
     let username = user::UserName::parse(payload.username).map_err(|_| StatusCode::BAD_REQUEST);

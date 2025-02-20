@@ -76,7 +76,7 @@ impl BuildingService<'_> {
         info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self
             .bld_lvl_repo
-            .get_next_upgrade(&mut *self.connection, bld_id, &0)?;
+            .get_next_upgrade(self.connection, bld_id, &0)?;
 
         // check for resources
         if !self.has_enough_resources(usr_id, &bld_lvl)? {
@@ -89,7 +89,7 @@ impl BuildingService<'_> {
         // verify if maximum number of buildings was reached
         if !self
             .usr_bld_repo
-            .can_construct(&mut *self.connection, usr_id, bld_id)?
+            .can_construct(self.connection, usr_id, bld_id)?
         {
             return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
@@ -137,9 +137,9 @@ impl BuildingService<'_> {
     pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> Result<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
-            .get_upgrade_tuple(&mut *self.connection, usr_bld_id)?;
+            .get_upgrade_tuple(self.connection, usr_bld_id)?;
         let bld_lvl = self.bld_lvl_repo.get_next_upgrade(
-            &mut *self.connection,
+            self.connection,
             &usr_bld.building_id,
             &usr_bld.level,
         )?;
@@ -194,7 +194,7 @@ impl BuildingService<'_> {
 
     #[tracing::instrument]
     pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> Result<()> {
-        let usr_bld = self.usr_bld_repo.get_by_id(&mut *self.connection, id)?;
+        let usr_bld = self.usr_bld_repo.get_by_id(self.connection, id)?;
         match usr_bld.upgrade_time {
             None => Err(Error::from((
                 ErrorKind::ConfirmUpgradeError,
@@ -205,7 +205,7 @@ impl BuildingService<'_> {
                     Error::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
                 })?;
                 if time <= Utc::now() {
-                    self.usr_bld_repo.inc_level(&mut *self.connection, id)?;
+                    self.usr_bld_repo.inc_level(self.connection, id)?;
                     Ok(())
                 } else {
                     Err(Error::from((
@@ -223,13 +223,13 @@ impl BuildingService<'_> {
         bld_lvl: &BuildingLevel,
     ) -> Result<bool> {
         debug!("Checking resources for user: {}", user_id);
-        let res = self.res_repo.get_by_id(&mut *self.connection, user_id)?;
+        let res = self.res_repo.get_by_id(self.connection, user_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);
         let has_enough_gold = res.gold >= bld_lvl.req_gold.unwrap_or(0);
         debug!(
-            "Has enough resources: food({}) wood({}) stone({}) gold({})",
+            "Has enough of resource: food({}) wood({}) stone({}) gold({})",
             has_enough_food, has_enough_wood, has_enough_stone, has_enough_gold
         );
         Ok(has_enough_food && has_enough_wood && has_enough_stone && has_enough_gold)

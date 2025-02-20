@@ -146,7 +146,7 @@ pub fn get_settings() -> Result<Settings> {
 /// using the `dotenvy` crate. If the `RUST_LOG` environment variable is set,
 /// it ensures that logging information for Diesel queries is included.
 /// If `RUST_LOG` is not set, it defaults to configure logging at the debug
-/// for the `empire` application and for Diesel queries.
+/// for the `empire` application, for Diesel queries, and for axum HTTP requests.
 ///
 /// # Returns
 ///
@@ -161,6 +161,9 @@ pub fn load_env() -> Result<()> {
             }
             if !v.contains("tower_http") {
                 env::set_var("RUST_LOG", format!("{},tower_http=debug", v));
+            }
+            if !v.contains("axum::rejection") {
+                env::set_var("RUST_LOG", format!("{},axum::rejection=trace", v));
             }
         }
         None => env::set_var("RUST_LOG", "empire=debug,tower_http=debug,diesel=debug"),

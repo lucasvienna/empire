@@ -1,6 +1,6 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use empire::controllers::HealthCheckResponse;
+use empire::controllers::HealthCheckBody;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -22,7 +22,7 @@ async fn health_check_works() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let body: HealthCheckResponse = serde_json::from_slice(&body).unwrap();
+    let body: HealthCheckBody = serde_json::from_slice(&body).unwrap();
     assert_eq!(body.status, "OK");
 }
 
@@ -39,6 +39,6 @@ async fn health_check_with_server() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body: HealthCheckResponse = response.json().await.unwrap();
+    let body: HealthCheckBody = response.json().await.unwrap();
     assert_eq!(body.status, "OK");
 }

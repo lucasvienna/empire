@@ -1,7 +1,7 @@
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
-use empire::controllers::{CreateUserRequest, UserResponse};
+use empire::controllers::{NewUserPayload, UserBody};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::user;
@@ -34,7 +34,7 @@ async fn create_and_get_by_id_works() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
 
-    let req = CreateUserRequest {
+    let req = NewUserPayload {
         username: "test1".to_string(),
         email: None,
         faction: 2,
@@ -49,7 +49,7 @@ async fn create_and_get_by_id_works() {
 
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let new_user: UserResponse = response.json().await.unwrap();
+    let new_user: UserBody = response.json().await.unwrap();
     assert_eq!(
         new_user.username.as_str(),
         req.username.as_str(),
@@ -63,7 +63,7 @@ async fn create_and_get_by_id_works() {
         .expect("Failed to execute request.");
 
     assert_eq!(response.status(), StatusCode::OK);
-    let user: UserResponse = response.json().await.unwrap();
+    let user: UserBody = response.json().await.unwrap();
     assert_eq!(new_user.id, user.id);
     assert_eq!(new_user.username, user.username);
     assert_eq!(new_user.faction, user.faction);
