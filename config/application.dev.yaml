@@ -2,5 +2,3 @@ server:
   axum_host: 127.0.0.1
 database:
   pool_size: 2
-jwt:
-  secret: jtw3Lfyqm0Ve2IHpaEKglJsNfLw4jbcgVFvUcs2EZeQ= # some random b64 string

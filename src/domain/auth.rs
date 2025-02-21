@@ -6,16 +6,23 @@ use axum::response::{IntoResponse, Response};
 use axum::{Json, RequestPartsExt};
 use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
-use jsonwebtoken::{decode, DecodingKey, EncodingKey, Validation};
-use secrecy::ExposeSecret;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::{Display, Formatter};
+use std::sync::LazyLock;
 use uuid::Uuid;
 
-pub(crate) struct Keys {
-    pub(crate) encoding: EncodingKey,
-    pub(crate) decoding: DecodingKey,
+/// JWT secret keys used for encoding and decoding tokens.
+/// This static instance is initialized lazily on first access.
+static KEYS: LazyLock<Keys> = LazyLock::new(|| {
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    Keys::new(secret.as_bytes())
+});
+
+pub struct Keys {
+    encoding: EncodingKey,
+    decoding: DecodingKey,
 }
 
 impl Keys {
@@ -58,8 +65,7 @@ where
             .map_err(|_| AuthError::InvalidToken)?;
 
         let settings = Settings::from_ref(state);
-        let keys = Keys::new(settings.jwt.secret.expose_secret().as_bytes());
-        let token = decode::<Claims>(bearer.token(), &keys.decoding, &Validation::default())
+        let token = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
             .map_err(|_| AuthError::InvalidToken)?;
 
         Ok(token.claims)
@@ -102,4 +108,17 @@ impl IntoResponse for AuthError {
         let body = json!({ "error": error_message });
         (status, Json(body)).into_response()
     }
+}
+
+/// Encodes the given JWT `Claims` into a token string.
+///
+/// This function uses the `encoding` key stored in the `KEYS` static instance
+/// to sign the provided `Claims` and produce a Base64-encoded, signed JWT token.
+///
+/// ### Returns:
+/// - `Ok(String)`: A signed JWT token string, if the encoding operation is successful.
+/// - `Err(AuthError)`: Returns `AuthError::TokenCreation` if the token creation fails due
+///   to any reason (e.g., invalid key or internal encoding error).
+pub fn encode_token(claims: Claims) -> Result<String, AuthError> {
+    encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
 }

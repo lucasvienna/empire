@@ -1,11 +1,9 @@
 use crate::configuration::JwtSettings;
-use crate::domain::auth::{AuthError, Claims};
+use crate::domain::auth::{encode_token, AuthError, Claims};
 use crate::domain::user::User;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use argon2::{password_hash, Argon2, PasswordHasher};
-use jsonwebtoken::{encode, Header};
-use secrecy::ExposeSecret;
 
 /// Hashes a password using the Argon2id algorithm with a randomly generated salt.
 ///
@@ -51,9 +49,7 @@ pub fn create_token_for_user(user: User, jwt_settings: &JwtSettings) -> Result<S
         iat: now.timestamp() as usize,
     };
 
-    let keys = crate::domain::auth::Keys::new(jwt_settings.secret.expose_secret().as_bytes());
-    let token = encode(&Header::default(), &claims, &keys.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
+    let token = encode_token(claims)?;
 
     Ok(token)
 }

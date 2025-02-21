@@ -8,6 +8,7 @@ use empire::net::router;
 use empire::net::server::AppState;
 use empire::Result;
 use secrecy::{ExposeSecret, SecretString};
+use std::env;
 use std::sync::{Arc, LazyLock};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -44,6 +45,7 @@ pub fn init_server() -> TestServer {
     LazyLock::force(&TRACING);
 
     let mut config = get_settings().expect("Failed to read configuration.");
+    env::set_var("JWT_SECRET", "fake testing secret");
 
     let (pool, db_settings) = initialize_test_pool(&mut config.database);
     config.database = db_settings.clone();
@@ -109,7 +111,7 @@ pub fn spawn_app() -> TestApp {
 /// - The connection pool cannot be created.
 ///
 /// [`DbPool`]: DbPool
-pub fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut DatabaseSettings) {
+fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut DatabaseSettings) {
     config.database_name = Uuid::new_v4().to_string();
 
     let mut db_settings = config.clone();
@@ -153,7 +155,7 @@ pub fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Data
 static TRACING: LazyLock<Result<()>> = LazyLock::new(init_test_tracing);
 
 fn init_test_tracing() -> Result<()> {
-    if std::env::var("TEST_LOG").is_ok() {
+    if env::var("TEST_LOG").is_ok() {
         let subscriber = registry()
             .with(EnvFilter::from_default_env().add_directive(LevelFilter::TRACE.into()))
             .with(fmt::Layer::new().with_test_writer());

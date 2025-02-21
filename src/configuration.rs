@@ -38,7 +38,6 @@ pub struct ServerSettings {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct JwtSettings {
-    pub secret: SecretString,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub expires_in: u64,
 }
