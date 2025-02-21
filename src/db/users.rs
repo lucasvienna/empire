@@ -41,6 +41,11 @@ impl Repository<User, NewUser, user::PK> for UserRepository {
 }
 
 impl UserRepository {
+    pub fn find_by_id(&self, connection: &mut DbConn, id: &user::PK) -> Result<Option<User>> {
+        let user: Option<User> = users::table.find(id).first(connection).optional()?;
+        Ok(user)
+    }
+
     pub fn get_by_name(&self, connection: &mut DbConn, name: impl AsRef<str>) -> Result<User> {
         let user = users::table
             .filter(users::name.eq(name.as_ref()))

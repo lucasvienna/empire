@@ -1,9 +1,12 @@
 use axum::body::Body;
-use axum::http;
-use axum::http::{Request, StatusCode};
-use empire::controllers::{NewUserPayload, UserBody};
+use axum::http::{header, Request, StatusCode};
+use axum_extra::headers;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use empire::controllers::{NewUserPayload, UserBody, UserListBody};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
+use empire::domain::auth::{encode_token, Claims};
 use empire::domain::user;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::services::auth_service::hash_password;
@@ -14,11 +17,17 @@ mod common;
 
 #[tokio::test]
 async fn get_all_works() {
-    let router = common::init_server().router;
+    let server = common::init_server();
+    let router = server.router;
+    let conn = server.db_pool.get().unwrap();
+    let user = create_test_user(conn);
+    let bearer = get_bearer(user.id);
+
     let response = router
         .oneshot(
             Request::builder()
                 .uri("/users")
+                .header(header::AUTHORIZATION, format!("Bearer {}", bearer.token()))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -27,13 +36,22 @@ async fn get_all_works() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    assert_eq!(&body[..], b"[]");
+    let body: UserListBody = serde_json::from_slice(&body).unwrap();
+    assert!(!body.is_empty(), "No users returned");
+    assert_eq!(
+        body[0].username.as_str(),
+        "test_user",
+        "First user isn't test_user"
+    )
 }
 
 #[tokio::test]
 async fn create_and_get_by_id_works() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
+    let conn = app.db_pool.get().unwrap();
+    let user = create_test_user(conn);
+    let bearer = get_bearer(user.id);
 
     let req = NewUserPayload {
         username: "test1".to_string(),
@@ -43,7 +61,8 @@ async fn create_and_get_by_id_works() {
     };
     let response = client
         .post(format!("{}/users", &app.address))
-        .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+        .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+        .bearer_auth(bearer.token())
         .json(&req)
         .send()
         .await
@@ -58,8 +77,10 @@ async fn create_and_get_by_id_works() {
         "New username isn't equal to request username"
     );
 
+    let bearer = get_bearer(new_user.id);
     let response = client
         .get(format!("{}/users/{}", &app.address, new_user.id))
+        .bearer_auth(bearer.token())
         .send()
         .await
         .expect("Failed to execute request.");
@@ -79,16 +100,33 @@ async fn delete_works() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
     let user = create_test_user(app.db_pool.get().unwrap());
+    let bearer = get_bearer(user.id);
 
-    let del_res = client
+    let res = client
         .delete(format!("{}/users/{}", &app.address, user.id))
+        .bearer_auth(bearer.token())
         .send()
         .await
         .expect("Failed to execute request.");
-    assert_eq!(del_res.status(), StatusCode::NO_CONTENT);
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
+    let res = client
+        .get(format!("{}/users/{}", &app.address, user.id))
+        .bearer_auth(bearer.token())
+        .send()
+        .await
+        .expect("Failed to execute request.");
+    assert_eq!(
+        res.status(),
+        StatusCode::UNAUTHORIZED,
+        "Shouldn't be able to authorize with deleted user"
+    );
+
+    let user2 = create_test_user(app.db_pool.get().unwrap());
+    let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired user trying to reuse the token
     let response = client
         .get(format!("{}/users/{}", &app.address, user.id))
+        .bearer_auth(bearer2.token())
         .send()
         .await
         .expect("Failed to execute request.");
@@ -115,4 +153,16 @@ fn create_test_user(mut conn: DbConn) -> User {
 fn delete_test_user(user_id: user::PK, mut conn: DbConn) -> usize {
     let user_repo = UserRepository {};
     user_repo.delete(&mut conn, &user_id).unwrap()
+}
+
+fn get_bearer(user_id: user::PK) -> Authorization<Bearer> {
+    let now = chrono::Utc::now();
+    let token = encode_token(Claims {
+        sub: user_id,
+        iat: now.timestamp() as usize,
+        exp: (now + chrono::Duration::minutes(1)).timestamp() as usize,
+    })
+    .unwrap();
+
+    headers::Authorization::bearer(&token).unwrap()
 }

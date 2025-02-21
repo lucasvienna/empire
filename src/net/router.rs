@@ -1,10 +1,11 @@
 use crate::controllers::user_routes;
 use crate::controllers::{auth_routes, health_check_routes};
+use crate::net::auth::auth_middleware;
 use crate::net::request_id::MakeRequestUlid;
 use crate::net::server::AppState;
 use axum::body::Body;
 use axum::http::{HeaderName, Request};
-use axum::Router;
+use axum::{middleware, Router};
 use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer as TowerCompressionLayer;
@@ -18,7 +19,7 @@ use tracing::{error, info_span};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn init() -> Router<AppState> {
+pub fn init(state: AppState) -> Router {
     let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
     let middleware = ServiceBuilder::new()
@@ -57,7 +58,11 @@ pub fn init() -> Router<AppState> {
 
     Router::new()
         .merge(health_check_routes())
-        .merge(user_routes())
         .merge(auth_routes())
+        .merge(user_routes().layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        )))
         .layer(middleware)
+        .with_state(state)
 }

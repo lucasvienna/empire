@@ -55,7 +55,7 @@ pub fn init_server() -> TestServer {
     };
 
     TestServer {
-        router: router::init().with_state(state),
+        router: router::init(state),
         db_pool: pool,
     }
 }

@@ -1,4 +1,4 @@
-use crate::configuration::{ServerSettings, Settings};
+use crate::configuration::Settings;
 use crate::db::connection::DbPool;
 use crate::net::router;
 use anyhow::Result;
@@ -26,9 +26,10 @@ impl Debug for AppState {
     }
 }
 
-pub async fn init(settings: &ServerSettings) -> Result<(TcpListener, Router<AppState>)> {
+pub async fn init(state: AppState) -> Result<(TcpListener, Router)> {
+    let settings = &state.settings.server;
     let addr = SocketAddr::from((settings.axum_host, settings.axum_port));
     let listener = TcpListener::bind(addr).await?;
-    let router = router::init();
+    let router = router::init(state);
     Ok((listener, router))
 }

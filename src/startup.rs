@@ -28,11 +28,11 @@ use crate::Result;
 /// - Retrieving the server's local address fails.
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
-    let (listener, router) = server::init(&config.server).await?;
-    let router = router.with_state(AppState {
+    let state = AppState {
         db_pool: Arc::new(pool),
         settings: config,
-    });
+    };
+    let (listener, router) = server::init(state).await?;
 
     info!("Empire server started!");
     info!("Listening on {}", listener.local_addr()?);

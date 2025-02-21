@@ -6,7 +6,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{Json, RequestPartsExt};
 use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::{Display, Formatter};
@@ -121,4 +121,23 @@ impl IntoResponse for AuthError {
 ///   to any reason (e.g., invalid key or internal encoding error).
 pub fn encode_token(claims: Claims) -> Result<String, AuthError> {
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
+}
+
+
+/// Decodes the given JWT token string into `Claims`.
+///
+/// This function uses the `decoding` key stored in the `KEYS` static instance
+/// to verify the provided token and extract its claims. The token is expected
+/// to be a Base64-encoded, signed JWT token.
+///
+/// ### Parameters:
+/// - `token` (`&str`): The JWT token string to decode.
+///
+/// ### Returns:
+/// - `Ok(Claims)`: Decoded claims from the token if the decoding operation is successful.
+/// - `Err(AuthError)`: Returns `AuthError::InvalidToken` if the token is invalid,
+///   has expired, or cannot be decoded (e.g., due to an incorrect signature or a malformed token).
+pub fn decode_token(token: &str) -> Result<TokenData<Claims>, AuthError> {
+    decode::<Claims>(token, &KEYS.decoding, &Validation::default())
+        .map_err(|_| AuthError::InvalidToken)
 }

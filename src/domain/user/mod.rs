@@ -15,6 +15,7 @@ pub type PK = Uuid;
 #[derive(Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Clone)]
 pub struct User {
     pub id: PK,
     pub name: String,
