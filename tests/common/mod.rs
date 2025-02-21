@@ -43,9 +43,13 @@ pub struct TestApp {
 pub fn init_server() -> TestServer {
     LazyLock::force(&TRACING);
 
-    let pool = initialize_test_pool();
+    let mut config = get_settings().expect("Failed to read configuration.");
+
+    let (pool, db_settings) = initialize_test_pool(&mut config.database);
+    config.database = db_settings.clone();
     let state = AppState {
         db_pool: Arc::new(pool.clone()),
+        settings: config,
     };
 
     TestServer {
@@ -105,29 +109,45 @@ pub fn spawn_app() -> TestApp {
 /// - The connection pool cannot be created.
 ///
 /// [`DbPool`]: DbPool
-pub fn initialize_test_pool() -> DbPool {
-    let mut config = get_settings()
-        .expect("Failed to read configuration.")
-        .database;
+pub fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut DatabaseSettings) {
     config.database_name = Uuid::new_v4().to_string();
 
-    let db_settings = DatabaseSettings {
-        database_name: "postgres".to_string(),
-        username: "postgres".to_string(),
-        password: SecretString::new("password".into()),
-        pool_size: Some(1),
-        ..config
-    };
+    let mut db_settings = config.clone();
+    db_settings.database_name = "postgres".to_string();
+    db_settings.username = "postgres".to_string();
+    db_settings.password = SecretString::new("password".into());
+    db_settings.pool_size = Some(1);
 
+    // === CREATE EPHEMERAL DATABASE ===
     let mut conn = PgConnection::establish(db_settings.connection_string().expose_secret())
         .expect("Failed to connect to database.");
-
     sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .execute(&mut conn)
         .expect("Failed to create test schema");
+    sql_query(
+        format!(
+            r#"GRANT ALL ON DATABASE "{}" TO "{}";"#,
+            config.database_name, config.username
+        )
+        .as_str(),
+    )
+    .execute(&mut conn)
+    .expect("Failed to grant database privileges to test user.");
 
-    run_pending(&mut conn).expect("Failed to run migrations.");
-    initialize_pool(&db_settings)
+    // === SET EPHEMERAL DATABASE UP ===
+    let mut conn = PgConnection::establish(config.connection_string().expose_secret())
+        .expect("Failed to connect to database.");
+    sql_query(
+        format!(
+            r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{}";"#,
+            config.username
+        )
+        .as_str(),
+    )
+    .execute(&mut conn)
+    .expect("Failed to grant table privileges to test user in public schema");
+    run_pending(&mut conn).expect("Failed to run migrations");
+    (initialize_pool(config), config)
 }
 
 static TRACING: LazyLock<Result<()>> = LazyLock::new(init_test_tracing);

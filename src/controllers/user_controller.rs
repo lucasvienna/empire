@@ -4,16 +4,17 @@ use crate::db::Repository;
 use crate::domain::user;
 use crate::domain::user::{NewUser, User};
 use crate::net::server::AppState;
-use crate::{Error, Result};
-use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
+use crate::services::auth_service::hash_password;
+use crate::{Error, ErrorKind, Result};
+use axum::{debug_handler, extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::{debug, error, info, instrument};
 
 /// Struct for creating a new user
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewUserPayload {
     pub username: String,
+    pub password: String,
     pub email: Option<String>,
     pub faction: i32,
 }
@@ -26,11 +27,13 @@ impl TryFrom<NewUserPayload> for NewUser {
             None => None,
             Some(email) => Some(user::UserEmail::parse(email)?),
         };
+        let pwd_hash = hash_password(&req.password).map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
+
         let user = Self {
             name: user::UserName::parse(req.username)?,
+            pwd_hash,
             email,
             faction: req.faction,
-            data: Some(Value::default()),
         };
         Ok(user)
     }
@@ -49,6 +52,7 @@ pub struct UpdateUserPayload {
 pub struct UserBody {
     pub id: user::PK,
     pub username: String,
+    pub email: Option<String>,
     pub faction: i32,
 }
 
@@ -59,6 +63,7 @@ impl From<User> for UserBody {
         Self {
             id: user.id,
             username: user.name,
+            email: user.email,
             faction: user.faction,
         }
     }
@@ -67,6 +72,7 @@ impl From<User> for UserBody {
 // === CRUD HANDLERS === //
 
 #[instrument(skip(conn))]
+#[debug_handler(state = AppState)]
 async fn get_users(
     DatabaseConnection(mut conn): DatabaseConnection,
 ) -> Result<Json<UserListBody>, StatusCode> {
@@ -84,6 +90,7 @@ async fn get_users(
 }
 
 #[instrument(skip(conn))]
+#[debug_handler(state = AppState)]
 async fn get_user_by_id(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
@@ -100,6 +107,7 @@ async fn get_user_by_id(
 }
 
 #[instrument(skip(conn))]
+#[debug_handler(state = AppState)]
 async fn create_user(
     DatabaseConnection(mut conn): DatabaseConnection,
     Json(payload): Json<NewUserPayload>,
@@ -126,6 +134,7 @@ async fn create_user(
 }
 
 #[instrument(skip(conn))]
+#[debug_handler(state = AppState)]
 async fn update_user(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
@@ -143,12 +152,17 @@ async fn update_user(
     };
     let email = email?.map(|email| email.as_ref().to_string());
 
+    let user = repo
+        .get_by_id(&mut conn, &user_id)
+        .map_err(|err| StatusCode::NOT_FOUND)?;
+
     let user = User {
         id: user_id,
         name,
+        // FIXME: this isn't good, should not be required
+        pwd_hash: user.pwd_hash,
         email,
         faction: payload.faction,
-        data: Some(Value::default()),
     };
 
     let updated_user = repo.update(&mut conn, &user).map_err(|err| {
@@ -161,6 +175,7 @@ async fn update_user(
 }
 
 #[instrument(skip(conn))]
+#[debug_handler(state = AppState)]
 async fn delete_user(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,

@@ -1,18 +1,24 @@
+use crate::net::server::AppState;
 use crate::Result;
+use axum::extract::{FromRef, FromRequestParts};
+use axum::http::request::Parts;
 use config::{Config, Environment, File};
+use reqwest::StatusCode;
 use secrecy::{ExposeSecret, SecretString};
+use serde::Deserialize;
 use serde_aux::prelude::deserialize_number_from_string;
 use std::env;
 use std::net::Ipv4Addr;
 use tracing::{debug, instrument, trace};
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub server: ServerSettings,
+    pub jwt: JwtSettings,
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: SecretString,
@@ -23,11 +29,18 @@ pub struct DatabaseSettings {
     pub pool_size: Option<u32>,
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ServerSettings {
     pub axum_host: Ipv4Addr,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub axum_port: u16,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct JwtSettings {
+    pub secret: SecretString,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub expires_in: u64,
 }
 
 /// The possible runtime environment for our application.
@@ -124,6 +137,7 @@ pub fn get_settings() -> Result<Settings> {
     let env_filename = format!("application.{}.yaml", environment.as_str());
     debug!("Loading settings from file: {:#?}", env_filename);
 
+    // these overwrite the previous ones, so we can have stacking defaults with an ENV override
     let settings = Config::builder()
         .add_source(File::from(config_dir.join("application.yaml")))
         .add_source(File::from(config_dir.join(env_filename)))
@@ -170,6 +184,24 @@ pub fn load_env() -> Result<()> {
     };
 
     Ok(())
+}
+
+impl<S> FromRequestParts<S> for Settings
+where
+    S: Send + Sync,
+    Settings: FromRef<S>,
+{
+    type Rejection = (StatusCode, String);
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let settings = Settings::from_ref(state);
+        Ok(settings)
+    }
+}
+
+impl FromRef<AppState> for Settings {
+    fn from_ref(state: &AppState) -> Self {
+        state.settings.clone()
+    }
 }
 
 #[cfg(test)]

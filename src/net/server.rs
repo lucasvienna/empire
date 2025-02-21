@@ -1,4 +1,4 @@
-use crate::configuration::ServerSettings;
+use crate::configuration::{ServerSettings, Settings};
 use crate::db::connection::DbPool;
 use crate::net::router;
 use anyhow::Result;
@@ -12,6 +12,7 @@ use tokio::net::TcpListener;
 #[derive(Clone)]
 pub struct AppState {
     pub db_pool: Arc<DbPool>,
+    pub settings: Settings,
 }
 
 impl Debug for AppState {
@@ -25,7 +26,7 @@ impl Debug for AppState {
     }
 }
 
-pub async fn init(settings: ServerSettings) -> Result<(TcpListener, Router<AppState>)> {
+pub async fn init(settings: &ServerSettings) -> Result<(TcpListener, Router<AppState>)> {
     let addr = SocketAddr::from((settings.axum_host, settings.axum_port));
     let listener = TcpListener::bind(addr).await?;
     let router = router::init();

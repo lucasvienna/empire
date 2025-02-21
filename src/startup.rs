@@ -28,9 +28,10 @@ use crate::Result;
 /// - Retrieving the server's local address fails.
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
-    let (listener, router) = server::init(config.server).await?;
+    let (listener, router) = server::init(&config.server).await?;
     let router = router.with_state(AppState {
         db_pool: Arc::new(pool),
+        settings: config,
     });
 
     info!("Empire server started!");
@@ -79,6 +80,6 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
-    
+
     info!("Shutting down...");
 }

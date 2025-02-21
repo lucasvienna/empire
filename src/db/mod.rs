@@ -3,15 +3,14 @@ use crate::domain::error::Result;
 pub mod building_levels;
 pub mod buildings;
 pub mod connection;
+pub mod extractor;
 pub mod factions;
 pub mod migrations;
 pub mod resources;
 pub mod user_buildings;
 pub mod users;
-pub mod extractor;
 
 pub use connection::{DbConn, DbPool};
-
 
 pub trait Repository<Entity, NewEntity, PK = i32> {
     /// get all entities

@@ -20,7 +20,7 @@ use tracing::{error, trace};
 /// containing [`StatusCode::INTERNAL_SERVER_ERROR`] as well as the error message.
 ///
 /// # Notes
-/// 1. The reliability of the database operations depends on proper configuration 
+/// 1. The reliability of the database operations depends on proper configuration
 ///    of the underlying pool/dependencies.
 /// 2. This extractor uses the [`FromRef`] trait to retrieve the appropriate
 ///    connection pool reference from your state. Ensure your application state

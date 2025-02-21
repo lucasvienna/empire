@@ -6,3 +6,5 @@ database:
   username: app
   password: secret
   database_name: empire
+jwt:
+  expires_in: 1209600 # 14 days in seconds

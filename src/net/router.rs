@@ -1,5 +1,5 @@
-use crate::controllers::health_check_routes;
 use crate::controllers::user_routes;
+use crate::controllers::{auth_routes, health_check_routes};
 use crate::net::request_id::MakeRequestUlid;
 use crate::net::server::AppState;
 use axum::body::Body;
@@ -58,5 +58,6 @@ pub fn init() -> Router<AppState> {
     Router::new()
         .merge(health_check_routes())
         .merge(user_routes())
+        .merge(auth_routes())
         .layer(middleware)
 }

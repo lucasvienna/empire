@@ -1,9 +1,35 @@
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::Json;
+use serde_json::json;
 use std::{error, fmt, io};
 
 pub type Result<T, E = Error> = anyhow::Result<T, E>;
 
+/// Represents an application-wide error type with rich error categorization.
+///
+/// This error type wraps several kinds of errors that may occur in the system.
+/// It enables seamless error conversions, categorizing errors into various kinds
+/// such as I/O errors, database errors, as well as application-specific errors.
+///
+/// The `Error` struct carries additional context, such as descriptions and details for specific errors.
+pub struct Error {
+    repr: ErrorRepr,
+}
+
+#[derive(Debug)]
+enum ErrorRepr {
+    WithDescription(ErrorKind, &'static str),
+    WithDescriptionAndDetail(ErrorKind, &'static str, String),
+    IoError(io::Error),
+    DbError(diesel::result::Error),
+    AnyhowError(anyhow::Error),
+}
+
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {
+    InternalError,
+
     // Packet Errors
     InvalidPacket,
     InvalidUsername,
@@ -51,17 +77,58 @@ pub enum ErrorKind {
     ConfirmUpgradeError,
 }
 
-#[derive(Debug)]
-enum ErrorRepr {
-    WithDescription(ErrorKind, &'static str),
-    WithDescriptionAndDetail(ErrorKind, &'static str, String),
-    IoError(io::Error),
-    DbError(diesel::result::Error),
-    AnyhowError(anyhow::Error),
-}
+impl From<ErrorKind> for StatusCode {
+    fn from(value: ErrorKind) -> Self {
+        match value {
+            ErrorKind::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
 
-pub struct Error {
-    repr: ErrorRepr,
+            // Packet Errors
+            ErrorKind::InvalidPacket
+            | ErrorKind::InvalidUsername
+            | ErrorKind::InvalidPassword
+            | ErrorKind::InvalidToken
+            | ErrorKind::InvalidMessage
+            | ErrorKind::InvalidBuilding
+            | ErrorKind::InvalidLevel
+            | ErrorKind::InvalidFaction
+            | ErrorKind::InvalidUpgrade
+            | ErrorKind::InvalidDestroy
+            | ErrorKind::InvalidCancel
+            | ErrorKind::InvalidError
+            | ErrorKind::InvalidData
+            | ErrorKind::InvalidSize
+            | ErrorKind::InvalidIndex
+            | ErrorKind::InvalidRead
+            | ErrorKind::InvalidWrite
+            | ErrorKind::InvalidFlush
+            | ErrorKind::InvalidCopy
+            | ErrorKind::InvalidPacketType
+            | ErrorKind::InvalidPacketBit
+            | ErrorKind::InvalidPacketByte
+            | ErrorKind::InvalidPacketBuffer
+            | ErrorKind::InvalidPacketLogin
+            | ErrorKind::InvalidPacketLogout
+            | ErrorKind::InvalidPacketChat
+            | ErrorKind::InvalidPacketBuild
+            | ErrorKind::InvalidPacketUpgrade
+            | ErrorKind::InvalidPacketDestroy
+            | ErrorKind::InvalidPacketCancel
+            | ErrorKind::InvalidPacketError
+            | ErrorKind::InvalidPacketUsername
+            | ErrorKind::InvalidPacketPassword
+            | ErrorKind::InvalidPacketToken
+            | ErrorKind::InvalidPacketMessage
+            | ErrorKind::InvalidPacketBuilding
+            | ErrorKind::InvalidPacketLevel
+            | ErrorKind::InvalidPacketFaction
+            | ErrorKind::UnreadBytesError => StatusCode::BAD_REQUEST,
+
+            // Service Errors
+            ErrorKind::ConstructBuildingError
+            | ErrorKind::UpgradeBuildingError
+            | ErrorKind::ConfirmUpgradeError => StatusCode::CONFLICT,
+        }
+    }
 }
 
 impl From<io::Error> for Error {
@@ -140,5 +207,19 @@ impl fmt::Display for Error {
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self, f)
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        let (status, message) = match self.repr {
+            ErrorRepr::WithDescription(kind, desc) => (kind.into(), desc),
+            ErrorRepr::WithDescriptionAndDetail(kind, desc, _) => (kind.into(), desc),
+            ErrorRepr::IoError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal I/O error"),
+            ErrorRepr::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Database error"),
+            ErrorRepr::AnyhowError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
+        };
+        let body = json!({"error": message});
+        (status, Json(body)).into_response()
     }
 }

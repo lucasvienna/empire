@@ -1,5 +1,5 @@
 use crate::net::server::AppState;
-use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::{debug_handler, Json, Router};
 use serde::{Deserialize, Serialize};
 
@@ -11,12 +11,12 @@ pub struct HealthCheckBody {
 
 #[debug_handler]
 /// Health check handler
-async fn health_check() -> Result<Json<HealthCheckBody>, StatusCode> {
+async fn health_check() -> impl IntoResponse {
     let response = HealthCheckBody {
         status: "OK".to_string(),
     };
 
-    Ok(Json(response))
+    Json(response)
 }
 
 /// Function to define health check routes

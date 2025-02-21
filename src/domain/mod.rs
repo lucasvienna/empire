@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod building;
 pub mod building_level;
 pub mod error;
