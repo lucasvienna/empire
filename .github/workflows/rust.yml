@@ -13,9 +13,9 @@ env:
   CARGO_TERM_COLOR: always
   DIESEL_VERSION: 2.2.7
   DIESEL_FEATURES: "postgres"
-  APP_USER: test
-  APP_USER_PWD: test
-  APP_DB_NAME: empire_test
+  APP_DATABASE__USERNAME: test
+  APP_DATABASE__PASSWORD: test
+  APP_DATABASE__DATABASE_NAME: empire_test
   PGPASSWORD: password
 
 jobs:
@@ -40,8 +40,8 @@ jobs:
         with:
           diesel_version: ${{ env.DIESEL_VERSION }}
           diesel_features: ${{ env.DIESEL_FEATURES }}
-          app_user: ${{ env.APP_USER }}
-          app_user_pwd: ${{ env.APP_USER_PWD }}
+          app_user: ${{ env.APP_DATABASE__USERNAME }}
+          app_pwd: ${{ env.APP_DATABASE__PASSWORD }}
           pgpassword: ${{ env.PGPASSWORD }}
       - name: Run tests
         run: cargo test -- --test-threads=1
@@ -90,8 +90,8 @@ jobs:
         with:
           diesel_version: ${{ env.DIESEL_VERSION }}
           diesel_features: ${{ env.DIESEL_FEATURES }}
-          app_user: ${{ env.APP_USER }}
-          app_user_pwd: ${{ env.APP_USER_PWD }}
+          app_user: ${{ env.APP_DATABASE__USERNAME }}
+          app_pwd: ${{ env.APP_DATABASE__PASSWORD }}
           pgpassword: ${{ env.PGPASSWORD }}
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov

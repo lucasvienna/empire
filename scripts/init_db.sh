@@ -4,12 +4,12 @@ set -eo pipefail
 
 # Check if a custom parameter has been set, otherwise use default values
 CONTAINER_NAME="postgres"
-DB_PORT="${POSTGRES_PORT:=5432}"
 SUPERUSER="${SUPERUSER:=postgres}"
 SUPERUSER_PWD="${SUPERUSER_PWD:=password}"
-APP_USER="${APP_USER:=app}"
-APP_USER_PWD="${APP_USER_PWD:=secret}"
-APP_DB_NAME="${APP_DB_NAME:=empire}"
+APP_DATABASE__PORT="${POSTGRES_PORT:=5432}"
+APP_DATABASE__USERNAME="${APP_DATABASE__USERNAME:=app}"
+APP_DATABASE__PASSWORD="${APP_DATABASE__PASSWORD:=secret}"
+APP_DATABASE__DATABASE_NAME="${APP_DATABASE__DATABASE_NAME:=empire}"
 
 if ! [ -x "$(command -v diesel)" ]; then
   echo >&2 "Error: diesel is not installed."
@@ -22,7 +22,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   docker run \
   --env POSTGRES_USER="${SUPERUSER}" \
   --env POSTGRES_PASSWORD="${SUPERUSER_PWD}" \
-  --publish "${DB_PORT}":5432 \
+  --publish "${APP_DATABASE__PORT}":5432 \
   --detach \
   --name "${CONTAINER_NAME}" \
   postgres:14 -N 1000
@@ -39,14 +39,14 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   done
 
   # Create the application user
-  CREATE_QUERY="CREATE USER ${APP_USER} WITH PASSWORD '${APP_USER_PWD}';"
+  CREATE_QUERY="CREATE USER ${APP_DATABASE__USERNAME} WITH PASSWORD '${APP_DATABASE__PASSWORD}';"
   docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${CREATE_QUERY}"
 
   # Grant create db privileges to the app user
-  GRANT_QUERY="ALTER USER ${APP_USER} CREATEDB;"
+  GRANT_QUERY="ALTER USER ${APP_DATABASE__USERNAME} CREATEDB;"
   docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${GRANT_QUERY}"
 fi
->&2 echo "Postgres is up and running on port ${DB_PORT}!"
+>&2 echo "Postgres is up and running on port ${APP_DATABASE__PORT}!"
 
-export DATABASE_URL=postgres://${APP_USER}:${APP_USER_PWD}@localhost:${DB_PORT}/${APP_DB_NAME}
+export DATABASE_URL=postgres://${APP_DATABASE__USERNAME}:${APP_DATABASE__PASSWORD}@localhost:${APP_DATABASE__PORT}/${APP_DATABASE__DATABASE_NAME}
 diesel setup

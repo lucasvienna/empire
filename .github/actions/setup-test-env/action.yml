@@ -15,7 +15,7 @@ inputs:
     description: 'Database application user'
     required: true
     type: string
-  app_user_pwd:
+  app_pwd:
     description: 'Password for the database application user'
     required: true
     type: string
@@ -43,20 +43,22 @@ runs:
     - name: Create Test User in PostgreSQL
       shell: bash
       env:
-        APP_USER: ${{ inputs.app_user }}
-        APP_USER_PWD: ${{ inputs.app_user_pwd }}
+        APP_DATABASE__USERNAME: ${{ inputs.app_user }}
+        APP_DATABASE__PASSWORD: ${{ inputs.app_pwd }}
         PGPASSWORD: ${{ inputs.pgpassword }}
       run: |
         # Create the test user
-        CREATE_QUERY="CREATE USER ${APP_USER} WITH PASSWORD '${APP_USER_PWD}';"
+        CREATE_QUERY="CREATE USER ${APP_DATABASE__USERNAME} WITH PASSWORD '${APP_DATABASE__PASSWORD}';"
         psql -U "postgres" -h "localhost" -c "${CREATE_QUERY}"
         
         # Grant create DB privileges to the test user
-        GRANT_QUERY="ALTER USER ${APP_USER} CREATEDB;"
+        GRANT_QUERY="ALTER USER ${APP_DATABASE__USERNAME} CREATEDB;"
         psql -U "postgres" -h "localhost" -c "${GRANT_QUERY}"
 
     - name: Migrate Database
       shell: bash
       env:
+        APP_DATABASE__USERNAME: ${{ inputs.app_user }}
+        APP_DATABASE__PASSWORD: ${{ inputs.app_pwd }}
         SKIP_DOCKER: true
       run: ./scripts/init_db.sh
