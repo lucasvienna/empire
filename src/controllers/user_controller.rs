@@ -27,7 +27,8 @@ impl TryFrom<NewUserPayload> for NewUser {
             None => None,
             Some(email) => Some(user::UserEmail::parse(email)?),
         };
-        let pwd_hash = hash_password(&req.password).map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
+        let pwd_hash = hash_password(&req.password)
+            .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
 
         let user = Self {
             name: user::UserName::parse(req.username)?,

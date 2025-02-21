@@ -9,9 +9,9 @@ pub mod domain;
 pub mod game;
 pub mod net;
 pub mod schema;
+pub mod services;
 pub mod startup;
 pub mod telemetry;
-pub mod services;
 
 // re-export for ease of use in other private crates
 pub use domain::error::{Error, ErrorKind, Result};
