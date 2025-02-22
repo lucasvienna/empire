@@ -1,21 +1,21 @@
-use crate::controllers::user_routes;
-use crate::controllers::{auth_routes, health_check_routes};
-use crate::net::auth::auth_middleware;
-use crate::net::request_id::MakeRequestUlid;
-use crate::net::server::AppState;
+use std::time::Duration;
+
 use axum::body::Body;
 use axum::http::{HeaderName, Request};
 use axum::{middleware, Router};
-use std::time::Duration;
 use tower::ServiceBuilder;
+use tower_http::catch_panic::CatchPanicLayer as TowerCatchPanicLayer;
 use tower_http::compression::CompressionLayer as TowerCompressionLayer;
+use tower_http::cors::CorsLayer as TowerCorsLayer;
 use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
-use tower_http::{
-    catch_panic::CatchPanicLayer as TowerCatchPanicLayer, cors::CorsLayer as TowerCorsLayer,
-    trace::TraceLayer as TowerTraceLayer,
-};
+use tower_http::trace::TraceLayer as TowerTraceLayer;
 use tracing::{error, info_span};
+
+use crate::controllers::{auth_routes, health_check_routes, user_routes};
+use crate::net::auth::auth_middleware;
+use crate::net::request_id::MakeRequestUlid;
+use crate::net::server::AppState;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 

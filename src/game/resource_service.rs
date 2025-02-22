@@ -1,6 +1,7 @@
+use std::fmt;
+
 use crate::db::resources::ResourcesRepository;
 use crate::db::DbConn;
-use std::fmt;
 
 pub struct ResourceService<'a> {
     connection: &'a mut DbConn,

@@ -1,11 +1,12 @@
+use diesel::prelude::*;
+use tracing::info;
+
 use crate::db::{DbConn, Repository};
 use crate::domain::building::Building;
 use crate::domain::error::Result;
 use crate::domain::user_building::{NewUserBuilding, UserBuilding};
 use crate::domain::{building, user, user_building};
 use crate::schema::{buildings, user_buildings};
-use diesel::prelude::*;
-use tracing::info;
 
 #[derive(Debug)]
 pub struct UserBuildingRepository {}

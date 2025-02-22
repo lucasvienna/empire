@@ -1,6 +1,7 @@
+use empire::{Error, ErrorKind, Result};
+
 use crate::buffer;
 use crate::buffer::Buffer;
-use empire::{Error, ErrorKind, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum Packet {

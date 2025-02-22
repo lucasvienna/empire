@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use chrono::prelude::*;
 use diesel::Connection;
-use tracing::{debug, info};
+use tracing::{debug, info, instrument};
 
 use crate::db::building_levels::BuildingLevelRepository;
 use crate::db::buildings::BuildingRepository;
@@ -67,7 +67,7 @@ impl BuildingService<'_> {
         }
     }
 
-    #[tracing::instrument]
+    #[instrument(skip(self))]
     pub fn construct_building(
         &mut self,
         usr_id: &user::PK,
@@ -133,7 +133,7 @@ impl BuildingService<'_> {
         }
     }
 
-    #[tracing::instrument]
+    #[instrument(skip(self))]
     pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> Result<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
@@ -192,7 +192,7 @@ impl BuildingService<'_> {
         }
     }
 
-    #[tracing::instrument]
+    #[instrument(skip(self))]
     pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> Result<()> {
         let usr_bld = self.usr_bld_repo.get_by_id(self.connection, id)?;
         match usr_bld.upgrade_time {

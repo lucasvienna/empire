@@ -1,10 +1,11 @@
+use diesel::prelude::*;
+use tracing::debug;
+
 use crate::db::{DbConn, Repository};
 use crate::domain::error::Result;
 use crate::domain::resource;
 use crate::domain::resource::{NewResource, Resource};
 use crate::schema::resources;
-use diesel::prelude::*;
-use tracing::debug;
 
 #[derive(Debug)]
 pub struct ResourcesRepository {}

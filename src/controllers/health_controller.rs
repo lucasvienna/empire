@@ -1,7 +1,8 @@
-use crate::net::server::AppState;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Json, Router};
 use serde::{Deserialize, Serialize};
+
+use crate::net::server::AppState;
 
 /// Struct representing the health check response
 #[derive(Serialize, Deserialize)]

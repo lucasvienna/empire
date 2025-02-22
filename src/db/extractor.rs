@@ -1,11 +1,13 @@
-use crate::db::{DbConn, DbPool};
-use crate::net::server::AppState;
+use std::ops::Deref;
+
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use diesel::r2d2::Pool;
-use std::ops::Deref;
 use tracing::{error, trace};
+
+use crate::db::{DbConn, DbPool};
+use crate::net::server::AppState;
 
 /// An extractor that acquires a database connection from a configured connection pool.
 ///

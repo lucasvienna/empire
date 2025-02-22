@@ -1,9 +1,10 @@
-use crate::{ErrorKind, Result};
 use diesel::pg::Pg;
 use diesel::serialize::{Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::AsExpression;
 use validator::ValidateEmail;
+
+use crate::{ErrorKind, Result};
 
 #[derive(AsExpression, Debug)]
 #[diesel(sql_type = Text)]
@@ -44,12 +45,13 @@ impl ToSql<Text, Pg> for UserEmail {
 
 #[cfg(test)]
 mod tests {
-    use super::UserEmail;
     use claims::assert_err;
     use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
+
+    use super::UserEmail;
 
     // Both `Clone` and `Debug` are required by `quickcheck`
     #[derive(Debug, Clone)]

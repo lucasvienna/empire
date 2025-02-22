@@ -1,6 +1,7 @@
-use crate::schema::building_levels;
 use diesel::prelude::*;
 use uuid::Uuid;
+
+use crate::schema::building_levels;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
 #[diesel(table_name = building_levels)]

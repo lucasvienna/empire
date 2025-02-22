@@ -1,3 +1,16 @@
+use std::fmt::Debug;
+
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::routing::{get, post};
+use axum::{debug_handler, Json, Router};
+use axum_extra::extract::CookieJar;
+use cookie::{Cookie, SameSite};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use tracing::{error, info, instrument, warn};
+
 use crate::configuration::Settings;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
@@ -8,17 +21,6 @@ use crate::domain::user::NewUser;
 use crate::net::server::AppState;
 use crate::services::auth_service::{create_token_for_user, hash_password};
 use crate::ErrorKind;
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::routing::{get, post};
-use axum::{debug_handler, Json, Router};
-use axum_extra::extract::CookieJar;
-use cookie::{Cookie, SameSite};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use std::fmt::Debug;
-use tracing::{error, info, instrument, warn};
 
 #[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {

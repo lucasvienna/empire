@@ -1,9 +1,9 @@
+use std::process::ExitCode;
+
 use anyhow::Result;
-use empire::configuration;
 use empire::db::{connection, migrations};
 use empire::startup::launch;
-use empire::telemetry;
-use std::process::ExitCode;
+use empire::{configuration, telemetry};
 use tracing::info;
 
 #[tokio::main]
