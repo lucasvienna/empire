@@ -1,6 +1,7 @@
-use crate::schema::resources;
 use diesel::prelude::*;
 use uuid::Uuid;
+
+use crate::schema::resources;
 
 #[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = resources)]

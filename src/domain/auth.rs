@@ -1,17 +1,20 @@
-use crate::configuration::Settings;
+use std::fmt::{Display, Formatter};
+use std::sync::LazyLock;
+
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, RequestPartsExt};
-use axum_extra::headers::{authorization::Bearer, Authorization};
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::fmt::{Display, Formatter};
-use std::sync::LazyLock;
 use uuid::Uuid;
+
+use crate::configuration::Settings;
 
 /// JWT secret keys used for encoding and decoding tokens.
 /// This static instance is initialized lazily on first access.
@@ -122,7 +125,6 @@ impl IntoResponse for AuthError {
 pub fn encode_token(claims: Claims) -> Result<String, AuthError> {
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
 }
-
 
 /// Decodes the given JWT token string into `Claims`.
 ///

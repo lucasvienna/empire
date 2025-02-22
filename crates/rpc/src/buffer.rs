@@ -1,6 +1,7 @@
-use empire::{Error, ErrorKind};
 use std::io::{Read, Write};
 use std::{fmt, mem, ptr};
+
+use empire::{Error, ErrorKind};
 
 pub struct Buffer {
     data: Vec<u8>, // buffer data

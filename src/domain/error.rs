@@ -1,8 +1,9 @@
+use std::{error, fmt, io};
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
-use std::{error, fmt, io};
 
 pub type Result<T, E = Error> = anyhow::Result<T, E>;
 

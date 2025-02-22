@@ -1,12 +1,14 @@
-use crate::configuration::Settings;
-use crate::db::connection::DbPool;
-use crate::net::router;
-use anyhow::Result;
-use axum::Router;
 use std::fmt::{Debug, Formatter};
 use std::net::SocketAddr;
 use std::sync::Arc;
+
+use anyhow::Result;
+use axum::Router;
 use tokio::net::TcpListener;
+
+use crate::configuration::Settings;
+use crate::db::connection::DbPool;
+use crate::net::router;
 
 /// Shared application state
 #[derive(Clone)]

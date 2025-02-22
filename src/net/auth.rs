@@ -1,6 +1,3 @@
-use crate::db::extractor::DatabaseConnection;
-use crate::db::users::UserRepository;
-use crate::domain::auth::decode_token;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
@@ -11,6 +8,10 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::{Authorization, HeaderMapExt};
 use serde::Serialize;
 use tracing::{error, info, instrument, trace, warn};
+
+use crate::db::extractor::DatabaseConnection;
+use crate::db::users::UserRepository;
+use crate::domain::auth::decode_token;
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {

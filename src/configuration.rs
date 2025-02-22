@@ -1,5 +1,6 @@
-use crate::net::server::AppState;
-use crate::Result;
+use std::env;
+use std::net::Ipv4Addr;
+
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use config::{Config, Environment, File};
@@ -7,9 +8,10 @@ use reqwest::StatusCode;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use serde_aux::prelude::deserialize_number_from_string;
-use std::env;
-use std::net::Ipv4Addr;
 use tracing::{debug, instrument, trace};
+
+use crate::net::server::AppState;
+use crate::Result;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Settings {

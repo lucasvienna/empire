@@ -1,8 +1,9 @@
-use logs_wheel::LogFileInitializer;
 use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{env, io};
+
+use logs_wheel::LogFileInitializer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, registry, EnvFilter};
 

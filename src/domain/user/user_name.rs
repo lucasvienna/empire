@@ -1,9 +1,10 @@
-use crate::{ErrorKind, Result};
 use diesel::pg::Pg;
 use diesel::serialize::{Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::AsExpression;
 use unicode_segmentation::UnicodeSegmentation;
+
+use crate::{ErrorKind, Result};
 
 /// A type representing a validated username.
 ///
@@ -76,8 +77,9 @@ impl ToSql<Text, Pg> for UserName {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::user::user_name::*;
     use claims::{assert_err, assert_ok};
+
+    use crate::domain::user::user_name::*;
 
     #[test]
     fn a_256_grapheme_long_name_is_valid() {

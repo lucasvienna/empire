@@ -1,3 +1,6 @@
+use std::env;
+use std::sync::{Arc, LazyLock};
+
 use axum::Router;
 use axum_test::util::new_random_tokio_tcp_listener;
 use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
@@ -8,8 +11,6 @@ use empire::net::router;
 use empire::net::server::AppState;
 use empire::Result;
 use secrecy::{ExposeSecret, SecretString};
-use std::env;
-use std::sync::{Arc, LazyLock};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, registry, EnvFilter};

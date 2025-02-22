@@ -1,6 +1,7 @@
-use empire::Result;
 use std::net::SocketAddr;
 use std::sync::Arc;
+
+use empire::Result;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tracing::info;

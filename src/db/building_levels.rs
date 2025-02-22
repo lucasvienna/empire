@@ -1,10 +1,11 @@
+use diesel::prelude::*;
+use tracing::debug;
+
 use crate::db::{DbConn, Repository};
 use crate::domain::building_level::{BuildingLevel, NewBuildingLevel};
 use crate::domain::error::Result;
 use crate::domain::{building, building_level};
 use crate::schema::building_levels;
-use diesel::prelude::*;
-use tracing::debug;
 
 #[derive(Debug)]
 pub struct BuildingLevelRepository {}

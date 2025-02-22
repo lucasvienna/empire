@@ -1,10 +1,12 @@
-use crate::configuration::DatabaseSettings;
+use std::env;
+
 use anyhow::Result;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::PgConnection;
 use secrecy::ExposeSecret;
-use std::env;
 use tracing::{debug, error, info, instrument};
+
+use crate::configuration::DatabaseSettings;
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;

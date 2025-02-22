@@ -2,12 +2,13 @@ mod user_email;
 mod user_name;
 
 use std::fmt;
+
+use diesel::prelude::*;
 pub use user_email::UserEmail;
 pub use user_name::UserName;
+use uuid::Uuid;
 
 use crate::schema::users;
-use diesel::prelude::*;
-use uuid::Uuid;
 
 /// User Primary Key
 pub type PK = Uuid;
