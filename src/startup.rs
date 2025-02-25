@@ -1,7 +1,6 @@
-use std::sync::Arc;
-
 use tokio::signal;
-use tracing::info;
+use tokio_util::sync::CancellationToken;
+use tracing::{info, warn};
 
 use crate::configuration::Settings;
 use crate::db::connection::DbPool;
@@ -30,20 +29,55 @@ use crate::Result;
 /// - Retrieving the server's local address fails.
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
-    let state = AppState {
-        db_pool: Arc::new(pool),
-        settings: config,
-    };
-    let (listener, router) = server::init(state).await?;
+    let token = CancellationToken::new();
+    let subroutines = start_subroutines(pool.clone(), token.clone());
+
+    let (listener, router) = server::init(AppState::new(pool, config)).await?;
 
     info!("Empire server started!");
     info!("Listening on {}", listener.local_addr()?);
 
-    axum::serve(listener, router.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    let server = axum::serve(listener, router.into_make_service())
+        .with_graceful_shutdown(shutdown_signal(token));
 
-    Ok(())
+    let (srv, _) = tokio::join!(server, subroutines);
+    srv.map_err(|err| {
+        warn!("Server error while shutting down: {:#?}", err);
+        err.into()
+    })
+}
+
+/// Starts background subroutines required for the Empire server to function.
+///
+/// The function initializes and runs various subroutines (e.g., resource generation)
+/// using the provided database connection and listens for shutdown signals
+/// through the `CancellationToken`.
+///
+/// When a cancellation signal is received through the `token`,
+/// all running subroutines will terminate.
+///
+/// # Arguments
+///
+/// * `connection` - A `DbConn` providing access to the database for the subroutines.
+/// * `token` - A `CancellationToken` used to detect shutdown signals and terminate subroutines.
+///
+/// # Behavior
+///
+/// This function utilizes `tokio::select!` to concurrently monitor the cancellation token and
+/// any ongoing subroutine (e.g., `res_gen`). When either the token is cancelled or the
+/// subroutine completes, the function exits. Ensure that any subroutines are endless.
+///
+/// Additional subroutines can be added inside the `tokio::select!` block by adding new arms.
+async fn start_subroutines(db_pool: DbPool, token: CancellationToken) {
+    let conn = db_pool.get().expect("Failed to get database connection.");
+    let res_gen = init_res_gen(conn);
+
+    tokio::select! {
+        _ = token.cancelled() => {},
+        _ = res_gen => {},
+        // we can add more subroutines here as desired :)
+        // _ = time::sleep(Duration::from_secs(10)) => {},
+    }
 }
 
 /// Waits for a shutdown signal in the application.
@@ -60,7 +94,7 @@ pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
 ///
 /// - If the `Ctrl+C` signal handler fails to install.
 /// - On Unix-based systems, if the `SIGTERM` signal handler fails to install.
-async fn shutdown_signal() {
+async fn shutdown_signal(token: CancellationToken) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -79,8 +113,8 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        _ = ctrl_c => token.cancel(),
+        _ = terminate => token.cancel(),
     }
 
     info!("Shutting down...");
