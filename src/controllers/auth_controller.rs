@@ -15,10 +15,10 @@ use crate::configuration::Settings;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
+use crate::domain::app_state::AppState;
 use crate::domain::auth::{AuthBody, AuthError, Claims};
 use crate::domain::user;
 use crate::domain::user::NewUser;
-use crate::net::server::AppState;
 use crate::services::auth_service::{create_token_for_user, hash_password};
 use crate::ErrorKind;
 

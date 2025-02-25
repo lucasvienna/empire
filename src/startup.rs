@@ -5,8 +5,9 @@ use tracing::info;
 
 use crate::configuration::Settings;
 use crate::db::connection::DbPool;
+use crate::domain::app_state::AppState;
+use crate::game::res_gen_subroutine::init_res_gen;
 use crate::net::server;
-use crate::net::server::AppState;
 use crate::Result;
 
 /// Launches the Empire server with the specified configuration and database connection pool.

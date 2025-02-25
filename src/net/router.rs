@@ -13,9 +13,9 @@ use tower_http::trace::TraceLayer as TowerTraceLayer;
 use tracing::{error, info_span};
 
 use crate::controllers::{auth_routes, health_check_routes, user_routes};
+use crate::domain::app_state::AppState;
 use crate::net::auth::auth_middleware;
 use crate::net::request_id::MakeRequestUlid;
-use crate::net::server::AppState;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 

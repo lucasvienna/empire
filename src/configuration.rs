@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_aux::prelude::deserialize_number_from_string;
 use tracing::{debug, instrument, trace};
 
-use crate::net::server::AppState;
+use crate::domain::app_state::AppState;
 use crate::Result;
 
 #[derive(Deserialize, Debug, Clone)]
