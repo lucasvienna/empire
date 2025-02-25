@@ -7,7 +7,7 @@ use axum_extra::extract::CookieJar;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::{Authorization, HeaderMapExt};
 use serde::Serialize;
-use tracing::{error, info, instrument, trace, warn};
+use tracing::{error, instrument, trace, warn};
 
 use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
@@ -26,7 +26,6 @@ pub async fn auth_middleware(
     mut req: Request,
     next: Next,
 ) -> crate::Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    info!("{:#?}", req.headers());
     let token = cookie_jar
         .get("token")
         .map(|cookie| {
