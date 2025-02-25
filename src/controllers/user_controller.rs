@@ -8,9 +8,9 @@ use tracing::{debug, error, info, instrument};
 use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
+use crate::domain::app_state::AppState;
 use crate::domain::user;
 use crate::domain::user::{NewUser, User};
-use crate::net::server::AppState;
 use crate::services::auth_service::hash_password;
 use crate::{Error, ErrorKind, Result};
 

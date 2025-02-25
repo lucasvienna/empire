@@ -7,7 +7,7 @@ use diesel::r2d2::Pool;
 use tracing::{error, trace};
 
 use crate::db::{DbConn, DbPool};
-use crate::net::server::AppState;
+use crate::domain::app_state::AppState;
 
 /// An extractor that acquires a database connection from a configured connection pool.
 ///
