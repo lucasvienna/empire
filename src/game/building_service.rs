@@ -15,49 +15,22 @@ use crate::domain::error::{Error, ErrorKind, Result};
 use crate::domain::user_building::{NewUserBuilding, UserBuilding};
 use crate::domain::{building, user, user_building};
 
-pub struct BuildingService<'a> {
-    connection: &'a mut DbConn,
+pub struct BuildingService {
+    connection: DbConn,
     bld_repo: BuildingRepository,
     usr_bld_repo: UserBuildingRepository,
     bld_lvl_repo: BuildingLevelRepository,
     res_repo: ResourcesRepository,
 }
 
-impl fmt::Debug for BuildingService<'_> {
+impl fmt::Debug for BuildingService {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        /* this is an alternative, lazy implementation:
-        #[derive(Debug)]
-        struct BuildingService<'a> {
-            bld_repo: &'a BuildingRepository,
-            usr_bld_repo: &'a UserBuildingRepository,
-            bld_lvl_repo: &'a BuildingLevelRepository,
-            res_repo: &'a ResourcesRepository,
-        }
-
-        let Self {
-            connection: _,
-            bld_repo,
-            usr_bld_repo,
-            bld_lvl_repo,
-            res_repo,
-        } = self;
-
-        fmt::Debug::fmt(
-            &BuildingService {
-                bld_repo,
-                usr_bld_repo,
-                bld_lvl_repo,
-                res_repo,
-            },
-            f,
-        )
-        */
         write!(f, "BuildingService")
     }
 }
 
-impl BuildingService<'_> {
-    pub fn new(connection: &mut DbConn) -> BuildingService {
+impl BuildingService {
+    pub fn new(connection: DbConn) -> BuildingService {
         BuildingService {
             connection,
             bld_repo: BuildingRepository {},
@@ -69,14 +42,14 @@ impl BuildingService<'_> {
 
     #[instrument(skip(self))]
     pub fn construct_building(
-        &mut self,
+        mut self,
         usr_id: &user::PK,
         bld_id: &building::PK,
     ) -> Result<UserBuilding> {
         info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self
             .bld_lvl_repo
-            .get_next_upgrade(self.connection, bld_id, &0)?;
+            .get_next_upgrade(&mut self.connection, bld_id, &0)?;
 
         // check for resources
         if !self.has_enough_resources(usr_id, &bld_lvl)? {
@@ -89,7 +62,7 @@ impl BuildingService<'_> {
         // verify if maximum number of buildings was reached
         if !self
             .usr_bld_repo
-            .can_construct(self.connection, usr_id, bld_id)?
+            .can_construct(&mut self.connection, usr_id, bld_id)?
         {
             return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
@@ -137,9 +110,9 @@ impl BuildingService<'_> {
     pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> Result<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
-            .get_upgrade_tuple(self.connection, usr_bld_id)?;
+            .get_upgrade_tuple(&mut self.connection, usr_bld_id)?;
         let bld_lvl = self.bld_lvl_repo.get_next_upgrade(
-            self.connection,
+            &mut self.connection,
             &usr_bld.building_id,
             &usr_bld.level,
         )?;
@@ -194,7 +167,7 @@ impl BuildingService<'_> {
 
     #[instrument(skip(self))]
     pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> Result<()> {
-        let usr_bld = self.usr_bld_repo.get_by_id(self.connection, id)?;
+        let usr_bld = self.usr_bld_repo.get_by_id(&mut self.connection, id)?;
         match usr_bld.upgrade_time {
             None => Err(Error::from((
                 ErrorKind::ConfirmUpgradeError,
@@ -205,7 +178,7 @@ impl BuildingService<'_> {
                     Error::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
                 })?;
                 if time <= Utc::now() {
-                    self.usr_bld_repo.inc_level(self.connection, id)?;
+                    self.usr_bld_repo.inc_level(&mut self.connection, id)?;
                     Ok(())
                 } else {
                     Err(Error::from((
@@ -223,7 +196,7 @@ impl BuildingService<'_> {
         bld_lvl: &BuildingLevel,
     ) -> Result<bool> {
         debug!("Checking resources for user: {}", user_id);
-        let res = self.res_repo.get_by_id(self.connection, user_id)?;
+        let res = self.res_repo.get_by_id(&mut self.connection, user_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);

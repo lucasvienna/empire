@@ -3,6 +3,7 @@ use std::{error, fmt, io};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use diesel::r2d2;
 use serde_json::json;
 
 pub type Result<T, E = Error> = anyhow::Result<T, E>;
@@ -24,6 +25,7 @@ enum ErrorRepr {
     WithDescriptionAndDetail(ErrorKind, &'static str, String),
     IoError(io::Error),
     DbError(diesel::result::Error),
+    R2d2Error(r2d2::Error),
     AnyhowError(anyhow::Error),
 }
 
@@ -148,6 +150,14 @@ impl From<diesel::result::Error> for Error {
     }
 }
 
+impl From<r2d2::Error> for Error {
+    fn from(err: r2d2::Error) -> Error {
+        Error {
+            repr: ErrorRepr::R2d2Error(err),
+        }
+    }
+}
+
 impl From<anyhow::Error> for Error {
     fn from(err: anyhow::Error) -> Error {
         Error {
@@ -200,6 +210,7 @@ impl fmt::Display for Error {
             }
             ErrorRepr::IoError(ref err) => err.fmt(f),
             ErrorRepr::DbError(ref err) => err.fmt(f),
+            ErrorRepr::R2d2Error(ref err) => err.fmt(f),
             ErrorRepr::AnyhowError(ref err) => err.fmt(f),
         }
     }
@@ -217,7 +228,9 @@ impl IntoResponse for Error {
             ErrorRepr::WithDescription(kind, desc) => (kind.into(), desc),
             ErrorRepr::WithDescriptionAndDetail(kind, desc, _) => (kind.into(), desc),
             ErrorRepr::IoError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal I/O error"),
-            ErrorRepr::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Database error"),
+            ErrorRepr::DbError(_) | ErrorRepr::R2d2Error(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Database error")
+            }
             ErrorRepr::AnyhowError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
         };
         let body = json!({"error": message});
