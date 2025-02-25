@@ -8,6 +8,14 @@ use tracing::{debug, error, info, instrument};
 use crate::db::DbConn;
 use crate::game::TICK_RATE;
 
+pub static RES_GEN_QUERY: &str = "UPDATE resources_accumulator acc
+    SET food  = GREATEST(acc.food + rg.food, acc.food_cap),
+        wood  = GREATEST(acc.wood + rg.wood, acc.wood_cap),
+        stone = GREATEST(acc.stone + rg.stone, acc.stone_cap),
+        gold  = GREATEST(acc.gold + rg.gold, acc.gold_cap)
+    FROM resource_generation rg
+    WHERE acc.user_id = rg.user_id;";
+
 /// Initializes a background task responsible for periodic resource generation.
 ///
 /// This function runs an asynchronous task that periodically updates the resource values
@@ -35,18 +43,11 @@ pub fn init_res_gen(mut conn: DbConn) -> JoinHandle<()> {
             interval.tick().await;
 
             info!("Incrementing resources...");
-            let updated = diesel::sql_query(
-                "UPDATE resources r
-                    SET food  = r.food + rg.food,
-                        wood  = r.wood + rg.wood,
-                        stone = r.stone + rg.stone,
-                        gold  = r.gold + rg.gold
-                    FROM resource_generation rg
-                    WHERE r.user_id = rg.user_id;",
-            )
-            .execute(&mut conn)
-            .inspect_err(|err| error!("Failed to generate resources: {}", err.to_string()))
-            .unwrap_or_default();
+            // TODO: rewrite this to use diesel, we now know how to create functions
+            let updated = diesel::sql_query(RES_GEN_QUERY)
+                .execute(&mut conn)
+                .inspect_err(|err| error!("Failed to generate resources: {}", err.to_string()))
+                .unwrap_or_default();
             debug!("Incremented resources for {} users", updated);
         }
     })

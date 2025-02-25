@@ -42,7 +42,7 @@ impl BuildingService {
 
     #[instrument(skip(self))]
     pub fn construct_building(
-        mut self,
+        &mut self,
         usr_id: &user::PK,
         bld_id: &building::PK,
     ) -> Result<UserBuilding> {
