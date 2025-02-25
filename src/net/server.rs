@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::Formatter;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -17,7 +17,7 @@ pub struct AppState {
     pub settings: Settings,
 }
 
-impl Debug for AppState {
+impl std::fmt::Debug for AppState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // Retrieve the state from the db_pool
         let db_state = self.db_pool.state();
