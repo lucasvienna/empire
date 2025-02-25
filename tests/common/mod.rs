@@ -16,6 +16,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, registry, EnvFilter};
 use uuid::Uuid;
 
+#[allow(dead_code)]
 pub struct TestServer {
     pub router: Router,
     pub db_pool: DbPool,
@@ -76,6 +77,7 @@ pub fn init_server() -> TestServer {
 /// - The server fails to start serving requests.
 ///
 /// [`TestApp`]: TestApp
+#[allow(dead_code)]
 pub fn spawn_app() -> TestApp {
     let server = init_server();
     let listener = new_random_tokio_tcp_listener().expect("Failed to bind random port");
