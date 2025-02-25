@@ -14,6 +14,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    building_resources (id) {
+        id -> Uuid,
+        building_id -> Int4,
+        building_level -> Int4,
+        population -> Int4,
+        food -> Int4,
+        wood -> Int4,
+        stone -> Int4,
+        gold -> Int4,
+    }
+}
+
+diesel::table! {
     buildings (id) {
         id -> Int4,
         name -> Text,
@@ -63,6 +76,7 @@ diesel::table! {
 }
 
 diesel::joinable!(building_levels -> buildings (building_id));
+diesel::joinable!(building_resources -> buildings (building_id));
 diesel::joinable!(buildings -> factions (faction));
 diesel::joinable!(resources -> users (user_id));
 diesel::joinable!(user_buildings -> buildings (building_id));
@@ -71,6 +85,7 @@ diesel::joinable!(users -> factions (faction));
 
 diesel::allow_tables_to_appear_in_same_query!(
     building_levels,
+    building_resources,
     buildings,
     factions,
     resources,

@@ -4,6 +4,7 @@
 
 pub mod configuration;
 pub mod controllers;
+pub mod custom_schema;
 pub mod db;
 pub mod domain;
 pub mod game;
