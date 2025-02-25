@@ -9,8 +9,9 @@ CREATE TABLE building_levels
     req_stone    INTEGER,
     req_gold     INTEGER,
 
-    PRIMARY KEY (id),
     UNIQUE (building_id, level),
+
+    PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE
 );
 
