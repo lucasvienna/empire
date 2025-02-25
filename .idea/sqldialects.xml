@@ -2,11 +2,14 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/migrations/2024-06-31-202715_ulid/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-054020_buildings_levels/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-054030_building_resources/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055918_users/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055924_resources/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-063632_user_buildings/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-063927_building_levels/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073558_resourge_generation/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055924_user_resources/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055932_user_buildings/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073558_resource_generation/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-074654_resource_accumulators/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-074654_resource_accumulators/up.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>
