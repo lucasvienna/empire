@@ -1,5 +1,6 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{debug_handler, Json, Router};
 use serde::{Deserialize, Serialize};
@@ -145,7 +146,7 @@ async fn update_user(
     DatabaseConnection(mut conn): DatabaseConnection,
     Path(user_id): Path<user::PK>,
     Json(payload): Json<UpdateUserPayload>,
-) -> Result<Json<UserBody>, StatusCode> {
+) -> Result<impl IntoResponse, StatusCode> {
     let repo = UserRepository {};
 
     let username = user::UserName::parse(payload.username).map_err(|_| StatusCode::BAD_REQUEST);
@@ -177,7 +178,7 @@ async fn update_user(
     })?;
     info!(?updated_user, "Updated user successfully");
 
-    Ok(Json(updated_user.into()))
+    Ok((StatusCode::ACCEPTED, Json(UserBody::from(updated_user))))
 }
 
 #[instrument(skip(conn))]

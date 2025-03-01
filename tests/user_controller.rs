@@ -3,13 +3,19 @@ use axum::http::{header, Request, StatusCode};
 use axum_extra::headers;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
-use empire::controllers::{NewUserPayload, UserBody, UserListBody};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use empire::controllers::{
+    NewUserPayload, RegisterPayload, UpdateUserPayload, UserBody, UserListBody,
+};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::{encode_token, Claims};
 use empire::domain::faction::FactionCode;
 use empire::domain::user;
 use empire::domain::user::{NewUser, User, UserName};
+use empire::domain::user_building::UserBuilding;
+use empire::schema::user_buildings;
+use empire::schema::users::dsl::users;
 use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -17,11 +23,11 @@ use tower::ServiceExt;
 mod common;
 
 #[tokio::test]
-async fn get_all_works() {
+async fn get_all() {
     let server = common::init_server();
     let router = server.router;
     let conn = server.db_pool.get().unwrap();
-    let user = create_test_user(conn);
+    let user = create_test_user(conn, None);
     let bearer = get_bearer(user.id);
 
     let response = router
@@ -47,11 +53,11 @@ async fn get_all_works() {
 }
 
 #[tokio::test]
-async fn create_and_get_by_id_works() {
+async fn create_and_get_by_id() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
     let conn = app.db_pool.get().unwrap();
-    let user = create_test_user(conn);
+    let user = create_test_user(conn, None);
     let bearer = get_bearer(user.id);
 
     let req = NewUserPayload {
@@ -97,10 +103,62 @@ async fn create_and_get_by_id_works() {
 }
 
 #[tokio::test]
-async fn delete_works() {
+async fn update() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
-    let user = create_test_user(app.db_pool.get().unwrap());
+    let mut conn = app.db_pool.get().unwrap();
+
+    let req = RegisterPayload {
+        username: "testy".to_string(),
+        password: "123".to_string(),
+        email: None,
+    };
+    let response = client
+        .post(format!("{}/register", &app.address))
+        .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+        .json(&req)
+        .send()
+        .await
+        .expect("Failed to create user.");
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let user: User = users.first(&mut conn).unwrap();
+    assert_eq!(user.faction, FactionCode::Neutral, "Faction is not neutral");
+
+    let usr_blds: Vec<UserBuilding> = user_buildings::table
+        .filter(user_buildings::user_id.eq(user.id))
+        .get_results(&mut conn)
+        .expect("Failed to get user buildings");
+    assert!(usr_blds.is_empty(), "User has buildings");
+
+    let bearer = get_bearer(user.id);
+    let body = UpdateUserPayload {
+        username: user.name,
+        email: None,
+        faction: FactionCode::Human,
+    };
+    let response = client
+        .put(format!("{}/users/{}", &app.address, user.id))
+        .bearer_auth(bearer.token())
+        .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+        .json(&body)
+        .send()
+        .await
+        .expect("Failed to update user.");
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+
+    let usr_blds: Vec<UserBuilding> = user_buildings::table
+        .filter(user_buildings::user_id.eq(user.id))
+        .get_results(&mut conn)
+        .expect("Failed to get user buildings");
+    assert!(!usr_blds.is_empty(), "User has no buildings");
+}
+
+#[tokio::test]
+async fn delete() {
+    let app = common::spawn_app();
+    let client = reqwest::Client::new();
+    let user = create_test_user(app.db_pool.get().unwrap(), None);
     let bearer = get_bearer(user.id);
 
     let res = client
@@ -123,7 +181,7 @@ async fn delete_works() {
         "Shouldn't be able to authorize with deleted user"
     );
 
-    let user2 = create_test_user(app.db_pool.get().unwrap());
+    let user2 = create_test_user(app.db_pool.get().unwrap(), None);
     let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired user trying to reuse the token
     let response = client
         .get(format!("{}/users/{}", &app.address, user.id))
@@ -135,7 +193,7 @@ async fn delete_works() {
 }
 
 /// Create a user. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn) -> User {
+fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> User {
     let user_repo = UserRepository {};
     user_repo
         .create(
@@ -144,7 +202,7 @@ fn create_test_user(mut conn: DbConn) -> User {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,
-                faction: FactionCode::Human,
+                faction: faction.unwrap_or(FactionCode::Human),
             },
         )
         .unwrap()
