@@ -31,3 +31,60 @@ CREATE TRIGGER new_user_buildings_trigger
     ON users
     FOR EACH ROW
 EXECUTE FUNCTION new_user_buildings_fn();
+
+CREATE OR REPLACE FUNCTION update_user_resources_caps_fn()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+AS
+$$
+DECLARE
+    old_caps RECORD;
+    new_caps RECORD;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Get the new caps from building_resources based on the building and level
+        SELECT food_cap, wood_cap, stone_cap, gold_cap
+        INTO new_caps
+        FROM building_resources
+        WHERE building_id = NEW.building_id
+          AND building_level = NEW.level;
+
+        UPDATE resources
+        SET food_cap  = food_cap + new_caps.food_cap,
+            wood_cap  = wood_cap + new_caps.wood_cap,
+            stone_cap = stone_cap + new_caps.stone_cap,
+            gold_cap  = gold_cap + new_caps.gold_cap
+        WHERE user_id = NEW.user_id;
+
+    ELSIF TG_OP = 'UPDATE' THEN
+        -- Get the previous cap values from building_resources
+        SELECT food_cap, wood_cap, stone_cap, gold_cap
+        INTO old_caps
+        FROM building_resources
+        WHERE building_id = OLD.building_id
+          AND building_level = OLD.level;
+
+        -- Get the updated cap values from building_resources
+        SELECT food_cap, wood_cap, stone_cap, gold_cap
+        INTO new_caps
+        FROM building_resources
+        WHERE building_id = NEW.building_id
+          AND building_level = NEW.level;
+
+        UPDATE resources
+        SET food_cap  = food_cap - old_caps.food_cap + new_caps.food_cap,
+            wood_cap  = wood_cap - old_caps.wood_cap + new_caps.wood_cap,
+            stone_cap = stone_cap - old_caps.stone_cap + new_caps.stone_cap,
+            gold_cap  = gold_cap - old_caps.gold_cap + new_caps.gold_cap
+        WHERE user_id = NEW.user_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER update_user_resources_caps_trigger
+    AFTER INSERT OR UPDATE
+    ON user_buildings
+    FOR EACH ROW
+EXECUTE FUNCTION update_user_resources_caps_fn();

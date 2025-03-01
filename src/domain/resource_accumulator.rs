@@ -14,8 +14,4 @@ pub struct ResourceAccumulator {
     pub wood: i32,
     pub stone: i32,
     pub gold: i32,
-    pub food_cap: i32,
-    pub wood_cap: i32,
-    pub stone_cap: i32,
-    pub gold_cap: i32,
 }

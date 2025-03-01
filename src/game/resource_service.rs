@@ -1,15 +1,15 @@
+use std::fmt;
+
 use diesel::prelude::*;
 use diesel::sql_types::Int4;
 use diesel::QueryDsl;
-use std::fmt;
 use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::DbConn;
 use crate::domain::resource::Resource;
 use crate::domain::user;
-use crate::schema::resources as rr;
-use crate::schema::resources_accumulator as ra;
+use crate::schema::{resources as rr, resources_accumulator as ra};
 use crate::Result;
 
 #[derive(Debug)]
