@@ -23,6 +23,14 @@ diesel::table! {
         wood -> Int4,
         stone -> Int4,
         gold -> Int4,
+        food_cap -> Int4,
+        wood_cap -> Int4,
+        stone_cap -> Int4,
+        gold_cap -> Int4,
+        food_acc_cap -> Int4,
+        wood_acc_cap -> Int4,
+        stone_acc_cap -> Int4,
+        gold_acc_cap -> Int4,
     }
 }
 
@@ -65,10 +73,6 @@ diesel::table! {
         wood -> Int4,
         stone -> Int4,
         gold -> Int4,
-        food_cap -> Int4,
-        wood_cap -> Int4,
-        stone_cap -> Int4,
-        gold_cap -> Int4,
     }
 }
 
