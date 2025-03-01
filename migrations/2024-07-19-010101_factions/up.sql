@@ -1,13 +1,17 @@
+CREATE TYPE faction_code AS ENUM ('neutral', 'human', 'orc', 'elf', 'dwarf', 'goblin');
+
 CREATE TABLE factions
 (
-    id   SERIAL NOT NULL PRIMARY KEY,
-    name TEXT   NOT NULL
+    id   faction_code NOT NULL,
+    name TEXT         NOT NULL,
+
+    PRIMARY KEY (id)
 );
 
-INSERT INTO factions (name)
-VALUES ('Neutral'), -- 1
-       ('Humans'),  -- 2
-       ('Orcs'),    -- 3
-       ('Elves'),   -- 4
-       ('Dwarves'), -- 5
-       ('Goblins'); -- 6
+INSERT INTO factions (id, name)
+VALUES ('neutral', 'Neutral'),
+       ('human',   'Humans' ),
+       ('orc',     'Orcs'   ),
+       ('elf',     'Elves'  ),
+       ('dwarf',   'Dwarves'),
+       ('goblin',  'Goblins');
