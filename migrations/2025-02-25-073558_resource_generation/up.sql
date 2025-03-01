@@ -12,4 +12,5 @@ SELECT ub.user_id,
 FROM user_buildings ub
          LEFT JOIN public.building_resources br
                    ON ub.building_id = br.building_id
+                       AND ub.level = br.building_level
 GROUP BY ub.user_id;

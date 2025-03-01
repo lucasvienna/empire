@@ -9,6 +9,7 @@ use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppState;
+use crate::domain::faction::FactionCode;
 use crate::domain::user;
 use crate::domain::user::{NewUser, User};
 use crate::services::auth_service::hash_password;
@@ -20,7 +21,7 @@ pub struct NewUserPayload {
     pub username: String,
     pub password: String,
     pub email: Option<String>,
-    pub faction: i32,
+    pub faction: FactionCode,
 }
 
 impl TryFrom<NewUserPayload> for NewUser {
@@ -49,7 +50,7 @@ impl TryFrom<NewUserPayload> for NewUser {
 pub struct UpdateUserPayload {
     pub username: String,
     pub email: Option<String>,
-    pub faction: i32,
+    pub faction: FactionCode,
 }
 
 /// Struct for response data
@@ -58,7 +59,7 @@ pub struct UserBody {
     pub id: user::PK,
     pub username: String,
     pub email: Option<String>,
-    pub faction: i32,
+    pub faction: FactionCode,
 }
 
 pub type UserListBody = Vec<UserBody>;

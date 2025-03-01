@@ -7,6 +7,7 @@ use empire::controllers::{NewUserPayload, UserBody, UserListBody};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::{encode_token, Claims};
+use empire::domain::faction::FactionCode;
 use empire::domain::user;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::services::auth_service::hash_password;
@@ -57,7 +58,7 @@ async fn create_and_get_by_id_works() {
         username: "test1".to_string(),
         password: "1234".to_string(),
         email: None,
-        faction: 2,
+        faction: FactionCode::Human,
     };
     let response = client
         .post(format!("{}/users", &app.address))
@@ -143,7 +144,7 @@ fn create_test_user(mut conn: DbConn) -> User {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,
-                faction: 2,
+                faction: FactionCode::Human,
             },
         )
         .unwrap()

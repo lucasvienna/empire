@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 
+use crate::domain::faction;
 use crate::schema::buildings;
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset)]
@@ -10,7 +11,7 @@ pub struct Building {
     pub name: String,
     pub max_level: i32,
     pub max_count: i32,
-    pub faction: i32,
+    pub faction: faction::PK,
     pub starter: bool,
 }
 
@@ -20,7 +21,7 @@ pub struct NewBuilding<'a> {
     pub name: &'a str,
     pub max_level: i32,
     pub max_count: i32,
-    pub faction: i32,
+    pub faction: faction::PK,
     pub starter: bool,
 }
 

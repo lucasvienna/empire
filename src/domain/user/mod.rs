@@ -8,6 +8,7 @@ pub use user_email::UserEmail;
 pub use user_name::UserName;
 use uuid::Uuid;
 
+use crate::domain::faction::FactionCode;
 use crate::schema::users;
 
 /// User Primary Key
@@ -22,7 +23,7 @@ pub struct User {
     pub name: String,
     pub pwd_hash: String,
     pub email: Option<String>,
-    pub faction: i32,
+    pub faction: FactionCode,
 }
 
 impl fmt::Debug for User {
@@ -43,7 +44,7 @@ pub struct NewUser {
     pub name: UserName,
     pub pwd_hash: String,
     pub email: Option<UserEmail>,
-    pub faction: i32,
+    pub faction: FactionCode,
 }
 
 impl fmt::Debug for NewUser {

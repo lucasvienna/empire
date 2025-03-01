@@ -5,6 +5,7 @@ use empire::controllers::{LoginPayload, RegisterPayload};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::AuthBody;
+use empire::domain::faction::FactionCode;
 use empire::domain::user::{NewUser, User, UserEmail, UserName};
 use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
@@ -253,7 +254,7 @@ fn create_test_user(mut conn: DbConn) -> User {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),
-                faction: 2,
+                faction: FactionCode::Human,
             },
         )
         .unwrap()

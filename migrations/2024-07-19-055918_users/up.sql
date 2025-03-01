@@ -4,7 +4,7 @@ CREATE TABLE users
     name     TEXT UNIQUE  NOT NULL,
     pwd_hash TEXT         NOT NULL,
     email    VARCHAR(254) NULL,
-    faction  INTEGER      NOT NULL DEFAULT 2, -- Humans
+    faction  faction_code NOT NULL DEFAULT 'neutral',
 
     PRIMARY KEY (id),
     FOREIGN KEY (faction) REFERENCES factions (id)

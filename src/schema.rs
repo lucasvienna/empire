@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "faction_code"))]
+    pub struct FactionCode;
+}
+
 diesel::table! {
     building_levels (id) {
         id -> Uuid,
@@ -35,19 +41,25 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::FactionCode;
+
     buildings (id) {
         id -> Int4,
         name -> Text,
         max_level -> Int4,
         max_count -> Int4,
-        faction -> Int4,
+        faction -> FactionCode,
         starter -> Bool,
     }
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::FactionCode;
+
     factions (id) {
-        id -> Int4,
+        id -> FactionCode,
         name -> Text,
     }
 }
@@ -87,13 +99,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::FactionCode;
+
     users (id) {
         id -> Uuid,
         name -> Text,
         pwd_hash -> Text,
         #[max_length = 254]
         email -> Nullable<Varchar>,
-        faction -> Int4,
+        faction -> FactionCode,
     }
 }
 

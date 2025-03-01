@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use diesel::update;
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
+use empire::domain::faction::FactionCode;
 use empire::domain::resource_accumulator::ResourceAccumulator;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::game::resource_service::ResourceService;
@@ -67,7 +68,7 @@ fn create_test_user(mut conn: DbConn) -> User {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,
-                faction: 2,
+                faction: FactionCode::Human,
             },
         )
         .unwrap()
