@@ -17,17 +17,30 @@ CREATE OR REPLACE FUNCTION new_user_buildings_fn()
 AS
 $$
 BEGIN
-    INSERT INTO user_buildings (user_id, building_id, level)
-    SELECT NEW.id, id, 1 -- pre-built buildings should be level 1
-    FROM buildings
-    WHERE faction = NEW.faction
-      AND starter = TRUE;
-    RETURN NEW;
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO user_buildings (user_id, building_id, level)
+        SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+        FROM buildings
+        WHERE NEW.faction <> 'neutral'
+          AND faction = NEW.faction
+          AND starter = TRUE;
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.faction <> NEW.faction AND NEW.faction <> 'neutral' THEN
+            INSERT INTO user_buildings (user_id, building_id, level)
+            SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+            FROM buildings
+            WHERE NEW.faction <> 'neutral'
+              AND faction = NEW.faction
+              AND starter = TRUE;
+            RETURN NEW;
+        END IF;
+    END IF;
 END;
 $$;
 
 CREATE TRIGGER new_user_buildings_trigger
-    AFTER INSERT
+    AFTER INSERT OR UPDATE
     ON users
     FOR EACH ROW
 EXECUTE FUNCTION new_user_buildings_fn();
