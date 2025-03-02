@@ -10,7 +10,7 @@ CREATE TABLE user_accumulator
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE OR REPLACE FUNCTION new_user_accumulators_fn()
+CREATE OR REPLACE FUNCTION new_user_accumulator_fn()
     RETURNS TRIGGER
     LANGUAGE PLPGSQL
 AS
@@ -21,8 +21,8 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER new_user_accumulators_trigger
+CREATE TRIGGER new_user_accumulator_trigger
     AFTER INSERT
     ON users
     FOR EACH ROW
-EXECUTE FUNCTION new_user_accumulators_fn();
+EXECUTE FUNCTION new_user_accumulator_fn();
