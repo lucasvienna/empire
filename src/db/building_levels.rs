@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use tracing::debug;
 
 use crate::db::{DbConn, Repository};
-use crate::domain::building_level::{BuildingLevel, NewBuildingLevel};
+use crate::domain::building_level::{BuildingLevel, NewBuildingLevel, UpdateBuildingLevel};
 use crate::domain::error::Result;
 use crate::domain::{building, building_level};
 use crate::schema::building_levels;
@@ -10,7 +10,7 @@ use crate::schema::building_levels;
 #[derive(Debug)]
 pub struct BuildingLevelRepository {}
 
-impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
+impl Repository<BuildingLevel, NewBuildingLevel, UpdateBuildingLevel, building_level::PK>
     for BuildingLevelRepository
 {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<BuildingLevel>> {
@@ -25,7 +25,7 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewBuildingLevel) -> Result<BuildingLevel> {
+    fn create(&self, connection: &mut DbConn, entity: NewBuildingLevel) -> Result<BuildingLevel> {
         debug!("Creating building level {:?}", entity);
         let building = diesel::insert_into(building_levels::table)
             .values(entity)
@@ -35,10 +35,15 @@ impl Repository<BuildingLevel, NewBuildingLevel<'_>, building_level::PK>
         Ok(building)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &BuildingLevel) -> Result<BuildingLevel> {
-        debug!("Updating building level {}", entity.id);
-        let building = diesel::update(building_levels::table.find(entity.id))
-            .set(entity)
+    fn update(
+        &self,
+        connection: &mut DbConn,
+        id: &building_level::PK,
+        changeset: UpdateBuildingLevel,
+    ) -> Result<BuildingLevel> {
+        debug!("Updating building level {}", id);
+        let building = diesel::update(building_levels::table.find(id))
+            .set(changeset)
             .get_result(connection)?;
         debug!("Updated building level: {:?}", building);
         Ok(building)

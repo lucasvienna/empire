@@ -4,14 +4,16 @@ use tracing::info;
 use crate::db::{DbConn, Repository};
 use crate::domain::building::Building;
 use crate::domain::error::Result;
-use crate::domain::user_building::{NewUserBuilding, UserBuilding};
+use crate::domain::user_building::{NewUserBuilding, UpdateUserBuilding, UserBuilding};
 use crate::domain::{building, user, user_building};
 use crate::schema::{buildings, user_buildings};
 
 #[derive(Debug)]
 pub struct UserBuildingRepository {}
 
-impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBuildingRepository {
+impl Repository<UserBuilding, NewUserBuilding, UpdateUserBuilding, user_building::PK>
+    for UserBuildingRepository
+{
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<UserBuilding>> {
         let buildings = user_buildings::table
             .select(UserBuilding::as_select())
@@ -24,7 +26,7 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: &NewUserBuilding) -> Result<UserBuilding> {
+    fn create(&self, connection: &mut DbConn, entity: NewUserBuilding) -> Result<UserBuilding> {
         let building = diesel::insert_into(user_buildings::table)
             .values(entity)
             .returning(UserBuilding::as_returning())
@@ -32,8 +34,13 @@ impl Repository<UserBuilding, NewUserBuilding<'_>, user_building::PK> for UserBu
         Ok(building)
     }
 
-    fn update(&self, connection: &mut DbConn, entity: &UserBuilding) -> Result<UserBuilding> {
-        let building = diesel::update(user_buildings::table.find(entity.id))
+    fn update(
+        &self,
+        connection: &mut DbConn,
+        id: &user_building::PK,
+        entity: UpdateUserBuilding,
+    ) -> Result<UserBuilding> {
+        let building = diesel::update(user_buildings::table.find(id))
             .set(entity)
             .get_result(connection)?;
         Ok(building)

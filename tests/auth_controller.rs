@@ -250,7 +250,7 @@ fn create_test_user(mut conn: DbConn) -> User {
     user_repo
         .create(
             &mut conn,
-            &NewUser {
+            NewUser {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),

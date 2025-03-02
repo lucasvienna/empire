@@ -11,7 +11,7 @@ use crate::{ErrorKind, Result};
 /// # Implementation Details
 /// Internally wraps a `String` and implements validation rules for usernames.
 /// Implements `diesel::AsExpression` for database compatibility and uses `Text` as the SQL type.
-#[derive(AsExpression, Debug)]
+#[derive(AsExpression, Debug, Clone, PartialEq, Eq)]
 #[diesel(sql_type = Text)]
 pub struct UserName(String);
 

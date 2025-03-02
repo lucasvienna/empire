@@ -62,7 +62,7 @@ impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
     }
 }
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = factions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Faction {
@@ -70,10 +70,16 @@ pub struct Faction {
     pub name: String,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = factions)]
 pub struct NewFaction {
     pub id: PK,
+    pub name: String,
+}
+
+#[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = factions)]
+pub struct UpdateFaction {
     pub name: String,
 }
 

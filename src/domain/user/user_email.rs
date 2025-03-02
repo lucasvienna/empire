@@ -6,7 +6,7 @@ use validator::ValidateEmail;
 
 use crate::{ErrorKind, Result};
 
-#[derive(AsExpression, Debug)]
+#[derive(AsExpression, Debug, Clone, PartialEq, Eq)]
 #[diesel(sql_type = Text)]
 pub struct UserEmail(String);
 
@@ -15,7 +15,7 @@ impl UserEmail {
         if s.validate_email() {
             Ok(Self(s))
         } else {
-            Err((ErrorKind::InvalidUsername, "Invalid username").into())
+            Err((ErrorKind::InvalidEmail, "Invalid email").into())
         }
     }
 }

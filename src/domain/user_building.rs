@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::schema::user_buildings;
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Debug)]
 #[diesel(table_name = user_buildings)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct UserBuilding {
@@ -16,11 +16,20 @@ pub struct UserBuilding {
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = user_buildings)]
-pub struct NewUserBuilding<'a> {
+pub struct NewUserBuilding {
     pub user_id: Uuid,
     pub building_id: i32,
     pub level: Option<i32>,
-    pub upgrade_time: Option<&'a str>,
+    pub upgrade_time: Option<String>,
+}
+
+#[derive(AsChangeset, Debug, Clone, PartialEq, Eq, Hash)]
+#[diesel(table_name = user_buildings)]
+pub struct UpdateUserBuilding {
+    pub user_id: Uuid,
+    pub building_id: i32,
+    pub level: Option<i32>,
+    pub upgrade_time: Option<String>,
 }
 
 pub type PK = Uuid;

@@ -1,14 +1,14 @@
 use diesel::prelude::*;
 
 use crate::domain::user::{self, User};
-use crate::schema::resources_accumulator;
+use crate::schema::user_accumulator;
 
 #[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq)]
-#[diesel(table_name = resources_accumulator)]
+#[diesel(table_name = user_accumulator)]
 #[diesel(primary_key(user_id))]
 #[diesel(belongs_to(User))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct ResourceAccumulator {
+pub struct UserAccumulator {
     pub user_id: user::PK,
     pub food: i32,
     pub wood: i32,

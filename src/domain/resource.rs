@@ -1,16 +1,27 @@
 use diesel::prelude::*;
 
 use crate::domain::user::{self, User};
-use crate::schema::resources;
+use crate::schema::user_resources;
 
 pub type PK = user::PK;
 
-#[derive(Queryable, Selectable, Identifiable, AsChangeset, Associations, Debug, PartialEq)]
-#[diesel(table_name = resources)]
-#[diesel(primary_key(user_id))]
+#[derive(
+    Queryable,
+    Selectable,
+    Identifiable,
+    AsChangeset,
+    Associations,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+)]
+#[diesel(table_name = user_resources, primary_key(user_id))]
 #[diesel(belongs_to(User))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Resource {
+pub struct UserResource {
     pub user_id: user::PK,
     pub food: i32,
     pub wood: i32,
@@ -22,8 +33,8 @@ pub struct Resource {
     pub gold_cap: i32,
 }
 
-#[derive(Debug, Insertable)]
-#[diesel(table_name = resources)]
+#[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = user_resources)]
 pub struct NewResource {
     pub user_id: user::PK,
     pub food: Option<i32>,
@@ -32,14 +43,11 @@ pub struct NewResource {
     pub gold: Option<i32>,
 }
 
-impl NewResource {
-    pub fn new(user_id: user::PK) -> NewResource {
-        NewResource {
-            user_id,
-            food: None,
-            wood: None,
-            stone: None,
-            gold: None,
-        }
-    }
+#[derive(AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = user_resources)]
+pub struct UpdateResource {
+    pub food: Option<i32>,
+    pub wood: Option<i32>,
+    pub stone: Option<i32>,
+    pub gold: Option<i32>,
 }

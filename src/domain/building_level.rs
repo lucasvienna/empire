@@ -17,12 +17,23 @@ pub struct BuildingLevel {
     pub req_gold: Option<i32>,
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = building_levels)]
-pub struct NewBuildingLevel<'a> {
+#[derive(Insertable, Identifiable, Debug)]
+#[diesel(table_name = building_levels, primary_key(building_id), check_for_backend(diesel::pg::Pg))]
+pub struct NewBuildingLevel {
     pub building_id: i32,
     pub level: i32,
-    pub upgrade_time: &'a str,
+    pub upgrade_time: String,
+    pub req_food: Option<i32>,
+    pub req_wood: Option<i32>,
+    pub req_stone: Option<i32>,
+    pub req_gold: Option<i32>,
+}
+
+#[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq)]
+#[diesel(table_name = building_levels, check_for_backend(diesel::pg::Pg))]
+pub struct UpdateBuildingLevel {
+    pub id: PK,
+    pub upgrade_time: Option<String>,
     pub req_food: Option<i32>,
     pub req_wood: Option<i32>,
     pub req_stone: Option<i32>,

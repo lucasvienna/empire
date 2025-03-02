@@ -133,9 +133,10 @@ async fn update() {
 
     let bearer = get_bearer(user.id);
     let body = UpdateUserPayload {
-        username: user.name,
+        username: None,
+        password: None,
         email: None,
-        faction: FactionCode::Human,
+        faction: Some(FactionCode::Human),
     };
     let response = client
         .put(format!("{}/users/{}", &app.address, user.id))
@@ -198,7 +199,7 @@ fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> User {
     user_repo
         .create(
             &mut conn,
-            &NewUser {
+            NewUser {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,

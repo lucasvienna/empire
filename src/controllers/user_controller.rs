@@ -12,7 +12,7 @@ use crate::db::Repository;
 use crate::domain::app_state::AppState;
 use crate::domain::faction::FactionCode;
 use crate::domain::user;
-use crate::domain::user::{NewUser, User};
+use crate::domain::user::{NewUser, UpdateUser, User};
 use crate::services::auth_service::hash_password;
 use crate::{Error, ErrorKind, Result};
 
@@ -49,9 +49,41 @@ impl TryFrom<NewUserPayload> for NewUser {
 /// Struct for updating user details
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateUserPayload {
-    pub username: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
     pub email: Option<String>,
-    pub faction: FactionCode,
+    pub faction: Option<FactionCode>,
+}
+
+impl TryFrom<UpdateUserPayload> for UpdateUser {
+    type Error = Error;
+
+    fn try_from(value: UpdateUserPayload) -> Result<Self, Self::Error> {
+        let name: Option<user::UserName> = match value.username {
+            None => None,
+            Some(username) => Some(user::UserName::parse(username)?),
+        };
+        let email: Option<user::UserEmail> = match value.email {
+            None => None,
+            Some(email) => Some(user::UserEmail::parse(email)?),
+        };
+        let pwd_hash = match value.password {
+            None => None,
+            Some(password) => {
+                let pwd_hash = hash_password(&password)
+                    .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
+                Some(pwd_hash)
+            }
+        };
+
+        let update = Self {
+            name,
+            email,
+            pwd_hash,
+            faction: value.faction,
+        };
+        Ok(update)
+    }
 }
 
 /// Struct for response data
@@ -128,7 +160,7 @@ async fn create_user(
         }
     };
 
-    let created_user = repo.create(&mut conn, &new_user).map_err(|err| {
+    let created_user = repo.create(&mut conn, new_user).map_err(|err| {
         error!("Failed to insert user: {:#?}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -149,30 +181,19 @@ async fn update_user(
 ) -> Result<impl IntoResponse, StatusCode> {
     let repo = UserRepository {};
 
-    let username = user::UserName::parse(payload.username).map_err(|_| StatusCode::BAD_REQUEST);
-    let name = username?.as_ref().to_string();
-    let email: Result<Option<user::UserEmail>, StatusCode> = match payload.email {
-        None => Ok(None),
-        Some(email) => Ok(Some(
-            user::UserEmail::parse(email).map_err(|_| StatusCode::BAD_REQUEST)?,
-        )),
+    let update: UpdateUser = match UpdateUser::try_from(payload) {
+        Ok(update) => update,
+        Err(err) => {
+            error!("Failed to parse user: {}", err);
+            return Err(StatusCode::BAD_REQUEST);
+        }
     };
-    let email = email?.map(|email| email.as_ref().to_string());
 
     let user = repo
         .get_by_id(&mut conn, &user_id)
         .map_err(|err| StatusCode::NOT_FOUND)?;
 
-    let user = User {
-        id: user_id,
-        name,
-        // FIXME: this isn't good, should not be required
-        pwd_hash: user.pwd_hash,
-        email,
-        faction: payload.faction,
-    };
-
-    let updated_user = repo.update(&mut conn, &user).map_err(|err| {
+    let updated_user = repo.update(&mut conn, &user_id, update).map_err(|err| {
         error!("Failed to update user: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;

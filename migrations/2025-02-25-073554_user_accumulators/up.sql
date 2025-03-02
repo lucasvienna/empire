@@ -1,4 +1,4 @@
-CREATE TABLE resources_accumulator
+CREATE TABLE user_accumulator
 (
     user_id UUID    NOT NULL,
     food    INTEGER NOT NULL DEFAULT 0,
@@ -10,19 +10,19 @@ CREATE TABLE resources_accumulator
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE OR REPLACE FUNCTION new_resource_accumulators_fn()
+CREATE OR REPLACE FUNCTION new_user_accumulators_fn()
     RETURNS TRIGGER
     LANGUAGE PLPGSQL
 AS
 $$
 BEGIN
-    INSERT INTO resources_accumulator (user_id) VALUES (NEW.id);
+    INSERT INTO user_accumulator (user_id) VALUES (NEW.id);
     RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER new_resource_accumulators_trigger
+CREATE TRIGGER new_user_accumulators_trigger
     AFTER INSERT
     ON users
     FOR EACH ROW
-EXECUTE FUNCTION new_resource_accumulators_fn();
+EXECUTE FUNCTION new_user_accumulators_fn();

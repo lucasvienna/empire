@@ -86,11 +86,11 @@ impl BuildingService {
             // construct building
             let usr_bld = self.usr_bld_repo.create(
                 connection,
-                &NewUserBuilding {
+                NewUserBuilding {
                     user_id: *usr_id,
                     building_id: *bld_id,
                     level: Some(0),
-                    upgrade_time: Some(bld_lvl.upgrade_time.as_str()),
+                    upgrade_time: Some(bld_lvl.upgrade_time),
                 },
             )?;
             info!("Building constructed: {:?}", usr_bld);

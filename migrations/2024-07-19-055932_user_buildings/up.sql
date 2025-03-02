@@ -62,7 +62,7 @@ BEGIN
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
-        UPDATE resources
+        UPDATE user_resources
         SET food_cap  = food_cap + new_caps.food_cap,
             wood_cap  = wood_cap + new_caps.wood_cap,
             stone_cap = stone_cap + new_caps.stone_cap,
@@ -84,7 +84,7 @@ BEGIN
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
-        UPDATE resources
+        UPDATE user_resources
         SET food_cap  = food_cap - old_caps.food_cap + new_caps.food_cap,
             wood_cap  = wood_cap - old_caps.wood_cap + new_caps.wood_cap,
             stone_cap = stone_cap - old_caps.stone_cap + new_caps.stone_cap,

@@ -1,4 +1,4 @@
-CREATE TABLE resources
+CREATE TABLE user_resources
 (
     user_id   UUID    NOT NULL,
     food      INTEGER NOT NULL DEFAULT 100,
@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION new_user_resources_fn()
 AS
 $$
 BEGIN
-    INSERT INTO resources (user_id) VALUES (NEW.id);
+    INSERT INTO user_resources (user_id) VALUES (NEW.id);
     RETURN NEW;
 END;
 $$;

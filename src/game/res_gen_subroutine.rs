@@ -31,7 +31,7 @@ pub static RES_GEN_QUERY: &str = "UPDATE resources_accumulator acc
 /// until the application shuts down or the `JoinHandle` is dropped.
 ///
 /// # Behavior
-/// - Updates the `resources` table every 60 seconds.
+/// - Updates the `resources` table every `TICK_RATE` seconds.
 /// - Increments the `food`, `wood`, `stone`, and `gold` columns for each user by their
 ///   respective resource generation rates stored in the `resource_generation` table.
 /// - Logs any errors encountered during the update operation.

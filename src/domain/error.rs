@@ -36,6 +36,7 @@ pub enum ErrorKind {
     // Packet Errors
     InvalidPacket,
     InvalidUsername,
+    InvalidEmail,
     InvalidPassword,
     InvalidToken,
     InvalidMessage,
@@ -88,6 +89,7 @@ impl From<ErrorKind> for StatusCode {
             // Packet Errors
             ErrorKind::InvalidPacket
             | ErrorKind::InvalidUsername
+            | ErrorKind::InvalidEmail
             | ErrorKind::InvalidPassword
             | ErrorKind::InvalidToken
             | ErrorKind::InvalidMessage

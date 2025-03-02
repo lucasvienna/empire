@@ -7,9 +7,9 @@ use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::DbConn;
-use crate::domain::resource::Resource;
+use crate::domain::resource::UserResource;
 use crate::domain::user;
-use crate::schema::{resources as rr, resources_accumulator as ra};
+use crate::schema::{user_accumulator as acc, user_resources as rsc};
 use crate::Result;
 
 #[derive(Debug)]
@@ -62,39 +62,39 @@ impl ResourceService {
     /// - The database query to calculate the collectible resource amounts fails.
     /// - The transaction to update both the accumulator and the resource storage fails.
     #[instrument(skip(self))]
-    pub fn collect_resources(&mut self, user_id: &user::PK) -> Result<Resource> {
-        let (food, wood, stone, gold) = ra::table
-            .inner_join(rr::table.on(ra::user_id.eq(rr::user_id)))
-            .filter(ra::user_id.eq(user_id))
+    pub fn collect_resources(&mut self, user_id: &user::PK) -> Result<UserResource> {
+        let (food, wood, stone, gold) = acc::table
+            .inner_join(rsc::table.on(acc::user_id.eq(rsc::user_id)))
+            .filter(acc::user_id.eq(user_id))
             .select((
-                least(ra::food, rr::food_cap - rr::food),
-                least(ra::wood, rr::wood_cap - rr::wood),
-                least(ra::stone, rr::stone_cap - rr::stone),
-                least(ra::gold, rr::gold_cap - rr::gold),
+                least(acc::food, rsc::food_cap - rsc::food),
+                least(acc::wood, rsc::wood_cap - rsc::wood),
+                least(acc::stone, rsc::stone_cap - rsc::stone),
+                least(acc::gold, rsc::gold_cap - rsc::gold),
             ))
             .first::<(i32, i32, i32, i32)>(&mut self.connection)?;
         debug!("Deltas: {:?}", (food, wood, stone, gold));
 
-        let res: Result<Resource> = self.connection.transaction(|conn| {
+        let res: Result<UserResource> = self.connection.transaction(|conn| {
             // drain accumulator first
-            let updated_rows = diesel::update(ra::table.filter(ra::user_id.eq(user_id)))
+            let updated_rows = diesel::update(acc::table.filter(acc::user_id.eq(user_id)))
                 .set((
-                    ra::food.eq(ra::food - food),
-                    ra::wood.eq(ra::wood - wood),
-                    ra::stone.eq(ra::stone - stone),
-                    ra::gold.eq(ra::gold - gold),
+                    acc::food.eq(acc::food - food),
+                    acc::wood.eq(acc::wood - wood),
+                    acc::stone.eq(acc::stone - stone),
+                    acc::gold.eq(acc::gold - gold),
                 ))
                 .execute(conn)?;
 
             // then increase resources
-            let res = diesel::update(rr::table.filter(rr::user_id.eq(user_id)))
+            let res = diesel::update(rsc::table.filter(rsc::user_id.eq(user_id)))
                 .set((
-                    rr::food.eq(rr::food + food),
-                    rr::wood.eq(rr::wood + wood),
-                    rr::stone.eq(rr::stone + stone),
-                    rr::gold.eq(rr::gold + gold),
+                    rsc::food.eq(rsc::food + food),
+                    rsc::wood.eq(rsc::wood + wood),
+                    rsc::stone.eq(rsc::stone + stone),
+                    rsc::gold.eq(rsc::gold + gold),
                 ))
-                .returning(Resource::as_returning())
+                .returning(UserResource::as_returning())
                 .get_result(conn)?;
 
             Ok(res)

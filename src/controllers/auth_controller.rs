@@ -103,7 +103,7 @@ async fn register(
         }
     }
 
-    let created_user = repo.create(&mut conn, &new_user).map_err(|err| {
+    let created_user = repo.create(&mut conn, new_user).map_err(|err| {
         error!("Failed to insert user: {:#?}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::INTERNAL_SERVER_ERROR, Json(body))

@@ -1,3 +1,0 @@
-DROP TABLE resources_accumulator;
-DROP TRIGGER new_resource_accumulators_trigger ON users;
-DROP FUNCTION new_resource_accumulators_fn;
