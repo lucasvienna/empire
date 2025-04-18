@@ -1,0 +1,102 @@
+# Enhanced `dependabot.yml` file with
+# configuration for npm, Docker, GitHub Actions, and Cargo package managers
+# Including groups for related Rust dependencies
+
+version: 2
+updates:
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    # Look for a `Dockerfile` in the `root` directory
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "daily"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    # Workflow files stored in the default location of `.github/workflows`
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: "/"
+    # Check the npm registry for updates every day (weekdays)
+    schedule:
+      interval: "daily"
+
+  # Enable version updates for Cargo (Rust)
+  - package-ecosystem: "cargo"
+    # Look for `Cargo.toml` files in the root directory
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 15
+    # Group related dependencies
+    groups:
+      axum:
+        patterns:
+          - "axum*"
+          - "tower*"
+          - "tower-http*"
+          - "http-body-util"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      diesel:
+        patterns:
+          - "diesel*"
+        update-types:
+          - "minor"
+          - "patch"
+          
+      serde:
+        patterns:
+          - "serde*"
+          - "serde-aux"
+        update-types:
+          - "minor"
+          - "patch"
+          
+      tokio:
+        patterns:
+          - "tokio*"
+        update-types:
+          - "minor"
+          - "patch"
+          
+      tracing:
+        patterns:
+          - "tracing*"
+        update-types:
+          - "minor"
+          - "patch"
+          
+      auth:
+        patterns:
+          - "argon2"
+          - "secrecy"
+          - "jsonwebtoken"
+          - "cookie"
+        update-types:
+          - "minor"
+          - "patch"
+          
+      dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+  # Enable version updates for Cargo in the rpc crate
+  - package-ecosystem: "cargo"
+    # Look for `Cargo.toml` in the rpc crate directory
+    directory: "/crates/rpc"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
