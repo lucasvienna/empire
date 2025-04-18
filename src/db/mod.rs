@@ -15,7 +15,7 @@ pub mod users;
 
 pub use connection::{DbConn, DbPool};
 
-pub trait Repository<Entity, NewEntity, UpdateEntity, PK = i32>
+pub trait Repository<Entity, NewEntity, UpdateEntity, PK = i32>: Send + Sync
 where
     UpdateEntity: AsChangeset,
 {
