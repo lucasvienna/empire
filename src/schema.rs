@@ -10,6 +10,10 @@ pub mod sql_types {
     pub struct ModTargetType;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "modifier_source_type"))]
+    pub struct ModifierSourceType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_type"))]
     pub struct ModifierType;
 
@@ -116,6 +120,24 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ModifierSourceType;
+
+    user_active_modifiers (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        modifier_id -> Uuid,
+        magnitude -> Numeric,
+        started_at -> Timestamptz,
+        expires_at -> Nullable<Timestamptz>,
+        source_type -> ModifierSourceType,
+        source_id -> Nullable<Uuid>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     user_buildings (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -163,6 +185,8 @@ diesel::joinable!(building_levels -> buildings (building_id));
 diesel::joinable!(building_resources -> buildings (building_id));
 diesel::joinable!(buildings -> factions (faction));
 diesel::joinable!(user_accumulator -> users (user_id));
+diesel::joinable!(user_active_modifiers -> modifiers (modifier_id));
+diesel::joinable!(user_active_modifiers -> users (user_id));
 diesel::joinable!(user_buildings -> buildings (building_id));
 diesel::joinable!(user_buildings -> users (user_id));
 diesel::joinable!(user_resources -> users (user_id));
@@ -175,6 +199,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     factions,
     modifiers,
     user_accumulator,
+    user_active_modifiers,
     user_buildings,
     user_resources,
     users,
