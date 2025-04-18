@@ -22,6 +22,8 @@ pub struct User {
     pub pwd_hash: String,
     pub email: Option<String>,
     pub faction: FactionCode,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 impl fmt::Debug for User {

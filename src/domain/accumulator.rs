@@ -14,4 +14,6 @@ pub struct UserAccumulator {
     pub wood: i32,
     pub stone: i32,
     pub gold: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }

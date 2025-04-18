@@ -13,6 +13,8 @@ pub struct Building {
     pub max_count: i32,
     pub faction: faction::PK,
     pub starter: bool,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]

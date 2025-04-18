@@ -81,9 +81,10 @@ impl BuildingLevelRepository {
             "Getting next upgrade for building {} at level {}",
             building_id, level
         );
+        let next_level: i32 = level + 1;
         let building = building_levels::table
             .filter(building_levels::building_id.eq(building_id))
-            .filter(building_levels::level.eq(level + 1))
+            .filter(building_levels::level.eq(&next_level))
             .first(connection)?;
         debug!("Next upgrade: {:?}", building);
         Ok(building)

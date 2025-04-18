@@ -88,6 +88,8 @@ pub struct UserResource {
     pub wood_cap: i32,
     pub stone_cap: i32,
     pub gold_cap: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 #[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

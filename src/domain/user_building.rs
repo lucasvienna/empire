@@ -12,6 +12,8 @@ pub struct UserBuilding {
     pub building_id: i32,
     pub level: i32,
     pub upgrade_time: Option<String>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 #[derive(Insertable, Debug)]

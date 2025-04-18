@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use diesel::query_builder::QueryId;
 use uuid::Uuid;
 
 use crate::schema::building_levels;
@@ -15,6 +16,8 @@ pub struct BuildingLevel {
     pub req_wood: Option<i32>,
     pub req_stone: Option<i32>,
     pub req_gold: Option<i32>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 #[derive(Insertable, Identifiable, Debug)]
