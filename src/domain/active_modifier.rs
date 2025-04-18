@@ -62,7 +62,10 @@ impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourc
             b"skill" => Ok(ModifierSourceType::Skill),
             b"research" => Ok(ModifierSourceType::Research),
             b"event" => Ok(ModifierSourceType::Event),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }

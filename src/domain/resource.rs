@@ -57,7 +57,10 @@ impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
             b"wood" => Ok(ResourceType::Wood),
             b"stone" => Ok(ResourceType::Stone),
             b"gold" => Ok(ResourceType::Gold),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }

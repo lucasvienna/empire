@@ -58,7 +58,10 @@ impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
             b"elf" => Ok(FactionCode::Elf),
             b"dwarf" => Ok(FactionCode::Dwarf),
             b"goblin" => Ok(FactionCode::Goblin),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }
