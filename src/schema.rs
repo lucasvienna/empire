@@ -4,6 +4,18 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "faction_code"))]
     pub struct FactionCode;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "mod_target_type"))]
+    pub struct ModTargetType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "modifier_type"))]
+    pub struct ModifierType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "resource_type"))]
+    pub struct ResourceType;
 }
 
 diesel::table! {
@@ -61,6 +73,25 @@ diesel::table! {
     factions (id) {
         id -> FactionCode,
         name -> Text,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ModifierType;
+    use super::sql_types::ModTargetType;
+    use super::sql_types::ResourceType;
+
+    modifiers (id) {
+        id -> Uuid,
+        name -> Text,
+        description -> Text,
+        modifier_type -> ModifierType,
+        target_type -> ModTargetType,
+        target_resource -> Nullable<ResourceType>,
+        stacking_group -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -126,6 +157,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     building_resources,
     buildings,
     factions,
+    modifiers,
     user_accumulator,
     user_buildings,
     user_resources,
