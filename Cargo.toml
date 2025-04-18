@@ -26,7 +26,7 @@ argon2 = "0.5.3"
 axum = { version = "0.8.3", features = ["query", "macros", "tokio", "http2"] }
 axum-extra = { version = "0.10.1", features = ["cookie", "tracing", "typed-header"] }
 axum-test = { version = "17.3.0", features = ["all"] }
-chrono = { version = "0.4.39", features = ["serde"] }
+chrono = { version = "0.4.40", features = ["serde"] }
 config = "0.15.11"
 cookie = { version = "0.18.1", features = ["secure"] }
 diesel = { version = "2.2.9", features = ["postgres", "r2d2", "extras"] }
