@@ -1,12 +1,14 @@
-use crate::domain::user::{self, User};
-use crate::schema::user_resources;
+use std::io::Write;
+
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+
+use crate::domain::user::{self, User};
+use crate::schema::user_resources;
 
 pub type PK = user::PK;
 
