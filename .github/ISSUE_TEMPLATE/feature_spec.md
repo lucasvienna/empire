@@ -9,11 +9,13 @@ assignees: 'lucasvienna'
 ## Scope
 A clear and concise description of what we're building.
 
-## Reasoning
-Why should we build this?
-
 ## Implementation
 How do we go about building it?
+
+## Technical Requirements
+- [ ] Technical requirement 1
+- [ ] Technical requirement 2
+- [ ] ...
 
 ## Acceptance Criteria
 - [ ] Criteria 1: Describe the first acceptance criterion here.
@@ -22,5 +24,9 @@ How do we go about building it?
 
 ## Definition of Done
 - [ ] All acceptance criteria are met.
-- [ ] Necessary tests are written and pass.
+- [ ] The necessary tests are written and pass.
 - [ ] Documentation is updated, if applicable.
+
+## Dependencies
+- Dependency 1
+- Dependency 2
