@@ -7,6 +7,7 @@ pub mod building_level;
 pub mod error;
 pub mod faction;
 pub mod modifier;
+pub mod modifier_history;
 pub mod resource;
 pub mod user;
 pub mod user_building;
