@@ -1,10 +1,20 @@
 use std::io::Write;
 
+use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
-use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
+use diesel::{
+    deserialize, serialize, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
+    Selectable,
+};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::domain::resource::ResourceType;
+use crate::schema::modifiers;
+
+pub type PK = Uuid;
 
 #[derive(
     AsExpression,
@@ -95,4 +105,31 @@ impl FromSql<crate::schema::sql_types::ModTargetType, Pg> for ModTargetType {
             _ => Err("Unrecognized enum variant".into()),
         }
     }
+}
+
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Modifier {
+    pub id: PK,
+    pub name: String,
+    pub description: String,
+    pub modifier_type: ModifierType,
+    pub target_type: ModTargetType,
+    pub target_resource: Option<ResourceType>,
+    pub stacking_group: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct NewModifier {
+    pub name: String,
+    pub description: String,
+    pub modifier_type: ModifierType,
+    pub target_type: ModTargetType,
+    pub target_resource: Option<ResourceType>,
+    pub stacking_group: Option<String>,
 }

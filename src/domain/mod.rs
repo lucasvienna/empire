@@ -1,4 +1,5 @@
 pub mod accumulator;
+pub mod active_modifier;
 pub mod app_state;
 pub mod auth;
 pub mod building;

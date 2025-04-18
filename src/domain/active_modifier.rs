@@ -1,0 +1,97 @@
+use std::io::Write;
+
+use bigdecimal::BigDecimal;
+use chrono::{DateTime, Utc};
+use diesel::deserialize::FromSql;
+use diesel::pg::{Pg, PgValue};
+use diesel::serialize::{IsNull, Output, ToSql};
+use diesel::{
+    deserialize, serialize, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
+    Selectable,
+};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::domain::{modifier, user};
+use crate::schema::user_active_modifiers;
+
+pub type PK = Uuid;
+
+#[derive(
+    AsExpression,
+    FromSqlRow,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+)]
+#[diesel(sql_type = crate::schema::sql_types::ModifierSourceType)]
+#[serde(rename_all = "lowercase")]
+pub enum ModifierSourceType {
+    Faction,
+    Item,
+    Skill,
+    Research,
+    Event,
+}
+
+impl ToSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourceType {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            ModifierSourceType::Faction => out.write_all(b"faction")?,
+            ModifierSourceType::Item => out.write_all(b"item")?,
+            ModifierSourceType::Skill => out.write_all(b"skill")?,
+            ModifierSourceType::Research => out.write_all(b"research")?,
+            ModifierSourceType::Event => out.write_all(b"event")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourceType {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"faction" => Ok(ModifierSourceType::Faction),
+            b"item" => Ok(ModifierSourceType::Item),
+            b"skill" => Ok(ModifierSourceType::Skill),
+            b"research" => Ok(ModifierSourceType::Research),
+            b"event" => Ok(ModifierSourceType::Event),
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
+}
+
+#[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = user_active_modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct UserActiveModifier {
+    pub id: PK,
+    pub user_id: user::PK,
+    pub modifier_id: modifier::PK,
+    pub magnitude: BigDecimal,
+    pub started_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub source_type: ModifierSourceType,
+    pub source_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = user_active_modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct NewUserActiveModifier {
+    pub user_id: Uuid,
+    pub modifier_id: Uuid,
+    pub magnitude: BigDecimal,
+    pub started_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub source_type: ModifierSourceType,
+    pub source_id: Option<Uuid>,
+}

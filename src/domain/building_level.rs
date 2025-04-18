@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use diesel::query_builder::QueryId;
 use uuid::Uuid;
 
 use crate::schema::building_levels;
