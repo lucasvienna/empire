@@ -842,7 +842,7 @@ dependencies = [
  "mime",
  "quickcheck",
  "quickcheck_macros",
- "rand 0.9.0",
+ "rand 0.9.1",
  "reqwest",
  "secrecy",
  "serde",
@@ -912,7 +912,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "206294f947d314ea224901e0b409c25465d1014ea0c3af27baaec861061a0426"
 dependencies = [
  "deunicode",
- "rand 0.9.0",
+ "rand 0.9.1",
 ]
 
 [[package]]
@@ -2017,7 +2017,7 @@ dependencies = [
  "hmac",
  "md-5",
  "memchr",
- "rand 0.9.0",
+ "rand 0.9.1",
  "sha2",
  "stringprep",
 ]
@@ -2222,13 +2222,12 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94"
+checksum = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.1",
- "zerocopy 0.8.20",
 ]
 
 [[package]]
@@ -2471,7 +2470,7 @@ dependencies = [
  "futures-util",
  "http",
  "mime",
- "rand 0.9.0",
+ "rand 0.9.1",
  "thiserror 2.0.11",
 ]
 
@@ -3423,7 +3422,7 @@ dependencies = [
  "http",
  "httparse",
  "log",
- "rand 0.9.0",
+ "rand 0.9.1",
  "rustls",
  "rustls-pki-types",
  "sha1",
@@ -3473,7 +3472,7 @@ checksum = "ab82fc73182c29b02e2926a6df32f2241dbadb5cfc111fd595515b3598f46bb3"
 dependencies = [
  "bytes",
  "postgres-types",
- "rand 0.9.0",
+ "rand 0.9.1",
  "serde",
  "uuid",
  "web-time",
@@ -3576,7 +3575,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c1f41ffb7cf259f1ecc2876861a17e7142e63ead296f671f81f6ae85903e0d6"
 dependencies = [
  "getrandom 0.3.1",
- "rand 0.9.0",
+ "rand 0.9.1",
  "serde",
  "uuid-macro-internal",
 ]
