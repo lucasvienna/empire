@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/migrations/2024-06-31-202715_ulid/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-054020_building_levels/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-054030_building_resources/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055918_users/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055924_user_resources/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2024-07-19-055932_user_buildings/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073554_user_accumulators/down.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073554_user_accumulators/up.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/migrations/2025-02-25-074658_resource_generation/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2023-01-01-202715_ulid/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-03-02-054020_building_levels/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-03-03-054030_building_resources/up.sql" dialect="PostgreSQL" />
@@ -18,6 +9,8 @@
     <file url="file://$PROJECT_DIR$/migrations/2024-04-05-055932_user_buildings/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-04-06-073554_user_accumulators/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-04-06-073554_user_accumulators/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-02-01-074658_resource_generation/up.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
