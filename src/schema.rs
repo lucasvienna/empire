@@ -6,16 +6,16 @@ pub mod sql_types {
     pub struct FactionCode;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "mod_target_type"))]
-    pub struct ModTargetType;
-
-    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_action_type"))]
     pub struct ModifierActionType;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_source_type"))]
     pub struct ModifierSourceType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "modifier_target"))]
+    pub struct ModifierTarget;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_type"))]
@@ -116,7 +116,7 @@ diesel::table! {
 diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::ModifierType;
-    use super::sql_types::ModTargetType;
+    use super::sql_types::ModifierTarget;
     use super::sql_types::ResourceType;
 
     modifiers (id) {
@@ -124,7 +124,7 @@ diesel::table! {
         name -> Text,
         description -> Text,
         modifier_type -> ModifierType,
-        target_type -> ModTargetType,
+        target_type -> ModifierTarget,
         target_resource -> Nullable<ResourceType>,
         stacking_group -> Nullable<Text>,
         created_at -> Timestamptz,

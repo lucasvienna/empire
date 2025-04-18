@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use empire::domain::modifier::{ModTargetType, ModifierType};
+use empire::domain::modifier::{ModifierTarget, ModifierType};
 use empire::domain::resource::ResourceType;
 use empire::schema::modifiers;
 
@@ -11,7 +11,7 @@ struct NewModifier {
     name: String,
     description: String,
     modifier_type: ModifierType,
-    target_type: ModTargetType,
+    target_type: ModifierTarget,
     target_resource: Option<ResourceType>,
     stacking_group: Option<String>,
 }
@@ -26,7 +26,7 @@ async fn test_valid_modifier_constraints() {
         name: "wood_boost".to_string(),
         description: "Increases wood production".to_string(),
         modifier_type: ModifierType::Percentage,
-        target_type: ModTargetType::Resource,
+        target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
     };
@@ -41,7 +41,7 @@ async fn test_valid_modifier_constraints() {
         name: "combat_boost".to_string(),
         description: "Increases combat effectiveness".to_string(),
         modifier_type: ModifierType::Multiplier,
-        target_type: ModTargetType::Combat,
+        target_type: ModifierTarget::Combat,
         target_resource: None,
         stacking_group: None,
     };
@@ -62,7 +62,7 @@ async fn test_invalid_modifier_constraints() {
         name: "invalid_resource".to_string(),
         description: "Invalid resource modifier".to_string(),
         modifier_type: ModifierType::Percentage,
-        target_type: ModTargetType::Resource,
+        target_type: ModifierTarget::Resource,
         target_resource: None,
         stacking_group: None,
     };
@@ -80,7 +80,7 @@ async fn test_invalid_modifier_constraints() {
         name: "invalid_combat".to_string(),
         description: "Invalid combat modifier".to_string(),
         modifier_type: ModifierType::Multiplier,
-        target_type: ModTargetType::Combat,
+        target_type: ModifierTarget::Combat,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
     };
@@ -103,7 +103,7 @@ async fn test_unique_name_constraint() {
         name: "unique_test".to_string(),
         description: "Test modifier".to_string(),
         modifier_type: ModifierType::Percentage,
-        target_type: ModTargetType::Resource,
+        target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Food),
         stacking_group: None,
     };
@@ -119,7 +119,7 @@ async fn test_unique_name_constraint() {
         name: "unique_test".to_string(),
         description: "Different description".to_string(),
         modifier_type: ModifierType::Flat,
-        target_type: ModTargetType::Resource,
+        target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
     };

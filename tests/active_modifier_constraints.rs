@@ -5,7 +5,7 @@ use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use empire::domain::active_modifier::{ModifierSourceType, NewUserActiveModifier};
 use empire::domain::faction::FactionCode;
-use empire::domain::modifier::{ModTargetType, ModifierType, NewModifier};
+use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::resource::ResourceType;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::schema::{modifiers, user_active_modifiers, users};
@@ -177,7 +177,7 @@ fn create_test_modifier(conn: &mut PgConnection) -> Uuid {
         name: format!("test_modifier_{}", Uuid::new_v4()),
         description: "Test modifier".to_string(),
         modifier_type: ModifierType::Percentage,
-        target_type: ModTargetType::Resource,
+        target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
     };
