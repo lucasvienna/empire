@@ -13,7 +13,7 @@ The classic race. Humans have bonuses to Wood and Cavalry.
 
 - +15% Wood production
 - +15% Cavalry training speed
-- +25% Cavalry DMG/DEF
+- +15% Cavalry DMG/DEF
 
 ### Orcs
 
