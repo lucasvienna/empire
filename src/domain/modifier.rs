@@ -55,7 +55,10 @@ impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
             b"percentage" => Ok(ModifierType::Percentage),
             b"flat" => Ok(ModifierType::Flat),
             b"multiplier" => Ok(ModifierType::Multiplier),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }
@@ -102,7 +105,10 @@ impl FromSql<crate::schema::sql_types::ModTargetType, Pg> for ModTargetType {
             b"combat" => Ok(ModTargetType::Combat),
             b"training" => Ok(ModTargetType::Training),
             b"research" => Ok(ModTargetType::Research),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }

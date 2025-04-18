@@ -59,7 +59,10 @@ impl FromSql<crate::schema::sql_types::ModifierActionType, Pg> for ModifierActio
             b"expired" => Ok(ModifierActionType::Expired),
             b"removed" => Ok(ModifierActionType::Removed),
             b"updated" => Ok(ModifierActionType::Updated),
-            _ => Err("Unrecognized enum variant".into()),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
         }
     }
 }
