@@ -1,3 +1,5 @@
+CREATE TYPE resource_type AS ENUM ('population', 'food', 'wood', 'stone', 'gold');
+
 CREATE TABLE user_resources
 (
     user_id   UUID    NOT NULL,
