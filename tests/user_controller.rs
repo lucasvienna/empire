@@ -126,7 +126,7 @@ async fn update() {
     assert_eq!(user.faction, FactionCode::Neutral, "Faction is not neutral");
 
     let usr_blds: Vec<UserBuilding> = user_buildings::table
-        .filter(user_buildings::user_id.eq(user.id))
+        .filter(user_buildings::user_id.eq(&user.id))
         .get_results(&mut conn)
         .expect("Failed to get user buildings");
     assert!(usr_blds.is_empty(), "User has buildings");
@@ -149,7 +149,7 @@ async fn update() {
     assert_eq!(response.status(), StatusCode::ACCEPTED);
 
     let usr_blds: Vec<UserBuilding> = user_buildings::table
-        .filter(user_buildings::user_id.eq(user.id))
+        .filter(user_buildings::user_id.eq(&user.id))
         .get_results(&mut conn)
         .expect("Failed to get user buildings");
     assert!(!usr_blds.is_empty(), "User has no buildings");
