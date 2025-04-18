@@ -54,7 +54,7 @@ jsonwebtoken = "9.3.1"
 
 [dev-dependencies]
 claims = "0.8"
-fake = "4.0"
+fake = "4.3"
 quickcheck = "1.0.3"
 quickcheck_macros = "1"
 rand = "0.9"
