@@ -26,7 +26,7 @@ CREATE TRIGGER set_modifiers_updated_at
     BEFORE UPDATE
     ON modifiers
     FOR EACH ROW
-EXECUTE PROCEDURE set_current_timestamp_updated_at();
+EXECUTE FUNCTION set_current_timestamp_updated_at();
 
 CREATE INDEX modifiers_target_idx ON modifiers (target_type, target_resource);
 

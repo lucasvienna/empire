@@ -1,19 +1,27 @@
 CREATE TABLE building_levels
 (
-    id           UUID    NOT NULL DEFAULT generate_ulid(),
-    building_id  INTEGER NOT NULL,
-    level        INTEGER NOT NULL,
-    upgrade_time TEXT    NOT NULL, -- "%H:%M:%S"
+    id           UUID        NOT NULL DEFAULT generate_ulid(),
+    building_id  INTEGER     NOT NULL,
+    level        INTEGER     NOT NULL,
+    upgrade_time TEXT        NOT NULL, -- "%H:%M:%S"
     req_food     INTEGER,
     req_wood     INTEGER,
     req_stone    INTEGER,
     req_gold     INTEGER,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     UNIQUE (building_id, level),
 
     PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE
 );
+
+CREATE TRIGGER set_building_levels_updated_at
+    BEFORE UPDATE
+    ON building_levels
+    FOR EACH ROW
+EXECUTE FUNCTION set_current_timestamp_updated_at();
 
 INSERT INTO building_levels (building_id, level, upgrade_time, req_food, req_wood, req_stone, req_gold)
 VALUES

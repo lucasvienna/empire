@@ -1,30 +1,37 @@
 CREATE TABLE building_resources
 (
-    id             UUID    NOT NULL DEFAULT generate_ulid(),
-    building_id    INTEGER NOT NULL,
-    building_level INTEGER NOT NULL,
+    id             UUID        NOT NULL DEFAULT generate_ulid(),
+    building_id    INTEGER     NOT NULL,
+    building_level INTEGER     NOT NULL,
     -- These are all in resources per hour
-    population     INTEGER NOT NULL DEFAULT 0,
-    food           INTEGER NOT NULL DEFAULT 0,
-    wood           INTEGER NOT NULL DEFAULT 0,
-    stone          INTEGER NOT NULL DEFAULT 0,
-    gold           INTEGER NOT NULL DEFAULT 0,
+    population     INTEGER     NOT NULL DEFAULT 0,
+    food           INTEGER     NOT NULL DEFAULT 0,
+    wood           INTEGER     NOT NULL DEFAULT 0,
+    stone          INTEGER     NOT NULL DEFAULT 0,
+    gold           INTEGER     NOT NULL DEFAULT 0,
     -- These are storage caps, per building
-    food_cap       INTEGER NOT NULL DEFAULT 0,
-    wood_cap       INTEGER NOT NULL DEFAULT 0,
-    stone_cap      INTEGER NOT NULL DEFAULT 0,
-    gold_cap       INTEGER NOT NULL DEFAULT 0,
+    food_cap       INTEGER     NOT NULL DEFAULT 0,
+    wood_cap       INTEGER     NOT NULL DEFAULT 0,
+    stone_cap      INTEGER     NOT NULL DEFAULT 0,
+    gold_cap       INTEGER     NOT NULL DEFAULT 0,
     -- These are accumulator caps, per building
-    food_acc_cap   INTEGER NOT NULL DEFAULT 0,
-    wood_acc_cap   INTEGER NOT NULL DEFAULT 0,
-    stone_acc_cap  INTEGER NOT NULL DEFAULT 0,
-    gold_acc_cap   INTEGER NOT NULL DEFAULT 0,
+    food_acc_cap   INTEGER     NOT NULL DEFAULT 0,
+    wood_acc_cap   INTEGER     NOT NULL DEFAULT 0,
+    stone_acc_cap  INTEGER     NOT NULL DEFAULT 0,
+    gold_acc_cap   INTEGER     NOT NULL DEFAULT 0,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id, building_level) REFERENCES building_levels (building_id, level)
 );
 
+CREATE TRIGGER set_building_resources_updated_at
+    BEFORE UPDATE
+    ON building_resources
+    FOR EACH ROW
+EXECUTE FUNCTION set_current_timestamp_updated_at();
 
 INSERT INTO building_resources (building_id, building_level, population, food_cap, wood_cap, stone_cap, gold_cap)
 VALUES

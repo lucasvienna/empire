@@ -28,6 +28,8 @@ diesel::table! {
         req_wood -> Nullable<Int4>,
         req_stone -> Nullable<Int4>,
         req_gold -> Nullable<Int4>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -49,6 +51,8 @@ diesel::table! {
         wood_acc_cap -> Int4,
         stone_acc_cap -> Int4,
         gold_acc_cap -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -63,6 +67,8 @@ diesel::table! {
         max_count -> Int4,
         faction -> FactionCode,
         starter -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -73,6 +79,8 @@ diesel::table! {
     factions (id) {
         id -> FactionCode,
         name -> Text,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -102,6 +110,8 @@ diesel::table! {
         wood -> Int4,
         stone -> Int4,
         gold -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -112,6 +122,8 @@ diesel::table! {
         building_id -> Int4,
         level -> Int4,
         upgrade_time -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -126,6 +138,8 @@ diesel::table! {
         wood_cap -> Int4,
         stone_cap -> Int4,
         gold_cap -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -140,6 +154,8 @@ diesel::table! {
         #[max_length = 254]
         email -> Nullable<Varchar>,
         faction -> FactionCode,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 

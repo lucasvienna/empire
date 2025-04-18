@@ -1,15 +1,23 @@
 CREATE TABLE buildings
 (
-    id        SERIAL       NOT NULL,
-    name      TEXT         NOT NULL,
-    max_level INTEGER      NOT NULL,
-    max_count INTEGER      NOT NULL,
-    faction   faction_code NOT NULL,
-    starter   BOOLEAN      NOT NULL DEFAULT FALSE,
+    id         SERIAL       NOT NULL,
+    name       TEXT         NOT NULL,
+    max_level  INTEGER      NOT NULL,
+    max_count  INTEGER      NOT NULL,
+    faction    faction_code NOT NULL,
+    starter    BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
     FOREIGN KEY (faction) REFERENCES factions (id)
 );
+
+CREATE TRIGGER set_buildings_updated_at
+    BEFORE UPDATE
+    ON buildings
+    FOR EACH ROW
+EXECUTE FUNCTION set_current_timestamp_updated_at();
 
 INSERT INTO buildings (name, max_level, max_count, faction, starter)
 VALUES ('Keep',           10, 1, 'human',   TRUE ), -- Humans

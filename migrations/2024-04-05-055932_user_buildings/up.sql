@@ -1,15 +1,23 @@
 CREATE TABLE user_buildings
 (
-    id           UUID    NOT NULL DEFAULT generate_ulid(),
-    user_id      UUID    NOT NULL,
-    building_id  INTEGER NOT NULL,
-    level        INTEGER NOT NULL DEFAULT 0,
-    upgrade_time TEXT    NULL     DEFAULT NULL, -- RFC 3339
+    id           UUID        NOT NULL DEFAULT generate_ulid(),
+    user_id      UUID        NOT NULL,
+    building_id  INTEGER     NOT NULL,
+    level        INTEGER     NOT NULL DEFAULT 0,
+    upgrade_time TEXT        NULL     DEFAULT NULL, -- RFC 3339
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id) REFERENCES buildings (id)
 );
+
+CREATE TRIGGER set_user_buildings_updated_at
+    BEFORE UPDATE
+    ON user_buildings
+    FOR EACH ROW
+EXECUTE PROCEDURE set_current_timestamp_updated_at();
 
 CREATE OR REPLACE FUNCTION new_user_buildings_fn()
     RETURNS TRIGGER
