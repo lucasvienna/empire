@@ -10,6 +10,15 @@
     <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073554_user_accumulators/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-02-25-073554_user_accumulators/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-02-25-074658_resource_generation/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2023-01-01-202715_ulid/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-03-02-054020_building_levels/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-03-03-054030_building_resources/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-04-01-055918_users/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-04-02-055924_user_resources/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-04-05-055932_user_buildings/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-04-06-073554_user_accumulators/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-04-06-073554_user_accumulators/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-01-074658_resource_generation/up.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>
