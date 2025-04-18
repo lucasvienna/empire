@@ -1,10 +1,12 @@
+use std::io::Write;
+
+use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 
 use crate::schema::factions;
 
@@ -67,8 +69,8 @@ impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
 pub struct Faction {
     pub id: PK,
     pub name: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
