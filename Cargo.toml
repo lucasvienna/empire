@@ -29,7 +29,7 @@ axum-test = { version = "17.2.0", features = ["all"] }
 chrono = { version = "0.4.39", features = ["serde"] }
 config = "0.15.7"
 cookie = { version = "0.18.1", features = ["secure"] }
-diesel = { version = "2.2.7", features = ["postgres", "r2d2", "extras"] }
+diesel = { version = "2.2.9", features = ["postgres", "r2d2", "extras"] }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"
 http-body-util = "0.1.2"
