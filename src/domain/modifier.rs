@@ -77,34 +77,34 @@ impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
     PartialOrd,
     Ord,
 )]
-#[diesel(sql_type = crate::schema::sql_types::ModTargetType)]
+#[diesel(sql_type = crate::schema::sql_types::ModifierTarget)]
 #[serde(rename_all = "lowercase")]
-pub enum ModTargetType {
+pub enum ModifierTarget {
     Resource,
     Combat,
     Training,
     Research,
 }
 
-impl ToSql<crate::schema::sql_types::ModTargetType, Pg> for ModTargetType {
+impl ToSql<crate::schema::sql_types::ModifierTarget, Pg> for ModifierTarget {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         match *self {
-            ModTargetType::Resource => out.write_all(b"resource")?,
-            ModTargetType::Combat => out.write_all(b"combat")?,
-            ModTargetType::Training => out.write_all(b"training")?,
-            ModTargetType::Research => out.write_all(b"research")?,
+            ModifierTarget::Resource => out.write_all(b"resource")?,
+            ModifierTarget::Combat => out.write_all(b"combat")?,
+            ModifierTarget::Training => out.write_all(b"training")?,
+            ModifierTarget::Research => out.write_all(b"research")?,
         }
         Ok(IsNull::No)
     }
 }
 
-impl FromSql<crate::schema::sql_types::ModTargetType, Pg> for ModTargetType {
+impl FromSql<crate::schema::sql_types::ModifierTarget, Pg> for ModifierTarget {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
         match bytes.as_bytes() {
-            b"resource" => Ok(ModTargetType::Resource),
-            b"combat" => Ok(ModTargetType::Combat),
-            b"training" => Ok(ModTargetType::Training),
-            b"research" => Ok(ModTargetType::Research),
+            b"resource" => Ok(ModifierTarget::Resource),
+            b"combat" => Ok(ModifierTarget::Combat),
+            b"training" => Ok(ModifierTarget::Training),
+            b"research" => Ok(ModifierTarget::Research),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
                 Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
@@ -121,7 +121,7 @@ pub struct Modifier {
     pub name: String,
     pub description: String,
     pub modifier_type: ModifierType,
-    pub target_type: ModTargetType,
+    pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_group: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -135,7 +135,7 @@ pub struct NewModifier {
     pub name: String,
     pub description: String,
     pub modifier_type: ModifierType,
-    pub target_type: ModTargetType,
+    pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_group: Option<String>,
 }
