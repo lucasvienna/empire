@@ -12,14 +12,6 @@ use crate::domain::user;
 use crate::schema::{user_accumulator as acc, user_resources as rsc};
 use crate::Result;
 
-#[derive(Debug)]
-pub enum ResourceType {
-    Food,
-    Wood,
-    Stone,
-    Gold,
-}
-
 pub struct ResourceService {
     connection: DbConn,
     res_repo: ResourcesRepository,
