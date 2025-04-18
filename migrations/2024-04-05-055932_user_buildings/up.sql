@@ -25,25 +25,13 @@ CREATE OR REPLACE FUNCTION new_user_buildings_fn()
 AS
 $$
 BEGIN
-    IF TG_OP = 'INSERT' THEN
-        INSERT INTO user_buildings (user_id, building_id, level)
-        SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
-        FROM buildings
-        WHERE NEW.faction <> 'neutral'
-          AND faction = NEW.faction
-          AND starter = TRUE;
-        RETURN NEW;
-    ELSIF TG_OP = 'UPDATE' THEN
-        IF OLD.faction <> NEW.faction AND NEW.faction <> 'neutral' THEN
-            INSERT INTO user_buildings (user_id, building_id, level)
-            SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
-            FROM buildings
-            WHERE NEW.faction <> 'neutral'
-              AND faction = NEW.faction
-              AND starter = TRUE;
-            RETURN NEW;
-        END IF;
-    END IF;
+    INSERT INTO user_buildings (user_id, building_id, level)
+    SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+    FROM buildings
+    WHERE faction = NEW.faction
+      AND starter = TRUE;
+
+    RETURN NEW;
 END;
 $$;
 
@@ -52,6 +40,34 @@ CREATE TRIGGER new_user_buildings_trigger
     ON users
     FOR EACH ROW
 EXECUTE FUNCTION new_user_buildings_fn();
+
+CREATE OR REPLACE FUNCTION change_user_buildings_fn()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+AS
+$$
+BEGIN
+    -- whenever a user switches from neutral to another faction,
+    -- insert all pre-built buildings for that faction
+    IF OLD.faction = 'neutral' THEN
+        INSERT INTO user_buildings (user_id, building_id, level)
+        SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+        FROM buildings
+        WHERE faction = NEW.faction
+          AND starter = TRUE;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER faction_select_user_buildings_trigger
+    AFTER UPDATE OF faction
+    ON users
+    FOR EACH ROW
+    WHEN (OLD.faction IS DISTINCT FROM NEW.faction)
+EXECUTE FUNCTION change_user_buildings_fn();
+
+-- TODO: add a trigger to switch buildings when the switch changes the faction
 
 CREATE OR REPLACE FUNCTION update_user_resources_caps_fn()
     RETURNS TRIGGER

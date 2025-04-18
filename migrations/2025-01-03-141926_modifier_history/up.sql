@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS modifier_history
     updated_at     TIMESTAMPTZ          NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (modifier_id) REFERENCES modifiers (id)
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (modifier_id) REFERENCES modifiers (id) ON DELETE CASCADE
 );
 
 -- Indexes for common queries
