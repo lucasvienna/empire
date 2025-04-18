@@ -1,9 +1,64 @@
-use diesel::prelude::*;
-
 use crate::domain::user::{self, User};
 use crate::schema::user_resources;
+use diesel::deserialize::FromSql;
+use diesel::pg::{Pg, PgValue};
+use diesel::prelude::*;
+use diesel::serialize::{IsNull, Output, ToSql};
+use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
+use serde::{Deserialize, Serialize};
+use std::io::Write;
 
 pub type PK = user::PK;
+
+#[derive(
+    AsExpression,
+    FromSqlRow,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+)]
+#[diesel(sql_type = crate::schema::sql_types::ResourceType)]
+#[serde(rename_all = "lowercase")]
+pub enum ResourceType {
+    Population,
+    Food,
+    Wood,
+    Stone,
+    Gold,
+}
+
+impl ToSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            ResourceType::Population => out.write_all(b"population")?,
+            ResourceType::Food => out.write_all(b"food")?,
+            ResourceType::Wood => out.write_all(b"wood")?,
+            ResourceType::Stone => out.write_all(b"stone")?,
+            ResourceType::Gold => out.write_all(b"gold")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"population" => Ok(ResourceType::Population),
+            b"food" => Ok(ResourceType::Food),
+            b"wood" => Ok(ResourceType::Wood),
+            b"stone" => Ok(ResourceType::Stone),
+            b"gold" => Ok(ResourceType::Gold),
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
+}
 
 #[derive(
     Queryable,
