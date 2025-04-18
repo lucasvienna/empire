@@ -1,9 +1,10 @@
+use std::io::Write;
+
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 
 #[derive(
     AsExpression,
