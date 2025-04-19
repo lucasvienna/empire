@@ -227,6 +227,46 @@ The system automatically manages faction-specific modifiers through database tri
 - **Faction Change Flow**: Atomic update of all related modifiers
 - **Resource Calculation**: Faction modifiers automatically included in modifier queries
 
+## Modifier Stacking Rules
+
+### Stacking Categories
+
+1. **Additive Stacking**
+    - Modifiers in the same stacking group sum their effects
+    - Primarily used for percentage-based modifiers from similar sources
+    - Example: Multiple "training_speed" bonuses are added together before being applied
+
+2. **Multiplicative Stacking**
+    - Modifiers from different stacking groups multiply with each other
+    - Used to combine effects from different source types
+    - Example: Faction bonus multiplied by temporary event bonus
+
+3. **Highest-Only Stacking**
+    - Only the highest magnitude modifier in the group takes effect
+    - Used for mutually exclusive effects
+    - Example: Multiple "combat_effectiveness" buffs from different equipment pieces
+
+### Stacking Group Guidelines
+
+- **Faction Modifiers**: `faction_{resource_type}`, `faction_combat`, etc.
+- **Temporary Buffs**: `temporary_{target_type}`
+- **Item Buffs**: `item_{item_type}_{target_type}`
+- **Equipment**: `equipment_{slot}_{target_type}`
+- **Research**: `research_{branch}_{target_type}`
+
+### Calculation Order
+
+1. Sum all additive modifiers within their stacking groups
+2. Apply highest-only selection within relevant groups
+3. Multiply results from different stacking groups
+4. Apply final caps and floors
+
+### Magnitude Limits
+
+- Individual modifier caps based on the source type
+- Global caps for combined effects (e.g. max 200% bonus)
+- Minimum effectiveness floor (e.g. cannot reduce below 50%)
+
 ## Additional Considerations for Negative Modifiers
 
 Since we're implementing a generic modifier system that can include both positive and negative effects:
