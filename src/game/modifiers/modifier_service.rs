@@ -1,7 +1,6 @@
-use uuid::Uuid;
-
 use crate::db::modifiers::ModifiersRepository;
 use crate::domain::modifier::active_modifier::{NewUserActiveModifier, UserActiveModifier};
+use crate::domain::user;
 use crate::game::modifiers::modifier_cache::ModifierCache;
 use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::Error;
@@ -13,6 +12,18 @@ pub struct ModifierService {
 }
 
 impl ModifierService {
+    pub fn new(
+        cache: ModifierCache,
+        scheduler: ModifierScheduler,
+        repository: ModifiersRepository,
+    ) -> Self {
+        Self {
+            cache,
+            scheduler,
+            repository,
+        }
+    }
+
     pub async fn apply_modifier(
         &mut self,
         new_modifier: NewUserActiveModifier,
@@ -23,7 +34,7 @@ impl ModifierService {
         todo!()
     }
 
-    pub async fn get_active_modifiers(&self, user_id: Uuid) -> Vec<UserActiveModifier> {
+    pub async fn get_active_modifiers(&self, user_id: user::PK) -> Vec<UserActiveModifier> {
         // Return cached or fetch from repository
         todo!()
     }

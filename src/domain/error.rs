@@ -33,7 +33,6 @@ enum ErrorRepr {
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {
     InternalError,
-    FailedToConnect,
 
     // Packet Errors
     InvalidPacket,
@@ -77,18 +76,39 @@ pub enum ErrorKind {
     InvalidPacketFaction,
     UnreadBytesError,
 
+    // Cache Errors
+    CacheError,
+    CacheExpiredError,
+    CacheMissError,
+    CacheWriteError,
+    CacheLimitError,
+
     // Service Errors
     ConstructBuildingError,
     UpgradeBuildingError,
     ConfirmUpgradeError,
 }
 
+impl Error {
+    pub fn new(kind: ErrorKind, desc: &'static str) -> Self {
+        Self {
+            repr: ErrorRepr::WithDescription(kind, desc),
+        }
+    }
+}
+
+impl Default for Error {
+    fn default() -> Self {
+        Self {
+            repr: ErrorRepr::WithDescription(ErrorKind::InternalError, "Internal error"),
+        }
+    }
+}
+
 impl From<ErrorKind> for StatusCode {
     fn from(value: ErrorKind) -> Self {
         match value {
-            ErrorKind::InternalError | ErrorKind::FailedToConnect => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            ErrorKind::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
 
             // Packet Errors
             ErrorKind::InvalidPacket
@@ -131,6 +151,13 @@ impl From<ErrorKind> for StatusCode {
             | ErrorKind::InvalidPacketLevel
             | ErrorKind::InvalidPacketFaction
             | ErrorKind::UnreadBytesError => StatusCode::BAD_REQUEST,
+
+            // Cache Errors
+            ErrorKind::CacheError
+            | ErrorKind::CacheExpiredError
+            | ErrorKind::CacheMissError
+            | ErrorKind::CacheWriteError
+            | ErrorKind::CacheLimitError => StatusCode::NOT_FOUND,
 
             // Service Errors
             ErrorKind::ConstructBuildingError
