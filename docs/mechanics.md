@@ -13,7 +13,7 @@ The classic race. Humans have bonuses to Wood and Cavalry.
 
 - +15% Wood production
 - +15% Cavalry training speed
-- +15% Cavalry DMG/DEF
+- +15% Cavalry ATK/DEF
 
 ### Orcs
 
@@ -24,7 +24,7 @@ Infantry.
 
 - +15% Stone production
 - +15% Infantry training speed
-- +15% Infantry DMG/DEF
+- +15% Infantry ATK/DEF
 
 ### Elves
 
@@ -35,7 +35,28 @@ to Food and Ranged units.
 
 - +15% Food production
 - +15% Ranged training speed
-- +15% Ranged DMG/DEF
+- +15% Ranged ATK/DEF
+
+### Dwarves
+
+Short and stocky, dwarves are a bit more militaristic and have bonuses to
+Gold and Artillery units.
+
+#### Passives
+
+- +15% Gold production
+- +15% Artillery training speed
+- +15% Artillery ATK/DEF
+
+### Goblins
+
+Tiny green-skinned devils, goblins are chaotic people with no specialisation.
+Instead, they have increased population and general training speed.
+
+#### Passives
+
+- +20% Population production
+- +20% General training speed
 
 ## Resources
 
@@ -135,7 +156,7 @@ five military buildings and one hybrid:
 - Walls
 
 The first four produce melee, ranged, mounted, and siege units. The
-Laboratory produces Mages (Shamans/Druids) and also doubles as its own
+Laboratory produces Mages (Shamans/Druids) and doubles as its own
 research building. The Wall defines the defensive capabilities of the
 Empire, and allows players to garrison part of their army.
 

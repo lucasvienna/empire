@@ -193,6 +193,40 @@ To illustrate how these architectural components would interact, consider this f
     - Optimize performance-critical paths
     - Implement advanced stacking rules
 
+## Faction Modifier Implementation
+
+### Trigger-Based Faction Modifier Management
+
+The system automatically manages faction-specific modifiers through database triggers, ensuring a consistent application of faction bonuses:
+
+1. **Trigger Events**
+    - On user creation (`AFTER INSERT`)
+    - On faction change (`AFTER UPDATE OF faction`)
+
+2. **Trigger Function Responsibilities**
+    - Removes existing faction modifiers when a user changes faction
+    - Applies new faction modifiers based on the user's faction
+    - Records all modifier changes in the history table
+    - Validates faction modifier existence (fails if no modifiers are found for a faction)
+
+3. **Modifier History Tracking**
+    - Records application of initial faction modifiers
+    - Tracks removal and application during faction changes
+    - Maintains audit trail with reasons for changes
+
+### Advantages of Trigger-Based Approach
+
+- **Data Consistency**: Ensures faction modifiers are always applied correctly
+- **Atomic Operations**: Changes to faction modifiers happen in the same transaction as faction changes
+- **Audit Trail**: Automatic tracking of all faction modifier changes
+- **Error Prevention**: Built-in validation prevents missing or incorrect faction modifier states
+
+### Integration Points
+
+- **User Creation Flow**: Automatic application of initial faction modifiers
+- **Faction Change Flow**: Atomic update of all related modifiers
+- **Resource Calculation**: Faction modifiers automatically included in modifier queries
+
 ## Additional Considerations for Negative Modifiers
 
 Since we're implementing a generic modifier system that can include both positive and negative effects:
