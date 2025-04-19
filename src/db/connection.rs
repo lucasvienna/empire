@@ -81,14 +81,14 @@ fn create_pool<S: Into<String>>(database_url: S) -> Result<DbPool> {
 /// Creates a new database pool with an optional pool size.
 fn create_pool_with_size<S: Into<String>>(
     database_url: S,
-    pool_size: Option<u32>,
+    pool_size: Option<usize>,
 ) -> Result<DbPool> {
     assert_ne!(pool_size, Some(0), "r2d2 pool size must be greater than 0");
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let builder = Pool::builder().test_on_check_out(true);
     let pool = match pool_size {
-        Some(size) => builder.max_size(size).build(manager)?,
+        Some(size) => builder.max_size(size as u32).build(manager)?,
         None => builder.build(manager)?,
     };
     debug!("Connection pool created: {:?}", pool.state());

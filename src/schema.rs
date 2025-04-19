@@ -6,6 +6,14 @@ pub mod sql_types {
     pub struct FactionCode;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "job_status"))]
+    pub struct JobStatus;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "job_type"))]
+    pub struct JobType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_action_type"))]
     pub struct ModifierActionType;
 
@@ -87,6 +95,29 @@ diesel::table! {
     factions (id) {
         id -> FactionCode,
         name -> Text,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::JobType;
+    use super::sql_types::JobStatus;
+
+    jobs (id) {
+        id -> Uuid,
+        job_type -> JobType,
+        status -> JobStatus,
+        payload -> Jsonb,
+        run_at -> Timestamptz,
+        last_error -> Nullable<Text>,
+        retries -> Int4,
+        max_retries -> Int4,
+        priority -> Int4,
+        timeout_seconds -> Int4,
+        locked_at -> Nullable<Timestamptz>,
+        locked_by -> Nullable<Text>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
@@ -224,6 +255,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     building_resources,
     buildings,
     factions,
+    jobs,
     modifier_history,
     modifiers,
     user_accumulator,

@@ -27,11 +27,13 @@ enum ErrorRepr {
     DbError(diesel::result::Error),
     R2d2Error(r2d2::Error),
     AnyhowError(anyhow::Error),
+    SerdeError(serde_json::Error),
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum ErrorKind {
     InternalError,
+    FailedToConnect,
 
     // Packet Errors
     InvalidPacket,
@@ -84,7 +86,9 @@ pub enum ErrorKind {
 impl From<ErrorKind> for StatusCode {
     fn from(value: ErrorKind) -> Self {
         match value {
-            ErrorKind::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorKind::InternalError | ErrorKind::FailedToConnect => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
 
             // Packet Errors
             ErrorKind::InvalidPacket
@@ -168,6 +172,14 @@ impl From<anyhow::Error> for Error {
     }
 }
 
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error {
+            repr: ErrorRepr::SerdeError(err),
+        }
+    }
+}
+
 impl From<config::ConfigError> for Error {
     fn from(err: config::ConfigError) -> Error {
         Error {
@@ -214,6 +226,7 @@ impl fmt::Display for Error {
             ErrorRepr::DbError(ref err) => err.fmt(f),
             ErrorRepr::R2d2Error(ref err) => err.fmt(f),
             ErrorRepr::AnyhowError(ref err) => err.fmt(f),
+            ErrorRepr::SerdeError(ref err) => err.fmt(f),
         }
     }
 }
@@ -234,6 +247,7 @@ impl IntoResponse for Error {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal Database error")
             }
             ErrorRepr::AnyhowError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
+            ErrorRepr::SerdeError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
         };
         let body = json!({"error": message});
         (status, Json(body)).into_response()

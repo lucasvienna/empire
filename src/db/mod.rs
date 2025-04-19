@@ -8,6 +8,7 @@ pub mod connection;
 pub mod extractor;
 pub mod factions;
 pub mod migrations;
+pub mod modifiers;
 pub mod resource_generation;
 pub mod resources;
 pub mod user_buildings;

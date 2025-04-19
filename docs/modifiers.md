@@ -11,11 +11,6 @@
 - **ModifierSource**: Enumeration of possible modifier origins
     - Faction passives, consumable items, skill tree nodes, research, events, guild effects
 
-- **ModifierDuration**: Models how long a modifier lasts
-    - Permanent (faction traits)
-    - Temporary with expiration (consumables, events)
-    - Conditional (active only when requirements are met)
-
 - **ModifierTarget**: What the modifier affects
     - Resource production, capacity, training speed, combat stats, etc.
 
@@ -266,6 +261,28 @@ The system automatically manages faction-specific modifiers through database tri
 - Individual modifier caps based on the source type
 - Global caps for combined effects (e.g. max 200% bonus)
 - Minimum effectiveness floor (e.g. cannot reduce below 50%)
+
+### Implementation Guidelines
+
+1. **Group Validation**
+    - Enforce group naming conventions
+    - Validate group compatibility with modifier types
+    - Check stack limits during modifier application
+
+2. **Performance Considerations**
+    - Cache calculated values until next modifier change
+    - Group modifiers by type for efficient calculation
+    - Pre-validate stacking rules on modifier creation
+
+3. **Error Handling**
+    - Reject invalid stacking attempts
+    - Log stacking rule violations
+    - Provide clear error messages for invalid combinations
+
+4. **Monitoring**
+    - Track highest achieved bonuses by type
+    - Monitor for unexpected stacking behaviour
+    - Alert on cap violations
 
 ## Additional Considerations for Negative Modifiers
 

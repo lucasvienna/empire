@@ -9,7 +9,7 @@ use tracing::{debug, error, info, instrument};
 use crate::db::DbConn;
 use crate::game::TICK_RATE;
 
-pub static RES_GEN_QUERY: &str = "UPDATE resources_accumulator acc
+pub static RES_GEN_QUERY: &str = "UPDATE user_accumulator acc
     SET food  = GREATEST(acc.food + rg.food / $1, rg.food_acc_cap),
         wood  = GREATEST(acc.wood + rg.wood / $1, rg.wood_acc_cap),
         stone = GREATEST(acc.stone + rg.stone / $1, rg.stone_acc_cap),

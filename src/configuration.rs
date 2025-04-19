@@ -28,7 +28,7 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub host: String,
     pub database_name: String,
-    pub pool_size: Option<u32>,
+    pub pool_size: Option<usize>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -36,6 +36,7 @@ pub struct ServerSettings {
     pub axum_host: Ipv4Addr,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub axum_port: u16,
+    pub workers: Option<usize>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

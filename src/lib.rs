@@ -8,6 +8,7 @@ pub mod custom_schema;
 pub mod db;
 pub mod domain;
 pub mod game;
+pub mod job_queue;
 pub mod net;
 pub mod schema;
 pub mod services;

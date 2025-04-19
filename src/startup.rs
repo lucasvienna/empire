@@ -1,3 +1,4 @@
+use std::thread::available_parallelism;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
@@ -6,6 +7,7 @@ use crate::configuration::Settings;
 use crate::db::connection::DbPool;
 use crate::domain::app_state::AppState;
 use crate::game::res_gen_subroutine::init_res_gen;
+use crate::job_queue::job_processor::WorkerPool;
 use crate::net::server;
 use crate::Result;
 
@@ -30,7 +32,15 @@ use crate::Result;
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
     let token = CancellationToken::new();
+    let app_state = AppState::new(pool.clone(), config.clone());
     let subroutines = start_subroutines(pool.clone(), token.clone());
+
+    let default_workers = available_parallelism()?.get();
+    let mut worker_pool = WorkerPool::new(app_state.job_queue.as_ref().clone());
+    worker_pool
+        .start(config.server.workers.unwrap_or(default_workers))
+        .await?;
+    let worker_monitor = shutdown_handler(token.clone(), worker_pool);
 
     let (listener, router) = server::init(AppState::new(pool, config)).await?;
 
@@ -40,7 +50,7 @@ pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
     let server = axum::serve(listener, router.into_make_service())
         .with_graceful_shutdown(shutdown_signal(token));
 
-    let (srv, _) = tokio::join!(server, subroutines);
+    let (srv, _, _) = tokio::join!(server, subroutines, worker_monitor);
     srv.map_err(|err| {
         warn!("Server error while shutting down: {:#?}", err);
         err.into()
@@ -118,4 +128,29 @@ async fn shutdown_signal(token: CancellationToken) {
     }
 
     info!("Shutting down...");
+}
+
+/// Handles the graceful shutdown process for the application's worker pool.
+///
+/// This function waits for a cancellation signal via the provided token and then initiates
+/// the shutdown sequence for the worker pool. It ensures that all workers complete their
+/// current tasks and terminate properly.
+///
+/// # Arguments
+///
+/// * `token` - A `CancellationToken` that signals when shutdown should begin
+/// * `worker_pool` - The `WorkerPool` instance that manages the application's background workers
+///
+/// # Behavior
+///
+/// The function will:
+/// 1. Wait for the cancellation token to be triggered
+/// 2. Attempt to shut down the worker pool gracefully
+/// 3. Log any errors that occur during the shutdown process
+async fn shutdown_handler(token: CancellationToken, mut worker_pool: WorkerPool) {
+    token.cancelled().await;
+    info!("Shutting down worker pool...");
+    if let Err(e) = worker_pool.shutdown().await {
+        warn!("Error shutting down worker pool: {}", e);
+    }
 }
