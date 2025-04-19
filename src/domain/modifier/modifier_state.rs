@@ -5,7 +5,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::domain::active_modifier::ModifierSourceType;
+use crate::domain::modifier::active_modifier::ModifierSourceType;
 
 /// Represents the current state of a modifier, including its magnitude and status.
 pub struct ModifierState {

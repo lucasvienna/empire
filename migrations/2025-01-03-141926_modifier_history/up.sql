@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS modifier_history
     modifier_id    UUID                 NOT NULL,
     action_type    modifier_action_type NOT NULL,
     occurred_at    TIMESTAMPTZ          NOT NULL DEFAULT now(),
-    magnitude      DECIMAL(10, 4)       NOT NULL,
+    magnitude      NUMERIC(10, 4)       NOT NULL,
     source_type    modifier_source_type NOT NULL,
     source_id      UUID                 NULL,
     previous_state JSONB                NULL, -- Stores previous state for updates

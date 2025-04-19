@@ -1,20 +1,12 @@
+use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
 use diesel::prelude::*;
-use empire::domain::modifier::{ModifierTarget, ModifierType};
+use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::resource::ResourceType;
 use empire::schema::modifiers;
 
 mod common;
-
-#[derive(Insertable)]
-#[diesel(table_name = modifiers)]
-struct NewModifier {
-    name: String,
-    description: String,
-    modifier_type: ModifierType,
-    target_type: ModifierTarget,
-    target_resource: Option<ResourceType>,
-    stacking_group: Option<String>,
-}
 
 #[tokio::test]
 async fn test_valid_modifier_constraints() {
@@ -26,6 +18,7 @@ async fn test_valid_modifier_constraints() {
         name: "wood_boost".to_string(),
         description: "Increases wood production".to_string(),
         modifier_type: ModifierType::Percentage,
+        magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
@@ -41,6 +34,7 @@ async fn test_valid_modifier_constraints() {
         name: "combat_boost".to_string(),
         description: "Increases combat effectiveness".to_string(),
         modifier_type: ModifierType::Multiplier,
+        magnitude: BigDecimal::from_str("1.5").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: None,
         stacking_group: None,
@@ -62,6 +56,7 @@ async fn test_invalid_modifier_constraints() {
         name: "invalid_resource".to_string(),
         description: "Invalid resource modifier".to_string(),
         modifier_type: ModifierType::Percentage,
+        magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: None,
         stacking_group: None,
@@ -80,6 +75,7 @@ async fn test_invalid_modifier_constraints() {
         name: "invalid_combat".to_string(),
         description: "Invalid combat modifier".to_string(),
         modifier_type: ModifierType::Multiplier,
+        magnitude: BigDecimal::from_str("1.25").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,
@@ -103,6 +99,7 @@ async fn test_unique_name_constraint() {
         name: "unique_test".to_string(),
         description: "Test modifier".to_string(),
         modifier_type: ModifierType::Percentage,
+        magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Food),
         stacking_group: None,
@@ -119,6 +116,7 @@ async fn test_unique_name_constraint() {
         name: "unique_test".to_string(),
         description: "Different description".to_string(),
         modifier_type: ModifierType::Flat,
+        magnitude: BigDecimal::from_str("50").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,

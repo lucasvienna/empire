@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS user_active_modifiers
     id          UUID                 NOT NULL DEFAULT generate_ulid(),
     user_id     UUID                 NOT NULL,
     modifier_id UUID                 NOT NULL,
-    magnitude   DECIMAL(10, 4)       NOT NULL,
     started_at  TIMESTAMPTZ          NOT NULL DEFAULT now(),
     expires_at  TIMESTAMPTZ          NULL,
     source_type modifier_source_type NOT NULL,

@@ -3,8 +3,8 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
-use empire::domain::active_modifier::{ModifierSourceType, NewUserActiveModifier};
 use empire::domain::faction::FactionCode;
+use empire::domain::modifier::active_modifier::{ModifierSourceType, NewUserActiveModifier};
 use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::resource::ResourceType;
 use empire::domain::user::{NewUser, User, UserName};
@@ -26,7 +26,6 @@ async fn test_timespan_validation() {
     let valid_modifier = NewUserActiveModifier {
         user_id,
         modifier_id,
-        magnitude: BigDecimal::from_str("1.5").unwrap(),
         started_at: None,
         expires_at: Some(Utc::now() + Duration::hours(1)),
         source_type: ModifierSourceType::Event,
@@ -42,7 +41,6 @@ async fn test_timespan_validation() {
     let invalid_modifier = NewUserActiveModifier {
         user_id,
         modifier_id,
-        magnitude: BigDecimal::from_str("1.5").unwrap(),
         started_at: None,
         expires_at: Some(Utc::now() - Duration::hours(1)),
         source_type: ModifierSourceType::Event,
@@ -61,7 +59,6 @@ async fn test_timespan_validation() {
     let no_expiry_modifier = NewUserActiveModifier {
         user_id,
         modifier_id,
-        magnitude: BigDecimal::from_str("1.5").unwrap(),
         started_at: None,
         expires_at: None,
         source_type: ModifierSourceType::Faction,
@@ -90,7 +87,6 @@ async fn test_cascade_deletion() {
     let active_modifier = NewUserActiveModifier {
         user_id,
         modifier_id,
-        magnitude: BigDecimal::from_str("1.5").unwrap(),
         started_at: None,
         expires_at: None,
         source_type: ModifierSourceType::Event,
@@ -125,7 +121,6 @@ async fn test_cascade_deletion() {
     let active_modifier = NewUserActiveModifier {
         user_id,
         modifier_id,
-        magnitude: BigDecimal::from_str("1.5").unwrap(),
         started_at: None,
         expires_at: None,
         source_type: ModifierSourceType::Event,
@@ -177,6 +172,7 @@ fn create_test_modifier(conn: &mut PgConnection) -> Uuid {
         name: format!("test_modifier_{}", Uuid::new_v4()),
         description: "Test modifier".to_string(),
         modifier_type: ModifierType::Percentage,
+        magnitude: BigDecimal::from_str("0.15").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
         stacking_group: None,

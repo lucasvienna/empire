@@ -1,5 +1,6 @@
 use std::io::Write;
 
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
@@ -14,6 +15,7 @@ use uuid::Uuid;
 use crate::domain::resource::ResourceType;
 use crate::schema::modifiers;
 
+pub mod active_modifier;
 pub mod modifier_history;
 pub mod modifier_state;
 
@@ -124,6 +126,7 @@ pub struct Modifier {
     pub name: String,
     pub description: String,
     pub modifier_type: ModifierType,
+    pub magnitude: BigDecimal,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_group: Option<String>,
@@ -138,6 +141,7 @@ pub struct NewModifier {
     pub name: String,
     pub description: String,
     pub modifier_type: ModifierType,
+    pub magnitude: BigDecimal,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_group: Option<String>,

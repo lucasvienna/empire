@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
-use crate::domain::active_modifier::ModifierSourceType;
+use crate::domain::modifier::active_modifier::ModifierSourceType;
 use crate::domain::{modifier, user};
 use crate::schema::modifier_history;
 

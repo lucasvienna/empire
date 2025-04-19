@@ -24,7 +24,7 @@ async fn test_faction_modifier_on_create() {
     let active_modifiers: Vec<(String, BigDecimal)> = user_active_modifiers::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&user_active_modifiers::modifier_id)))
         .filter(user_active_modifiers::user_id.eq(&user.id))
-        .select((modifiers::name, user_active_modifiers::magnitude))
+        .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();
 
@@ -99,7 +99,7 @@ async fn test_faction_change() {
     let active_modifiers: Vec<(String, BigDecimal)> = user_active_modifiers::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&user_active_modifiers::modifier_id)))
         .filter(user_active_modifiers::user_id.eq(&user.id))
-        .select((modifiers::name, user_active_modifiers::magnitude))
+        .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();
 

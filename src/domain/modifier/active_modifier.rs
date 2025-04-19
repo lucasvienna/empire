@@ -1,6 +1,5 @@
 use std::io::Write;
 
-use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
@@ -77,7 +76,6 @@ pub struct UserActiveModifier {
     pub id: PK,
     pub user_id: user::PK,
     pub modifier_id: modifier::PK,
-    pub magnitude: BigDecimal,
     pub started_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: ModifierSourceType,
@@ -92,7 +90,6 @@ pub struct UserActiveModifier {
 pub struct NewUserActiveModifier {
     pub user_id: Uuid,
     pub modifier_id: Uuid,
-    pub magnitude: BigDecimal,
     pub started_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: ModifierSourceType,
