@@ -5,7 +5,7 @@ use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::faction::FactionCode;
-use empire::domain::modifier_history::ModifierActionType;
+use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::schema::{modifier_history, modifiers, user_active_modifiers};
 use empire::services::auth_service::hash_password;

@@ -14,6 +14,9 @@ use uuid::Uuid;
 use crate::domain::resource::ResourceType;
 use crate::schema::modifiers;
 
+pub mod modifier_history;
+pub mod modifier_state;
+
 pub type PK = Uuid;
 
 #[derive(
