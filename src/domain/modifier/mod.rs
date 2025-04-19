@@ -6,8 +6,8 @@ use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{
-    deserialize, serialize, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
-    Selectable,
+    deserialize, serialize, AsChangeset, AsExpression, FromSqlRow, Identifiable, Insertable,
+    Queryable, Selectable,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -143,6 +143,20 @@ pub struct NewModifier {
     pub modifier_type: ModifierType,
     pub magnitude: BigDecimal,
     pub target_type: ModifierTarget,
+    pub target_resource: Option<ResourceType>,
+    pub stacking_group: Option<String>,
+}
+
+#[derive(AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct UpdateModifier {
+    pub id: PK,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub modifier_type: Option<ModifierType>,
+    pub magnitude: Option<BigDecimal>,
+    pub target_type: Option<ModifierTarget>,
     pub target_resource: Option<ResourceType>,
     pub stacking_group: Option<String>,
 }
