@@ -8,7 +8,7 @@ pub use user_email::UserEmail;
 pub use user_name::UserName;
 use uuid::Uuid;
 
-use crate::domain::faction::FactionCode;
+use crate::domain::factions::FactionCode;
 use crate::schema::users;
 
 /// User Primary Key

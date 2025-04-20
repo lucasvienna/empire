@@ -2,28 +2,28 @@ use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::error::Result;
-use crate::domain::faction::{Faction, NewFaction, UpdateFaction, PK as FactionKey};
-use crate::schema::factions::dsl::*;
+use crate::domain::factions::{Faction, FactionKey, NewFaction, UpdateFaction};
+use crate::schema::faction::dsl::*;
 
 pub struct FactionRepository {}
 
 impl Repository<Faction, NewFaction, UpdateFaction, FactionKey> for FactionRepository {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Faction>> {
-        let fac_list = factions.select(Faction::as_select()).load(connection)?;
+        let fac_list = faction.select(Faction::as_select()).load(connection)?;
         Ok(fac_list)
     }
 
     fn get_by_id(&self, connection: &mut DbConn, faction_id: &FactionKey) -> Result<Faction> {
-        let faction = factions.find(faction_id).first(connection)?;
-        Ok(faction)
+        let fac = faction.find(faction_id).first(connection)?;
+        Ok(fac)
     }
 
     fn create(&self, connection: &mut DbConn, entity: NewFaction) -> Result<Faction> {
-        let faction = diesel::insert_into(factions)
+        let new_faction = diesel::insert_into(faction)
             .values(entity)
             .returning(Faction::as_returning())
             .get_result(connection)?;
-        Ok(faction)
+        Ok(new_faction)
     }
 
     fn update(
@@ -32,14 +32,14 @@ impl Repository<Faction, NewFaction, UpdateFaction, FactionKey> for FactionRepos
         faction_id: &FactionKey,
         changeset: UpdateFaction,
     ) -> Result<Faction> {
-        let faction = diesel::update(factions.find(faction_id))
+        let updated_faction = diesel::update(faction.find(faction_id))
             .set(changeset)
             .get_result(connection)?;
-        Ok(faction)
+        Ok(updated_faction)
     }
 
     fn delete(&self, connection: &mut DbConn, faction_id: &FactionKey) -> Result<usize> {
-        let res = diesel::delete(factions.find(faction_id)).execute(connection)?;
-        Ok(res)
+        let rows_deleted = diesel::delete(faction.find(faction_id)).execute(connection)?;
+        Ok(rows_deleted)
     }
 }

@@ -10,7 +10,7 @@ use empire::controllers::{
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::{encode_token, Claims};
-use empire::domain::faction::FactionCode;
+use empire::domain::factions::FactionCode;
 use empire::domain::user;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::domain::user_building::UserBuilding;

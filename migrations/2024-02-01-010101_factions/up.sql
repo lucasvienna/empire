@@ -1,6 +1,6 @@
 CREATE TYPE faction_code AS ENUM ('neutral', 'human', 'orc', 'elf', 'dwarf', 'goblin');
 
-CREATE TABLE factions
+CREATE TABLE faction
 (
     id         faction_code NOT NULL,
     name       TEXT         NOT NULL,
@@ -10,13 +10,13 @@ CREATE TABLE factions
     PRIMARY KEY (id)
 );
 
-CREATE TRIGGER set_factions_updated_at
+CREATE TRIGGER set_faction_updated_at
     BEFORE UPDATE
-    ON factions
+    ON faction
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();
 
-INSERT INTO factions (id, name)
+INSERT INTO faction (id, name)
 VALUES ('neutral', 'Neutral'),
        ('human',   'Humans' ),
        ('orc',     'Orcs'   ),

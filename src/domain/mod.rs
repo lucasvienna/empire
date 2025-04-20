@@ -4,7 +4,7 @@ pub mod auth;
 pub mod building;
 pub mod building_level;
 pub mod error;
-pub mod faction;
+pub mod factions;
 pub mod jobs;
 pub mod modifier;
 pub mod resource;

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
-use empire::domain::faction::FactionCode;
+use empire::domain::factions::FactionCode;
 use empire::domain::modifier::active_modifier::{ModifierSourceType, NewActiveModifier};
 use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::resource::ResourceType;

@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-use crate::domain::faction;
+use crate::domain::factions;
 use crate::schema::buildings;
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, Hash)]
@@ -11,7 +11,7 @@ pub struct Building {
     pub name: String,
     pub max_level: i32,
     pub max_count: i32,
-    pub faction: faction::PK,
+    pub faction: factions::FactionKey,
     pub starter: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -23,7 +23,7 @@ pub struct NewBuilding {
     pub name: String,
     pub max_level: i32,
     pub max_count: i32,
-    pub faction: faction::PK,
+    pub faction: factions::FactionKey,
     pub starter: bool,
 }
 
@@ -33,7 +33,7 @@ pub struct UpdateBuilding {
     pub name: String,
     pub max_level: i32,
     pub max_count: i32,
-    pub faction: faction::PK,
+    pub faction: factions::FactionKey,
     pub starter: bool,
 }
 

@@ -10,7 +10,7 @@ use crate::db::extractor::DatabaseConnection;
 use crate::db::users::UserRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppState;
-use crate::domain::faction::FactionCode;
+use crate::domain::factions::FactionCode;
 use crate::domain::user;
 use crate::domain::user::{NewUser, UpdateUser, User};
 use crate::services::auth_service::hash_password;

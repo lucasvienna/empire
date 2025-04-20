@@ -10,7 +10,7 @@ CREATE TABLE buildings
     updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
-    FOREIGN KEY (faction) REFERENCES factions (id)
+    FOREIGN KEY (faction) REFERENCES faction (id)
 );
 
 CREATE TRIGGER set_buildings_updated_at

@@ -109,7 +109,7 @@ diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::FactionCode;
 
-    factions (id) {
+    faction (id) {
         id -> FactionCode,
         name -> Text,
         created_at -> Timestamptz,
@@ -241,21 +241,21 @@ diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> users (user_id));
 diesel::joinable!(building_levels -> buildings (building_id));
 diesel::joinable!(building_resources -> buildings (building_id));
-diesel::joinable!(buildings -> factions (faction));
+diesel::joinable!(buildings -> faction (faction));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> users (user_id));
 diesel::joinable!(user_accumulator -> users (user_id));
 diesel::joinable!(user_buildings -> buildings (building_id));
 diesel::joinable!(user_buildings -> users (user_id));
 diesel::joinable!(user_resources -> users (user_id));
-diesel::joinable!(users -> factions (faction));
+diesel::joinable!(users -> faction (faction));
 
 diesel::allow_tables_to_appear_in_same_query!(
     active_modifiers,
     building_levels,
     building_resources,
     buildings,
-    factions,
+    faction,
     job,
     modifier_history,
     modifiers,

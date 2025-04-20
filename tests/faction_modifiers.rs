@@ -4,7 +4,7 @@ use bigdecimal::BigDecimal;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
-use empire::domain::faction::FactionCode;
+use empire::domain::factions::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::schema::{active_modifiers, modifier_history, modifiers};

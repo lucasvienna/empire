@@ -5,7 +5,7 @@ use empire::controllers::{LoginPayload, RegisterPayload};
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::AuthBody;
-use empire::domain::faction::FactionCode;
+use empire::domain::factions::FactionCode;
 use empire::domain::user::{NewUser, User, UserEmail, UserName};
 use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;

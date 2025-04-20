@@ -8,7 +8,10 @@ use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
 
-use crate::schema::factions;
+use crate::schema::faction;
+
+/// Type alias for the primary key of factions, using FactionCode as the identifier.
+pub type FactionKey = FactionCode;
 
 #[derive(
     AsExpression,
@@ -26,7 +29,10 @@ use crate::schema::factions;
 )]
 #[diesel(sql_type = crate::schema::sql_types::FactionCode)]
 #[serde(rename_all = "lowercase")]
+/// Represents the available faction types in the game.
+/// Each variant corresponds to a distinct playable faction, except Neutral.
 pub enum FactionCode {
+    /// The neutral faction, which is the default faction for new players.
     Neutral,
     Human,
     Orc,
@@ -67,26 +73,34 @@ impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = factions)]
+#[diesel(table_name = faction)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+/// Represents a faction entity in the game with its properties.
 pub struct Faction {
-    pub id: PK,
+    /// Unique identifier of the faction using FactionCode
+    pub id: FactionKey,
+    /// Display name of the faction
     pub name: String,
+    /// Timestamp when the faction was created
     pub created_at: DateTime<Utc>,
+    /// Timestamp when the faction was last updated
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = factions)]
+#[diesel(table_name = faction)]
+/// Data structure for creating a new faction.
 pub struct NewFaction {
-    pub id: PK,
+    /// Unique identifier for the new faction
+    pub id: FactionKey,
+    /// Display name for the new faction
     pub name: String,
 }
 
 #[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = factions)]
+#[diesel(table_name = faction)]
+/// Data structure for updating an existing faction's properties.
 pub struct UpdateFaction {
+    /// New display name for the faction
     pub name: String,
 }
-
-pub type PK = FactionCode;

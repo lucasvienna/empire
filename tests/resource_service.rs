@@ -3,7 +3,7 @@ use diesel::update;
 use empire::db::users::UserRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::accumulator::UserAccumulator;
-use empire::domain::faction::FactionCode;
+use empire::domain::factions::FactionCode;
 use empire::domain::user::{NewUser, User, UserName};
 use empire::game::resource_service::ResourceService;
 use empire::schema::{user_accumulator as acc, user_resources as rsc};
