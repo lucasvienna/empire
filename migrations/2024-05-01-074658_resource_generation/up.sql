@@ -10,7 +10,7 @@ SELECT ub.user_id,
        SUM(br.stone_acc_cap) as stone_acc_cap,
        SUM(br.gold_acc_cap)  as gold_acc_cap
 FROM user_buildings ub
-         LEFT JOIN public.building_resources br
+         LEFT JOIN public.building_resource br
                    ON ub.building_id = br.building_id
                        AND ub.level = br.building_level
 GROUP BY ub.user_id;

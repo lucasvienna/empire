@@ -1,4 +1,4 @@
-CREATE TABLE building_resources
+CREATE TABLE building_resource
 (
     id             UUID        NOT NULL DEFAULT generate_ulid(),
     building_id    INTEGER     NOT NULL,
@@ -24,16 +24,16 @@ CREATE TABLE building_resources
 
     PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES building (id) ON DELETE CASCADE,
-    FOREIGN KEY (building_id, building_level) REFERENCES building_level (building_id, level)
+    FOREIGN KEY (building_id, building_level) REFERENCES building_level (building_id, level) ON DELETE CASCADE
 );
 
-CREATE TRIGGER set_building_resources_updated_at
+CREATE TRIGGER set_building_resource_updated_at
     BEFORE UPDATE
-    ON building_resources
+    ON building_resource
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();
 
-INSERT INTO building_resources (building_id, building_level, population, food_cap, wood_cap, stone_cap, gold_cap)
+INSERT INTO building_resource (building_id, building_level, population, food_cap, wood_cap, stone_cap, gold_cap)
 VALUES
 -- Keep
 (1,  0,  10,  240,    240,    160,    160   ), -- Keep 0: Food/Wood: 240; Stone/Gold: 160
@@ -84,7 +84,7 @@ VALUES
 ;
 
 -- Farm
-INSERT INTO building_resources (building_id, building_level, food, food_acc_cap)
+INSERT INTO building_resource (building_id, building_level, food, food_acc_cap)
 VALUES (3,  0,  120,  360  ), -- Farm 0: rate=120, capacity=360
        (3,  1,  240,  960  ), -- Farm 1: rate=240, capacity=960
        (3,  2,  360,  2160 ), -- Farm 2: rate=360, capacity=2160
@@ -110,7 +110,7 @@ VALUES (3,  0,  120,  360  ), -- Farm 0: rate=120, capacity=360
 ;
 
 -- Lumberyard
-INSERT INTO building_resources (building_id, building_level, wood, wood_acc_cap)
+INSERT INTO building_resource (building_id, building_level, wood, wood_acc_cap)
 VALUES (4,  0,  120,  360  ), -- Lumberyard 0: wood rate=120, wood capacity=360
        (4,  1,  240,  960  ), -- Lumberyard 1: wood rate=240, wood capacity=960
        (4,  2,  360,  2160 ), -- Lumberyard 2: wood rate=360, wood capacity=2160
@@ -136,7 +136,7 @@ VALUES (4,  0,  120,  360  ), -- Lumberyard 0: wood rate=120, wood capacity=360
 ;
 
 -- Quarry
-INSERT INTO building_resources (building_id, building_level, wood, wood_acc_cap)
+INSERT INTO building_resource (building_id, building_level, wood, wood_acc_cap)
 VALUES (5,  0,  80,   240  ), -- Quarry 0: stone rate=80,  stone capacity=240
        (5,  1,  160,  640  ), -- Quarry 1: stone rate=160, stone capacity=640
        (5,  2,  240,  1440 ), -- Quarry 2: stone rate=240, stone capacity=1440
@@ -162,7 +162,7 @@ VALUES (5,  0,  80,   240  ), -- Quarry 0: stone rate=80,  stone capacity=240
 ;
 
 -- Mine
-INSERT INTO building_resources (building_id, building_level, gold, gold_acc_cap)
+INSERT INTO building_resource (building_id, building_level, gold, gold_acc_cap)
 VALUES (6,  0,  80,   240  ), -- Mine 0: gold rate=80,  gold capacity=240
        (6,  1,  160,  640  ), -- Mine 1: gold rate=160, gold capacity=640
        (6,  2,  240,  1440 ), -- Mine 2: gold rate=240, gold capacity=1440

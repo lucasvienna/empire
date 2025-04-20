@@ -83,7 +83,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    building_resources (id) {
+    building_resource (id) {
         id -> Uuid,
         building_id -> Int4,
         building_level -> Int4,
@@ -241,7 +241,7 @@ diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> users (user_id));
 diesel::joinable!(building -> faction (faction));
 diesel::joinable!(building_level -> building (building_id));
-diesel::joinable!(building_resources -> building (building_id));
+diesel::joinable!(building_resource -> building (building_id));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> users (user_id));
 diesel::joinable!(user_accumulator -> users (user_id));
@@ -254,7 +254,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     active_modifiers,
     building,
     building_level,
-    building_resources,
+    building_resource,
     faction,
     job,
     modifier_history,

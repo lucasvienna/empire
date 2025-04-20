@@ -1,1 +1,1 @@
-DROP TABLE building_resources;
+DROP TABLE building_resource;

@@ -79,10 +79,10 @@ DECLARE
     new_caps RECORD;
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        -- Get the new caps from building_resources based on the building and level
+        -- Get the new caps from building_resource based on the building and level
         SELECT food_cap, wood_cap, stone_cap, gold_cap
         INTO new_caps
-        FROM building_resources
+        FROM building_resource
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
@@ -94,17 +94,17 @@ BEGIN
         WHERE user_id = NEW.user_id;
 
     ELSIF TG_OP = 'UPDATE' THEN
-        -- Get the previous cap values from building_resources
+        -- Get the previous cap values from building_resource
         SELECT food_cap, wood_cap, stone_cap, gold_cap
         INTO old_caps
-        FROM building_resources
+        FROM building_resource
         WHERE building_id = OLD.building_id
           AND building_level = OLD.level;
 
-        -- Get the updated cap values from building_resources
+        -- Get the updated cap values from building_resource
         SELECT food_cap, wood_cap, stone_cap, gold_cap
         INTO new_caps
-        FROM building_resources
+        FROM building_resource
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
