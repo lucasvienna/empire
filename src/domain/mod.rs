@@ -1,7 +1,7 @@
 pub mod accumulator;
 pub mod app_state;
 pub mod auth;
-pub mod building;
+pub mod buildings;
 pub mod building_level;
 pub mod error;
 pub mod factions;

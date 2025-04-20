@@ -52,6 +52,22 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::FactionCode;
+
+    building (id) {
+        id -> Int4,
+        name -> Text,
+        max_level -> Int4,
+        max_count -> Int4,
+        faction -> FactionCode,
+        starter -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     building_levels (id) {
         id -> Uuid,
         building_id -> Int4,
@@ -84,22 +100,6 @@ diesel::table! {
         wood_acc_cap -> Int4,
         stone_acc_cap -> Int4,
         gold_acc_cap -> Int4,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    use diesel::sql_types::*;
-    use super::sql_types::FactionCode;
-
-    buildings (id) {
-        id -> Int4,
-        name -> Text,
-        max_level -> Int4,
-        max_count -> Int4,
-        faction -> FactionCode,
-        starter -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
@@ -239,22 +239,22 @@ diesel::table! {
 
 diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> users (user_id));
-diesel::joinable!(building_levels -> buildings (building_id));
-diesel::joinable!(building_resources -> buildings (building_id));
-diesel::joinable!(buildings -> faction (faction));
+diesel::joinable!(building -> faction (faction));
+diesel::joinable!(building_levels -> building (building_id));
+diesel::joinable!(building_resources -> building (building_id));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> users (user_id));
 diesel::joinable!(user_accumulator -> users (user_id));
-diesel::joinable!(user_buildings -> buildings (building_id));
+diesel::joinable!(user_buildings -> building (building_id));
 diesel::joinable!(user_buildings -> users (user_id));
 diesel::joinable!(user_resources -> users (user_id));
 diesel::joinable!(users -> faction (faction));
 
 diesel::allow_tables_to_appear_in_same_query!(
     active_modifiers,
+    building,
     building_levels,
     building_resources,
-    buildings,
     faction,
     job,
     modifier_history,

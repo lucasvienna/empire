@@ -4,7 +4,7 @@ use tracing::debug;
 use crate::db::{DbConn, Repository};
 use crate::domain::building_level::{BuildingLevel, NewBuildingLevel, UpdateBuildingLevel};
 use crate::domain::error::Result;
-use crate::domain::{building, building_level};
+use crate::domain::{building_level, buildings};
 use crate::schema::building_levels;
 
 #[derive(Debug)]
@@ -61,7 +61,7 @@ impl BuildingLevelRepository {
     pub fn get_by_building_id(
         &self,
         connection: &mut DbConn,
-        building_id: &building::PK,
+        building_id: &buildings::BuildingKey,
     ) -> Result<Vec<BuildingLevel>> {
         debug!("Getting levels for building {}", building_id);
         let buildings = building_levels::table
@@ -74,7 +74,7 @@ impl BuildingLevelRepository {
     pub fn get_next_upgrade(
         &self,
         connection: &mut DbConn,
-        building_id: &building::PK,
+        building_id: &buildings::BuildingKey,
         level: &i32,
     ) -> Result<BuildingLevel> {
         debug!(

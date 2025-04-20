@@ -10,7 +10,7 @@ CREATE TABLE user_buildings
 
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (building_id) REFERENCES buildings (id)
+    FOREIGN KEY (building_id) REFERENCES building (id)
 );
 
 CREATE TRIGGER set_user_buildings_updated_at
@@ -27,7 +27,7 @@ $$
 BEGIN
     INSERT INTO user_buildings (user_id, building_id, level)
     SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
-    FROM buildings
+    FROM building
     WHERE faction = NEW.faction
       AND starter = TRUE;
 
@@ -52,7 +52,7 @@ BEGIN
     IF OLD.faction = 'neutral' THEN
         INSERT INTO user_buildings (user_id, building_id, level)
         SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
-        FROM buildings
+        FROM building
         WHERE faction = NEW.faction
           AND starter = TRUE;
     END IF;

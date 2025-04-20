@@ -23,7 +23,7 @@ CREATE TABLE building_resources
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
-    FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE,
+    FOREIGN KEY (building_id) REFERENCES building (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id, building_level) REFERENCES building_levels (building_id, level)
 );
 

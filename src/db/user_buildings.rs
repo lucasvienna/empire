@@ -2,11 +2,11 @@ use diesel::prelude::*;
 use tracing::info;
 
 use crate::db::{DbConn, Repository};
-use crate::domain::building::Building;
+use crate::domain::buildings::Building;
 use crate::domain::error::Result;
 use crate::domain::user_building::{NewUserBuilding, UpdateUserBuilding, UserBuilding};
-use crate::domain::{building, user, user_building};
-use crate::schema::{buildings, user_buildings};
+use crate::domain::{buildings, user, user_building};
+use crate::schema::{building, user_buildings};
 
 #[derive(Debug)]
 pub struct UserBuildingRepository {}
@@ -65,13 +65,13 @@ impl UserBuildingRepository {
         &self,
         connection: &mut DbConn,
         usr_id: &user::PK,
-        bld_id: &building::PK,
+        bld_id: &buildings::BuildingKey,
     ) -> Result<bool> {
         info!(
             "Checking if user {} can construct building: {}",
             usr_id, bld_id
         );
-        let bld = buildings::table
+        let bld = building::table
             .find(bld_id)
             .select(Building::as_select())
             .first(connection)?;
@@ -94,9 +94,9 @@ impl UserBuildingRepository {
         usr_bld_id: &user_building::PK,
     ) -> Result<UpgradeTuple> {
         let upgrade_tuple = user_buildings::table
-            .left_join(buildings::table)
+            .left_join(building::table)
             .filter(user_buildings::id.eq(usr_bld_id))
-            .select((UserBuilding::as_select(), buildings::max_level.nullable()))
+            .select((UserBuilding::as_select(), building::max_level.nullable()))
             .first::<UpgradeTuple>(connection)?;
         Ok(upgrade_tuple)
     }

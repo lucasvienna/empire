@@ -1,4 +1,4 @@
-CREATE TABLE buildings
+CREATE TABLE building
 (
     id         SERIAL       NOT NULL,
     name       TEXT         NOT NULL,
@@ -15,11 +15,11 @@ CREATE TABLE buildings
 
 CREATE TRIGGER set_buildings_updated_at
     BEFORE UPDATE
-    ON buildings
+    ON building
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();
 
-INSERT INTO buildings (name, max_level, max_count, faction, starter)
+INSERT INTO building (name, max_level, max_count, faction, starter)
 VALUES ('Keep',           10, 1, 'human',   TRUE ), -- Humans
        ('Warehouse',      10, 1, 'human',   FALSE), -- Humans
        ('Farm',           10, 4, 'human',   TRUE ), -- Humans

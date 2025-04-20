@@ -13,7 +13,7 @@ use crate::db::{DbConn, Repository};
 use crate::domain::building_level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
 use crate::domain::user_building::{NewUserBuilding, UserBuilding};
-use crate::domain::{building, user, user_building};
+use crate::domain::{buildings, user, user_building};
 
 pub struct BuildingService {
     connection: DbConn,
@@ -44,7 +44,7 @@ impl BuildingService {
     pub fn construct_building(
         &mut self,
         usr_id: &user::PK,
-        bld_id: &building::PK,
+        bld_id: &buildings::BuildingKey,
     ) -> Result<UserBuilding> {
         info!("Constructing building: {} for user: {}", bld_id, usr_id);
         let bld_lvl = self

@@ -14,7 +14,7 @@ CREATE TABLE building_levels
     UNIQUE (building_id, level),
 
     PRIMARY KEY (id),
-    FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE
+    FOREIGN KEY (building_id) REFERENCES building (id) ON DELETE CASCADE
 );
 
 CREATE TRIGGER set_building_levels_updated_at

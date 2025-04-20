@@ -1,1 +1,1 @@
-DROP TABLE buildings;
+DROP TABLE building;
