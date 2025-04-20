@@ -2,9 +2,9 @@ use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use serde::Serialize;
 use tokio::sync::broadcast;
-use uuid::Uuid;
 
 use crate::db::DbPool;
+use crate::domain::job;
 use crate::domain::job::{Job, JobStatus, JobType, NewJob};
 use crate::schema::jobs::dsl::jobs;
 use crate::schema::jobs::*;
@@ -38,7 +38,7 @@ impl JobQueue {
         job_payload: impl Serialize,
         job_priority: JobPriority,
         job_run_at: DateTime<Utc>,
-    ) -> Result<Uuid> {
+    ) -> Result<job::PK> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
         let pld = serde_json::to_value(job_payload)?;
 
@@ -97,7 +97,7 @@ impl JobQueue {
     }
 
     /// Marks a job as completed
-    pub async fn complete_job(&self, job_id: Uuid) -> Result<(), Error> {
+    pub async fn complete_job(&self, job_id: job::PK) -> Result<(), Error> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
 
         diesel::update(jobs.filter(id.eq(&job_id)))
@@ -112,7 +112,7 @@ impl JobQueue {
     }
 
     /// Marks a job as failed
-    pub async fn fail_job(&self, job_id: Uuid, error: impl AsRef<str>) -> Result<(), Error> {
+    pub async fn fail_job(&self, job_id: job::PK, error: impl AsRef<str>) -> Result<(), Error> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
 
         diesel::update(jobs)

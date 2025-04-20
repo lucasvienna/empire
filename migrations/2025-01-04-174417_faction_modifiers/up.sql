@@ -53,7 +53,7 @@ BEGIN
     -- Remove old faction modifiers if this is an UPDATE
     IF old_faction_code IS NOT NULL THEN
         DELETE
-        FROM user_active_modifiers
+        FROM active_modifiers
         WHERE user_id = OLD.id
           AND modifier_id IN (SELECT id FROM modifiers WHERE name LIKE old_faction_code || '_%')
           AND source_type = 'faction';
@@ -73,7 +73,7 @@ BEGIN
     END IF;
 
     -- Apply new faction modifiers
-    INSERT INTO user_active_modifiers (user_id, modifier_id, source_type)
+    INSERT INTO active_modifiers (user_id, modifier_id, source_type)
     SELECT NEW.id,
            m.id,
            'faction'

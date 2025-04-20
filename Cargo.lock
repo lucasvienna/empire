@@ -833,6 +833,7 @@ dependencies = [
  "mime",
  "quickcheck",
  "quickcheck_macros",
+ "r2d2",
  "rand 0.9.1",
  "reqwest",
  "secrecy",

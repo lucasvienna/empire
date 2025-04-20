@@ -7,7 +7,7 @@ use empire::db::{DbConn, Repository};
 use empire::domain::faction::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::user::{NewUser, User, UserName};
-use empire::schema::{modifier_history, modifiers, user_active_modifiers};
+use empire::schema::{active_modifiers, modifier_history, modifiers};
 use empire::services::auth_service::hash_password;
 
 mod common;
@@ -21,9 +21,9 @@ async fn test_faction_modifier_on_create() {
     let user = create_test_user(&mut conn, FactionCode::Human);
 
     // Verify active modifiers
-    let active_modifiers: Vec<(String, BigDecimal)> = user_active_modifiers::table
-        .inner_join(modifiers::table.on(modifiers::id.eq(&user_active_modifiers::modifier_id)))
-        .filter(user_active_modifiers::user_id.eq(&user.id))
+    let active_modifiers: Vec<(String, BigDecimal)> = active_modifiers::table
+        .inner_join(modifiers::table.on(modifiers::id.eq(&active_modifiers::modifier_id)))
+        .filter(active_modifiers::user_id.eq(&user.id))
         .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();
@@ -96,9 +96,9 @@ async fn test_faction_change() {
         .unwrap();
 
     // Verify active modifiers
-    let active_modifiers: Vec<(String, BigDecimal)> = user_active_modifiers::table
-        .inner_join(modifiers::table.on(modifiers::id.eq(&user_active_modifiers::modifier_id)))
-        .filter(user_active_modifiers::user_id.eq(&user.id))
+    let active_modifiers: Vec<(String, BigDecimal)> = active_modifiers::table
+        .inner_join(modifiers::table.on(modifiers::id.eq(&active_modifiers::modifier_id)))
+        .filter(active_modifiers::user_id.eq(&user.id))
         .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();

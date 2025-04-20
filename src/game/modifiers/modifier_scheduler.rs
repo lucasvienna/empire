@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::domain::job::JobType;
 use crate::domain::resource::ResourceType;
+use crate::domain::{job, modifier, user};
 use crate::job_queue::{JobPriority, JobQueue};
 use crate::Error;
 
@@ -36,10 +37,10 @@ impl ModifierScheduler {
     /// Schedule a job to expire a modifier at the specified time
     pub async fn schedule_expiration(
         &self,
-        modifier_id: Uuid,
-        user_id: Uuid,
+        modifier_id: modifier::PK,
+        user_id: user::PK,
         expires_at: DateTime<Utc>,
-    ) -> Result<Uuid, Error> {
+    ) -> Result<job::PK, Error> {
         let payload = ModifierJobPayload::ExpireModifier {
             modifier_id,
             user_id,
@@ -53,9 +54,9 @@ impl ModifierScheduler {
     /// Schedule an immediate recalculation of resources for a user
     pub async fn schedule_resource_recalculation(
         &self,
-        user_id: Uuid,
+        user_id: user::PK,
         resource_types: Vec<ResourceType>,
-    ) -> Result<Uuid, Error> {
+    ) -> Result<job::PK, Error> {
         let payload = ModifierJobPayload::RecalculateResources {
             user_id,
             resource_types,
@@ -74,9 +75,9 @@ impl ModifierScheduler {
     /// Schedule a cache update for a user's modifiers
     pub async fn schedule_cache_update(
         &self,
-        user_id: Uuid,
+        user_id: user::PK,
         run_at: DateTime<Utc>,
-    ) -> Result<Uuid, Error> {
+    ) -> Result<job::PK, Error> {
         let payload = ModifierJobPayload::UpdateModifierCache { user_id };
 
         self.job_queue
@@ -92,9 +93,9 @@ impl ModifierScheduler {
     /// Schedule multiple cache updates for a batch of users
     pub async fn schedule_batch_cache_update(
         &self,
-        user_ids: Vec<Uuid>,
+        user_ids: Vec<user::PK>,
         run_at: DateTime<Utc>,
-    ) -> Result<Vec<Uuid>, Error> {
+    ) -> Result<Vec<job::PK>, Error> {
         let mut job_ids = Vec::with_capacity(user_ids.len());
 
         for user_id in user_ids {

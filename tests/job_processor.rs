@@ -20,7 +20,7 @@ async fn test_worker_pool_lifecycle() {
     assert_eq!(worker_pool.worker_count(), 3);
 
     // Enqueue a test job
-    let job_id = worker_pool
+    let _job_id = worker_pool
         .queue
         .enqueue(
             JobType::Modifier,

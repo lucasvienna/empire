@@ -62,7 +62,7 @@
 
 - New database tables:
     - `modifiers`: Core modifier definitions
-    - `user_active_modifiers`: Modifiers currently active for users
+    - `active_modifiers`: Modifiers currently active for users
     - `modifier_history`: Record of past modifiers for analytics
 
 ### Cache Strategy

@@ -3,7 +3,6 @@ use std::{error, fmt, io};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use diesel::r2d2;
 use serde_json::json;
 
 pub type Result<T, E = Error> = anyhow::Result<T, E>;
@@ -25,7 +24,8 @@ enum ErrorRepr {
     WithDescriptionAndDetail(ErrorKind, &'static str, String),
     IoError(io::Error),
     DbError(diesel::result::Error),
-    R2d2Error(r2d2::Error),
+    DieselPoolError(diesel::r2d2::Error),
+    PoolError(r2d2::Error),
     AnyhowError(anyhow::Error),
     SerdeError(serde_json::Error),
 }
@@ -183,10 +183,18 @@ impl From<diesel::result::Error> for Error {
     }
 }
 
+impl From<diesel::r2d2::Error> for Error {
+    fn from(err: diesel::r2d2::Error) -> Error {
+        Error {
+            repr: ErrorRepr::DieselPoolError(err),
+        }
+    }
+}
+
 impl From<r2d2::Error> for Error {
     fn from(err: r2d2::Error) -> Error {
         Error {
-            repr: ErrorRepr::R2d2Error(err),
+            repr: ErrorRepr::PoolError(err),
         }
     }
 }
@@ -251,7 +259,8 @@ impl fmt::Display for Error {
             }
             ErrorRepr::IoError(ref err) => err.fmt(f),
             ErrorRepr::DbError(ref err) => err.fmt(f),
-            ErrorRepr::R2d2Error(ref err) => err.fmt(f),
+            ErrorRepr::DieselPoolError(ref err) => err.fmt(f),
+            ErrorRepr::PoolError(ref err) => err.fmt(f),
             ErrorRepr::AnyhowError(ref err) => err.fmt(f),
             ErrorRepr::SerdeError(ref err) => err.fmt(f),
         }
@@ -270,7 +279,7 @@ impl IntoResponse for Error {
             ErrorRepr::WithDescription(kind, desc) => (kind.into(), desc),
             ErrorRepr::WithDescriptionAndDetail(kind, desc, _) => (kind.into(), desc),
             ErrorRepr::IoError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal I/O error"),
-            ErrorRepr::DbError(_) | ErrorRepr::R2d2Error(_) => {
+            ErrorRepr::DbError(_) | ErrorRepr::DieselPoolError(_) | ErrorRepr::PoolError(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal Database error")
             }
             ErrorRepr::AnyhowError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),

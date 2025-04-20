@@ -4,6 +4,7 @@ use crate::db::{DbConn, Repository};
 use crate::domain::modifier::active_modifier::{
     ActiveModifier, NewActiveModifier, UpdateActiveModifier, PK as ActiveModifierKey,
 };
+use crate::domain::user;
 use crate::schema::active_modifiers::dsl::*;
 use crate::Result;
 
@@ -51,5 +52,18 @@ impl Repository<ActiveModifier, NewActiveModifier, UpdateActiveModifier, ActiveM
     fn delete(&self, connection: &mut DbConn, mod_id: &ActiveModifierKey) -> Result<usize> {
         let deleted_count = diesel::delete(active_modifiers.find(mod_id)).execute(connection)?;
         Ok(deleted_count)
+    }
+}
+
+impl ActiveModifiersRepository {
+    pub fn get_by_user_id(
+        &self,
+        connection: &mut DbConn,
+        usr_id: &user::PK,
+    ) -> Result<Vec<ActiveModifier>> {
+        let active_mods = active_modifiers
+            .filter(user_id.eq(usr_id))
+            .get_results(connection)?;
+        Ok(active_mods)
     }
 }
