@@ -1,6 +1,7 @@
 CREATE TABLE player_accumulator
 (
-    player_id    UUID        NOT NULL,
+    id         UUID        NOT NULL DEFAULT generate_ulid(),
+    player_id  UUID UNIQUE NOT NULL,
     food       INTEGER     NOT NULL DEFAULT 0,
     wood       INTEGER     NOT NULL DEFAULT 0,
     stone      INTEGER     NOT NULL DEFAULT 0,
@@ -8,7 +9,7 @@ CREATE TABLE player_accumulator
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    PRIMARY KEY (player_id),
+    PRIMARY KEY (id),
     FOREIGN KEY (player_id) REFERENCES player (id) ON DELETE CASCADE
 );
 

@@ -3,16 +3,19 @@ use tracing::debug;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::error::Result;
-use crate::domain::player::resource::{
-    self, NewPlayerResource, PlayerResource, UpdatePlayerResource,
-};
+use crate::domain::player::resource::{self, NewPlayerResource, PlayerResource, PlayerResourceKey, UpdatePlayerResource};
 use crate::schema::player_resource::dsl::*;
 
 #[derive(Debug)]
 pub struct ResourcesRepository {}
 
-impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, resource::PK>
-    for ResourcesRepository
+impl
+    Repository<
+        PlayerResource,
+        NewPlayerResource,
+        &UpdatePlayerResource,
+        PlayerResourceKey,
+    > for ResourcesRepository
 {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<PlayerResource>> {
         debug!("Getting all resources");
@@ -25,7 +28,7 @@ impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, resour
     fn get_by_id(
         &self,
         connection: &mut DbConn,
-        player_key: &resource::PK,
+        player_key: &PlayerResourceKey,
     ) -> Result<PlayerResource> {
         debug!("Getting resource by ID: {}", player_key);
         let resource = player_resource.find(player_key).first(connection)?;
@@ -59,9 +62,9 @@ impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, resour
         Ok(resource)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &resource::PK) -> Result<usize> {
-        debug!("Deleting resource: {}", id);
-        let res = diesel::delete(player_resource.find(id)).execute(connection)?;
+    fn delete(&self, connection: &mut DbConn, resource_key: &PlayerResourceKey) -> Result<usize> {
+        debug!("Deleting resource: {}", resource_key);
+        let res = diesel::delete(player_resource.find(resource_key)).execute(connection)?;
         debug!("Deleted resource: {}", res);
         Ok(res)
     }
@@ -74,7 +77,7 @@ impl ResourcesRepository {
     pub fn deduct(
         &self,
         connection: &mut DbConn,
-        player_key: &resource::PK,
+        player_key: &PlayerResourceKey,
         amounts: &Deduction,
     ) -> Result<PlayerResource> {
         debug!(

@@ -1,7 +1,7 @@
 CREATE TABLE player_building
 (
     id           UUID        NOT NULL DEFAULT generate_ulid(),
-    player_id      UUID        NOT NULL,
+    player_id    UUID        NOT NULL,
     building_id  INTEGER     NOT NULL,
     level        INTEGER     NOT NULL DEFAULT 0,
     upgrade_time TEXT        NULL     DEFAULT NULL, -- RFC 3339
@@ -12,6 +12,8 @@ CREATE TABLE player_building
     FOREIGN KEY (player_id) REFERENCES player (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id) REFERENCES building (id)
 );
+
+CREATE INDEX player_building_tupple_idx ON player_building (player_id, building_id);
 
 CREATE TRIGGER set_player_building_updated_at
     BEFORE UPDATE

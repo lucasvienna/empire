@@ -198,7 +198,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    player_accumulator (player_id) {
+    player_accumulator (id) {
+        id -> Uuid,
         player_id -> Uuid,
         food -> Int4,
         wood -> Int4,
@@ -222,7 +223,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    player_resource (player_id) {
+    player_resource (id) {
+        id -> Uuid,
         player_id -> Uuid,
         food -> Int4,
         wood -> Int4,
