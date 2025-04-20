@@ -10,7 +10,7 @@ use crate::db::buildings::BuildingRepository;
 use crate::db::resources::ResourcesRepository;
 use crate::db::user_buildings::UserBuildingRepository;
 use crate::db::{DbConn, Repository};
-use crate::domain::building_level::BuildingLevel;
+use crate::domain::building_levels::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
 use crate::domain::user_building::{NewUserBuilding, UserBuilding};
 use crate::domain::{buildings, user, user_building};

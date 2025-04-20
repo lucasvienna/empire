@@ -1,4 +1,4 @@
-CREATE TABLE building_levels
+CREATE TABLE building_level
 (
     id           UUID        NOT NULL DEFAULT generate_ulid(),
     building_id  INTEGER     NOT NULL,
@@ -19,11 +19,11 @@ CREATE TABLE building_levels
 
 CREATE TRIGGER set_building_levels_updated_at
     BEFORE UPDATE
-    ON building_levels
+    ON building_level
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();
 
-INSERT INTO building_levels (building_id, level, upgrade_time, req_food, req_wood, req_stone, req_gold)
+INSERT INTO building_level (building_id, level, upgrade_time, req_food, req_wood, req_stone, req_gold)
 VALUES
 -- 1-10: Humans --
 -- Keep

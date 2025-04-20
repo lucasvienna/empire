@@ -1,1 +1,1 @@
-DROP TABLE building_levels;
+DROP TABLE building_level;

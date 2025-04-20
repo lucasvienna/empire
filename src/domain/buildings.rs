@@ -37,14 +37,14 @@ pub struct NewBuilding {
 }
 
 /// Data transfer object for updating an existing building
-#[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = building)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct UpdateBuilding {
+pub struct UpdateBuilding { // TODO: make all of these optional
+    pub id: BuildingKey,
     pub name: String,
     pub max_level: i32,
     pub max_count: i32,
     pub faction: factions::FactionKey,
     pub starter: bool,
 }
-

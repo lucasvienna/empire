@@ -24,7 +24,7 @@ CREATE TABLE building_resources
 
     PRIMARY KEY (id),
     FOREIGN KEY (building_id) REFERENCES building (id) ON DELETE CASCADE,
-    FOREIGN KEY (building_id, building_level) REFERENCES building_levels (building_id, level)
+    FOREIGN KEY (building_id, building_level) REFERENCES building_level (building_id, level)
 );
 
 CREATE TRIGGER set_building_resources_updated_at
