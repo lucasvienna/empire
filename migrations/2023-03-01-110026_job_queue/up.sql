@@ -1,7 +1,7 @@
 CREATE TYPE job_status AS ENUM ('pending', 'in_progress', 'completed', 'failed', 'cancelled');
 CREATE TYPE job_type AS ENUM ('modifier', 'building', 'resource');
 
-CREATE TABLE IF NOT EXISTS jobs
+CREATE TABLE IF NOT EXISTS job
 (
     id              UUID        NOT NULL DEFAULT generate_ulid(),
     job_type        job_type    NOT NULL,
@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS jobs
     PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_jobs_status_run_at ON jobs (status, run_at) WHERE status = 'pending';
-CREATE INDEX idx_jobs_locked_by ON jobs (locked_by) WHERE locked_by IS NOT NULL;
+CREATE INDEX idx_jobs_status_run_at ON job (status, run_at) WHERE status = 'pending';
+CREATE INDEX idx_jobs_locked_by ON job (locked_by) WHERE locked_by IS NOT NULL;

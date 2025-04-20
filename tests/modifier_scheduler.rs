@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use chrono::{Duration, DurationRound, TimeDelta, Utc};
 use diesel::{QueryDsl, RunQueryDsl};
-use empire::domain::job::{Job, JobStatus, JobType};
+use empire::domain::jobs::{Job, JobStatus, JobType};
 use empire::game::modifiers::modifier_scheduler::{ModifierJobPayload, ModifierScheduler};
 use empire::job_queue::JobQueue;
-use empire::schema::jobs;
+use empire::schema::job;
 use uuid::Uuid;
 
 mod common;
@@ -27,7 +27,7 @@ async fn test_schedule_expiration() {
         .unwrap();
 
     // Verify the job was created with correct parameters
-    let job = jobs::table
+    let job = job::table
         .find(job_id)
         .first::<Job>(&mut connection)
         .unwrap();

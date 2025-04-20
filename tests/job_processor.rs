@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use chrono::Utc;
-use empire::domain::job::JobType;
+use empire::domain::jobs::JobType;
 use empire::job_queue::job_processor::WorkerPool;
 use empire::job_queue::{JobPriority, JobQueue};
 use serde_json::json;

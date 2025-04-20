@@ -122,7 +122,7 @@ diesel::table! {
     use super::sql_types::JobType;
     use super::sql_types::JobStatus;
 
-    jobs (id) {
+    job (id) {
         id -> Uuid,
         job_type -> JobType,
         status -> JobStatus,
@@ -256,7 +256,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     building_resources,
     buildings,
     factions,
-    jobs,
+    job,
     modifier_history,
     modifiers,
     user_accumulator,

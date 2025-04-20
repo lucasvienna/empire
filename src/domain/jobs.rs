@@ -9,9 +9,10 @@ use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::jobs;
+use crate::schema::job;
 
-pub type PK = Uuid;
+/// Unique identifier type for jobs, implemented as a UUID
+pub type JobKey = Uuid;
 
 #[derive(
     AsExpression,
@@ -29,9 +30,13 @@ pub type PK = Uuid;
 )]
 #[diesel(sql_type = crate::schema::sql_types::JobType)]
 #[serde(rename_all = "lowercase")]
+/// Represents different types of background jobs that can be processed by the system
 pub enum JobType {
+    /// Jobs that handle modifier-related tasks like applying or removing effects
     Modifier,
+    /// Jobs related to building construction, upgrade or maintenance
     Building,
+    /// Jobs for resource collection, production or distribution
     Resource,
 }
 
@@ -76,11 +81,17 @@ impl FromSql<crate::schema::sql_types::JobType, Pg> for JobType {
 )]
 #[diesel(sql_type = crate::schema::sql_types::JobStatus)]
 #[serde(rename_all = "lowercase")]
+/// Represents the current state of a background job
 pub enum JobStatus {
+    /// Job is queued and waiting to be processed
     Pending,
+    /// A worker is currently processing Job
     InProgress,
+    /// Job has finished processing successfully
     Completed,
+    /// Job encountered an error during processing
     Failed,
+    /// Job was manually cancelled or terminated
     Cancelled,
 }
 
@@ -114,10 +125,12 @@ impl FromSql<crate::schema::sql_types::JobStatus, Pg> for JobStatus {
 }
 
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq)]
-#[diesel(table_name = jobs)]
+#[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+/// Represents a background job that can be queued and processed asynchronously
+/// by workers, with support for retries, priorities, and locking mechanisms
 pub struct Job {
-    pub id: PK,
+    pub id: JobKey,
     pub job_type: JobType,
     pub status: JobStatus,
     pub payload: serde_json::Value,
@@ -134,8 +147,9 @@ pub struct Job {
 }
 
 #[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq)]
-#[diesel(table_name = jobs)]
+#[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+/// Represents data required to create a new background job entry in the queue system
 pub struct NewJob {
     pub job_type: JobType,
     pub status: JobStatus,
@@ -148,10 +162,11 @@ pub struct NewJob {
 }
 
 #[derive(AsChangeset, Debug, Clone, PartialEq, Eq)]
-#[diesel(table_name = jobs)]
+#[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+/// Represents the fields that can be updated for an existing job in the queue system
 pub struct UpdateJob {
-    pub id: PK,
+    pub id: JobKey,
     pub job_type: Option<JobType>,
     pub status: Option<JobStatus>,
     pub payload: Option<serde_json::Value>,

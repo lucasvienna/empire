@@ -4,10 +4,9 @@ use serde::Serialize;
 use tokio::sync::broadcast;
 
 use crate::db::DbPool;
-use crate::domain::job;
-use crate::domain::job::{Job, JobStatus, JobType, NewJob};
-use crate::schema::jobs::dsl::jobs;
-use crate::schema::jobs::*;
+use crate::domain::jobs::{Job, JobKey, JobStatus, JobType, NewJob};
+use crate::schema::job::dsl::job;
+use crate::schema::job::*;
 use crate::{Error, ErrorKind, Result};
 
 pub mod job_processor;
@@ -38,7 +37,7 @@ impl JobQueue {
         job_payload: impl Serialize,
         job_priority: JobPriority,
         job_run_at: DateTime<Utc>,
-    ) -> Result<job::PK> {
+    ) -> Result<JobKey> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
         let pld = serde_json::to_value(job_payload)?;
 
@@ -53,7 +52,7 @@ impl JobQueue {
             timeout_seconds: 300,
         };
 
-        let job_id = diesel::insert_into(jobs)
+        let job_id = diesel::insert_into(job)
             .values(&new_job)
             .returning(id)
             .get_result(&mut conn)?;
@@ -65,10 +64,10 @@ impl JobQueue {
     pub async fn get_next_job(&self, worker_id: &str) -> Result<Option<Job>, Error> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
 
-        let job: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>, Error> {
+        let next: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>, Error> {
             let now = Utc::now();
             // First, select the job we want to process
-            let next_job: Option<Job> = jobs
+            let next_job: Option<Job> = job
                 .filter(status.eq(&JobStatus::Pending))
                 .filter(run_at.le(now + Duration::seconds(1))) // avoid skipping jobs queued for this whole second + some random millis
                 .filter(locked_at.is_null())
@@ -78,10 +77,10 @@ impl JobQueue {
                 .get_result(conn)
                 .optional()?;
 
-            if let Some(job) = &next_job {
+            if let Some(next) = &next_job {
                 // Then lock this specific job
-                diesel::update(jobs)
-                    .filter(id.eq(job.id))
+                diesel::update(job)
+                    .filter(id.eq(next.id))
                     .set((
                         status.eq(JobStatus::InProgress),
                         locked_at.eq(Some(now)),
@@ -93,14 +92,14 @@ impl JobQueue {
             Ok(next_job)
         })?;
 
-        Ok(job)
+        Ok(next)
     }
 
     /// Marks a job as completed
-    pub async fn complete_job(&self, job_id: job::PK) -> Result<(), Error> {
+    pub async fn complete_job(&self, job_id: JobKey) -> Result<(), Error> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
 
-        diesel::update(jobs.filter(id.eq(&job_id)))
+        diesel::update(job.filter(id.eq(&job_id)))
             .set((
                 status.eq(JobStatus::Completed),
                 locked_at.eq(None::<DateTime<Utc>>),
@@ -112,10 +111,10 @@ impl JobQueue {
     }
 
     /// Marks a job as failed
-    pub async fn fail_job(&self, job_id: job::PK, error: impl AsRef<str>) -> Result<(), Error> {
+    pub async fn fail_job(&self, job_id: JobKey, error: impl AsRef<str>) -> Result<(), Error> {
         let mut conn = self.pool.get().expect("Failed to get database connection");
 
-        diesel::update(jobs)
+        diesel::update(job)
             .filter(id.eq(job_id))
             .set((
                 status.eq(JobStatus::Failed),

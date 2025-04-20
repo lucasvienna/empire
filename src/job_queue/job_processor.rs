@@ -7,7 +7,7 @@ use tracing::{debug, error, info, trace, warn};
 use ulid::Ulid;
 
 use crate::db::DbPool;
-use crate::domain::job::Job;
+use crate::domain::jobs::Job;
 use crate::job_queue::JobQueue;
 use crate::Error;
 

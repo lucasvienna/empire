@@ -4,9 +4,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::job::JobType;
+use crate::domain::jobs::JobType;
 use crate::domain::resource::ResourceType;
-use crate::domain::{job, modifier, user};
+use crate::domain::{jobs, modifier, user};
 use crate::job_queue::{JobPriority, JobQueue};
 use crate::Error;
 
@@ -40,7 +40,7 @@ impl ModifierScheduler {
         modifier_id: modifier::PK,
         user_id: user::PK,
         expires_at: DateTime<Utc>,
-    ) -> Result<job::PK, Error> {
+    ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::ExpireModifier {
             modifier_id,
             user_id,
@@ -56,7 +56,7 @@ impl ModifierScheduler {
         &self,
         user_id: user::PK,
         resource_types: Vec<ResourceType>,
-    ) -> Result<job::PK, Error> {
+    ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::RecalculateResources {
             user_id,
             resource_types,
@@ -77,7 +77,7 @@ impl ModifierScheduler {
         &self,
         user_id: user::PK,
         run_at: DateTime<Utc>,
-    ) -> Result<job::PK, Error> {
+    ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::UpdateModifierCache { user_id };
 
         self.job_queue
@@ -95,7 +95,7 @@ impl ModifierScheduler {
         &self,
         user_ids: Vec<user::PK>,
         run_at: DateTime<Utc>,
-    ) -> Result<Vec<job::PK>, Error> {
+    ) -> Result<Vec<jobs::JobKey>, Error> {
         let mut job_ids = Vec::with_capacity(user_ids.len());
 
         for user_id in user_ids {
