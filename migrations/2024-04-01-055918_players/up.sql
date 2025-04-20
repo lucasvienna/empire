@@ -1,4 +1,4 @@
-CREATE TABLE users
+CREATE TABLE player
 (
     id         UUID         NOT NULL DEFAULT generate_ulid(),
     name       TEXT UNIQUE  NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE users
     FOREIGN KEY (faction) REFERENCES faction (id)
 );
 
-CREATE TRIGGER set_users_updated_at
+CREATE TRIGGER set_players_updated_at
     BEFORE UPDATE
-    ON users
+    ON player
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();

@@ -7,15 +7,14 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use empire::controllers::{
     NewUserPayload, RegisterPayload, UpdateUserPayload, UserBody, UserListBody,
 };
-use empire::db::users::UserRepository;
+use empire::db::players::PlayerRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::{encode_token, Claims};
 use empire::domain::factions::FactionCode;
-use empire::domain::user;
-use empire::domain::user::{NewUser, User, UserName};
-use empire::domain::user_building::UserBuilding;
-use empire::schema::user_buildings;
-use empire::schema::users::dsl::users;
+use empire::domain::player::buildings::PlayerBuilding;
+use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
+use empire::schema::player::dsl::player;
+use empire::schema::player_building;
 use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -119,17 +118,17 @@ async fn update() {
         .json(&req)
         .send()
         .await
-        .expect("Failed to create user.");
+        .expect("Failed to create player.");
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let user: User = users.first(&mut conn).unwrap();
+    let user: Player = player.first(&mut conn).unwrap();
     assert_eq!(user.faction, FactionCode::Neutral, "Faction is not neutral");
 
-    let usr_blds: Vec<UserBuilding> = user_buildings::table
-        .filter(user_buildings::user_id.eq(&user.id))
+    let player_blds: Vec<PlayerBuilding> = player_building::table
+        .filter(player_building::player_id.eq(&user.id))
         .get_results(&mut conn)
-        .expect("Failed to get user buildings");
-    assert!(usr_blds.is_empty(), "User has buildings");
+        .expect("Failed to get player buildings");
+    assert!(player_blds.is_empty(), "User has buildings");
 
     let bearer = get_bearer(user.id);
     let body = UpdateUserPayload {
@@ -145,14 +144,14 @@ async fn update() {
         .json(&body)
         .send()
         .await
-        .expect("Failed to update user.");
+        .expect("Failed to update player.");
     assert_eq!(response.status(), StatusCode::ACCEPTED);
 
-    let usr_blds: Vec<UserBuilding> = user_buildings::table
-        .filter(user_buildings::user_id.eq(&user.id))
+    let player_blds: Vec<PlayerBuilding> = player_building::table
+        .filter(player_building::player_id.eq(&user.id))
         .get_results(&mut conn)
-        .expect("Failed to get user buildings");
-    assert!(!usr_blds.is_empty(), "User has no buildings");
+        .expect("Failed to get player buildings");
+    assert!(!player_blds.is_empty(), "User has no buildings");
 }
 
 #[tokio::test]
@@ -183,7 +182,7 @@ async fn delete() {
     );
 
     let user2 = create_test_user(app.db_pool.get().unwrap(), None);
-    let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired user trying to reuse the token
+    let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired player trying to reuse the token
     let response = client
         .get(format!("{}/users/{}", &app.address, user.id))
         .bearer_auth(bearer2.token())
@@ -193,13 +192,13 @@ async fn delete() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
-/// Create a user. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> User {
-    let user_repo = UserRepository {};
+/// Create a player. Uses internal DB functions.
+fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> Player {
+    let user_repo = PlayerRepository {};
     user_repo
         .create(
             &mut conn,
-            NewUser {
+            NewPlayer {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,
@@ -209,16 +208,16 @@ fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> User {
         .unwrap()
 }
 
-/// Delete a user. Uses internal DB functions.
-fn delete_test_user(user_id: user::UserKey, mut conn: DbConn) -> usize {
-    let user_repo = UserRepository {};
-    user_repo.delete(&mut conn, &user_id).unwrap()
+/// Delete a player. Uses internal DB functions.
+fn delete_test_user(player_id: PlayerKey, mut conn: DbConn) -> usize {
+    let user_repo = PlayerRepository {};
+    user_repo.delete(&mut conn, &player_id).unwrap()
 }
 
-fn get_bearer(user_id: user::UserKey) -> Authorization<Bearer> {
+fn get_bearer(player_id: PlayerKey) -> Authorization<Bearer> {
     let now = chrono::Utc::now();
     let token = encode_token(Claims {
-        sub: user_id,
+        sub: player_id,
         iat: now.timestamp() as usize,
         exp: (now + chrono::Duration::minutes(1)).timestamp() as usize,
     })

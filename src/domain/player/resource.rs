@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
@@ -5,12 +7,11 @@ use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 
-use crate::domain::user::{self, User};
-use crate::schema::user_resources;
+use crate::domain::player::{Player, PlayerKey};
+use crate::schema::player_resource;
 
-pub type PK = user::UserKey;
+pub type PK = PlayerKey;
 
 #[derive(
     AsExpression,
@@ -68,11 +69,11 @@ impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
 #[derive(
     Queryable, Selectable, Identifiable, Associations, Debug, Clone, PartialEq, Eq, PartialOrd, Ord,
 )]
-#[diesel(table_name = user_resources, primary_key(user_id))]
-#[diesel(belongs_to(User))]
+#[diesel(table_name = player_resource, primary_key(player_id))]
+#[diesel(belongs_to(Player))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct UserResource {
-    pub user_id: user::UserKey,
+pub struct PlayerResource {
+    pub player_id: PlayerKey,
     pub food: i32,
     pub wood: i32,
     pub stone: i32,
@@ -86,9 +87,9 @@ pub struct UserResource {
 }
 
 #[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_resources, check_for_backend(diesel::pg::Pg))]
-pub struct NewResource {
-    pub user_id: user::UserKey,
+#[diesel(table_name = player_resource, check_for_backend(diesel::pg::Pg))]
+pub struct NewPlayerResource {
+    pub player_id: PlayerKey,
     pub food: Option<i32>,
     pub wood: Option<i32>,
     pub stone: Option<i32>,
@@ -96,9 +97,9 @@ pub struct NewResource {
 }
 
 #[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_resources, primary_key(user_id))]
-pub struct UpdateResource {
-    pub user_id: user::UserKey,
+#[diesel(table_name = player_resource, primary_key(player_id))]
+pub struct UpdatePlayerResource {
+    pub player_id: PlayerKey,
     pub food: Option<i32>,
     pub wood: Option<i32>,
     pub stone: Option<i32>,

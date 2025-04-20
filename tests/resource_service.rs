@@ -1,12 +1,12 @@
 use diesel::prelude::*;
 use diesel::update;
-use empire::db::users::UserRepository;
+use empire::db::players::PlayerRepository;
 use empire::db::{DbConn, Repository};
-use empire::domain::accumulator::UserAccumulator;
 use empire::domain::factions::FactionCode;
-use empire::domain::user::{NewUser, User, UserName};
+use empire::domain::player::accumulator::PlayerAccumulator;
+use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::game::resource_service::ResourceService;
-use empire::schema::{user_accumulator as acc, user_resources as rsc};
+use empire::schema::{player_accumulator as acc, player_resource as rsc};
 use empire::services::auth_service::hash_password;
 
 mod common;
@@ -16,17 +16,17 @@ async fn test_collect_resource() {
     let db_pool = common::init_server().db_pool;
     let mut conn = db_pool.get().unwrap();
     let user = create_test_user(db_pool.get().unwrap());
-    update(acc::table.filter(acc::user_id.eq(&user.id)))
+    update(acc::table.filter(acc::player_id.eq(&user.id)))
         .set((
             acc::food.eq(1000),
             acc::wood.eq(850),
             acc::stone.eq(901),
             acc::gold.eq(899),
         ))
-        .returning(UserAccumulator::as_returning())
+        .returning(PlayerAccumulator::as_returning())
         .get_result(&mut conn)
         .expect("Failed to update resource accumulator");
-    update(rsc::table.filter(rsc::user_id.eq(&user.id)))
+    update(rsc::table.filter(rsc::player_id.eq(&user.id)))
         .set((
             rsc::food_cap.eq(1000),
             rsc::wood_cap.eq(1000),
@@ -47,8 +47,8 @@ async fn test_collect_resource() {
     assert_eq!(res.gold, 999);
 
     // Verify that the accumulators were drained correctly
-    let updated_accumulator: UserAccumulator = acc::table
-        .filter(acc::user_id.eq(&user.id))
+    let updated_accumulator: PlayerAccumulator = acc::table
+        .filter(acc::player_id.eq(&user.id))
         .first(&mut conn)
         .expect("Failed to query resource accumulator");
 
@@ -58,13 +58,13 @@ async fn test_collect_resource() {
     assert_eq!(updated_accumulator.gold, 0);
 }
 
-/// Create a user. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn) -> User {
-    let user_repo = UserRepository {};
+/// Create a player. Uses internal DB functions.
+fn create_test_user(mut conn: DbConn) -> Player {
+    let user_repo = PlayerRepository {};
     user_repo
         .create(
             &mut conn,
-            NewUser {
+            NewPlayer {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,

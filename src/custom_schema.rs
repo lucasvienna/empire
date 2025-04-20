@@ -1,7 +1,7 @@
 // this isn't a table but instead a view. The problem is that diesel doesn't support views yet
 diesel::table! {
-    resource_generation (user_id) {
-        user_id -> Uuid,
+    resource_generation (player_id) {
+        player_id -> Uuid,
         population -> Int4,
         food -> Int4,
         wood -> Int4,

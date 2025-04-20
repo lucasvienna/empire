@@ -10,7 +10,7 @@ use serde::Serialize;
 use tracing::{error, instrument, trace, warn};
 
 use crate::db::extractor::DatabaseConnection;
-use crate::db::users::UserRepository;
+use crate::db::players::PlayerRepository;
 use crate::domain::auth::decode_token;
 
 #[derive(Debug, Serialize)]
@@ -60,13 +60,13 @@ pub async fn auth_middleware(
         })?
         .claims;
 
-    let user_id = claims.sub;
-    let user_repo = UserRepository {};
-    let user = user_repo.find_by_id(&mut conn, &user_id).map_err(|e| {
-        error!("Error fetching user from database: {}", e);
+    let player_id = claims.sub;
+    let player_repo = PlayerRepository {};
+    let user = player_repo.find_by_id(&mut conn, &player_id).map_err(|e| {
+        error!("Error fetching player from database: {}", e);
         let json_error = ErrorResponse {
             status: "fail",
-            message: format!("Error fetching user from database: {}", e),
+            message: format!("Error fetching player from database: {}", e),
         };
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
     })?;
@@ -75,7 +75,7 @@ pub async fn auth_middleware(
         error!("User not found in database");
         let json_error = ErrorResponse {
             status: "fail",
-            message: "The user belonging to this token no longer exists".to_string(),
+            message: "The player belonging to this token no longer exists".to_string(),
         };
         (StatusCode::UNAUTHORIZED, Json(json_error))
     })?;

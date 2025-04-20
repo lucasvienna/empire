@@ -12,7 +12,7 @@ use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
 use crate::domain::modifier::active_modifier::ModifierSourceType;
-use crate::domain::{modifier, user};
+use crate::domain::{modifier, player};
 use crate::schema::modifier_history;
 
 pub type PK = Uuid;
@@ -72,7 +72,7 @@ impl FromSql<crate::schema::sql_types::ModifierActionType, Pg> for ModifierActio
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ModifierHistory {
     pub id: PK,
-    pub user_id: user::UserKey,
+    pub player_id: player::PlayerKey,
     pub modifier_id: modifier::ModifierKey,
     pub action_type: ModifierActionType,
     pub magnitude: BigDecimal,
@@ -88,7 +88,7 @@ pub struct ModifierHistory {
 #[derive(Insertable, Debug)]
 #[diesel(table_name = modifier_history)]
 pub struct NewModifierHistory {
-    pub user_id: user::UserKey,
+    pub player_id: player::PlayerKey,
     pub modifier_id: modifier::ModifierKey,
     pub action_type: ModifierActionType,
     pub magnitude: BigDecimal,

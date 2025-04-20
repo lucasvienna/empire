@@ -4,7 +4,7 @@ use crate::db::{DbConn, Repository};
 use crate::domain::modifier::active_modifier::{
     ActiveModifier, NewActiveModifier, UpdateActiveModifier, PK as ActiveModifierKey,
 };
-use crate::domain::user;
+use crate::domain::player::PlayerKey;
 use crate::schema::active_modifiers::dsl::*;
 use crate::Result;
 
@@ -55,13 +55,13 @@ impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, Active
 }
 
 impl ActiveModifiersRepository {
-    pub fn get_by_user_id(
+    pub fn get_by_player_id(
         &self,
         connection: &mut DbConn,
-        usr_id: &user::UserKey,
+        player_key: &PlayerKey,
     ) -> Result<Vec<ActiveModifier>> {
         let active_mods = active_modifiers
-            .filter(user_id.eq(usr_id))
+            .filter(player_id.eq(player_key))
             .get_results(connection)?;
         Ok(active_mods)
     }

@@ -40,7 +40,7 @@ diesel::table! {
 
     active_modifiers (id) {
         id -> Uuid,
-        user_id -> Uuid,
+        player_id -> Uuid,
         modifier_id -> Uuid,
         started_at -> Timestamptz,
         expires_at -> Nullable<Timestamptz>,
@@ -147,7 +147,7 @@ diesel::table! {
 
     modifier_history (id) {
         id -> Uuid,
-        user_id -> Uuid,
+        player_id -> Uuid,
         modifier_id -> Uuid,
         action_type -> ModifierActionType,
         occurred_at -> Timestamptz,
@@ -182,8 +182,24 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_accumulator (user_id) {
-        user_id -> Uuid,
+    use diesel::sql_types::*;
+    use super::sql_types::FactionCode;
+
+    player (id) {
+        id -> Uuid,
+        name -> Text,
+        pwd_hash -> Text,
+        #[max_length = 254]
+        email -> Nullable<Varchar>,
+        faction -> FactionCode,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    player_accumulator (player_id) {
+        player_id -> Uuid,
         food -> Int4,
         wood -> Int4,
         stone -> Int4,
@@ -194,9 +210,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_buildings (id) {
+    player_building (id) {
         id -> Uuid,
-        user_id -> Uuid,
+        player_id -> Uuid,
         building_id -> Int4,
         level -> Int4,
         upgrade_time -> Nullable<Text>,
@@ -206,8 +222,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    user_resources (user_id) {
-        user_id -> Uuid,
+    player_resource (player_id) {
+        player_id -> Uuid,
         food -> Int4,
         wood -> Int4,
         stone -> Int4,
@@ -221,34 +237,18 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    use diesel::sql_types::*;
-    use super::sql_types::FactionCode;
-
-    users (id) {
-        id -> Uuid,
-        name -> Text,
-        pwd_hash -> Text,
-        #[max_length = 254]
-        email -> Nullable<Varchar>,
-        faction -> FactionCode,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
 diesel::joinable!(active_modifiers -> modifiers (modifier_id));
-diesel::joinable!(active_modifiers -> users (user_id));
+diesel::joinable!(active_modifiers -> player (player_id));
 diesel::joinable!(building -> faction (faction));
 diesel::joinable!(building_level -> building (building_id));
 diesel::joinable!(building_resource -> building (building_id));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
-diesel::joinable!(modifier_history -> users (user_id));
-diesel::joinable!(user_accumulator -> users (user_id));
-diesel::joinable!(user_buildings -> building (building_id));
-diesel::joinable!(user_buildings -> users (user_id));
-diesel::joinable!(user_resources -> users (user_id));
-diesel::joinable!(users -> faction (faction));
+diesel::joinable!(modifier_history -> player (player_id));
+diesel::joinable!(player -> faction (faction));
+diesel::joinable!(player_accumulator -> player (player_id));
+diesel::joinable!(player_building -> building (building_id));
+diesel::joinable!(player_building -> player (player_id));
+diesel::joinable!(player_resource -> player (player_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     active_modifiers,
@@ -259,8 +259,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     job,
     modifier_history,
     modifiers,
-    user_accumulator,
-    user_buildings,
-    user_resources,
-    users,
+    player,
+    player_accumulator,
+    player_building,
+    player_resource,
 );

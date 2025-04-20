@@ -11,7 +11,7 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::{modifier, user};
+use crate::domain::{modifier, player};
 use crate::schema::active_modifiers;
 
 pub type PK = Uuid;
@@ -73,7 +73,7 @@ impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourc
 #[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct ActiveModifier {
     pub id: PK,
-    pub user_id: user::UserKey,
+    pub player_id: player::PlayerKey,
     pub modifier_id: modifier::ModifierKey,
     pub started_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
@@ -86,7 +86,7 @@ pub struct ActiveModifier {
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct NewActiveModifier {
-    pub user_id: user::UserKey,
+    pub player_id: player::PlayerKey,
     pub modifier_id: modifier::ModifierKey,
     pub started_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,

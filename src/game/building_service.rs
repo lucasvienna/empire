@@ -7,18 +7,19 @@ use tracing::{debug, info, instrument};
 
 use crate::db::building_levels::BuildingLevelRepository;
 use crate::db::buildings::BuildingRepository;
+use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::db::resources::ResourcesRepository;
-use crate::db::user_buildings::UserBuildingRepository;
 use crate::db::{DbConn, Repository};
 use crate::domain::building_levels::BuildingLevel;
+use crate::domain::buildings::BuildingKey;
 use crate::domain::error::{Error, ErrorKind, Result};
-use crate::domain::user_building::{NewUserBuilding, UserBuilding};
-use crate::domain::{buildings, user, user_building};
+use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding};
+use crate::domain::player::{buildings, PlayerKey};
 
 pub struct BuildingService {
     connection: DbConn,
     bld_repo: BuildingRepository,
-    usr_bld_repo: UserBuildingRepository,
+    player_bld_repo: PlayerBuildingRepository,
     bld_lvl_repo: BuildingLevelRepository,
     res_repo: ResourcesRepository,
 }
@@ -34,7 +35,7 @@ impl BuildingService {
         BuildingService {
             connection,
             bld_repo: BuildingRepository {},
-            usr_bld_repo: UserBuildingRepository {},
+            player_bld_repo: PlayerBuildingRepository {},
             bld_lvl_repo: BuildingLevelRepository {},
             res_repo: ResourcesRepository {},
         }
@@ -43,16 +44,19 @@ impl BuildingService {
     #[instrument(skip(self))]
     pub fn construct_building(
         &mut self,
-        usr_id: &user::UserKey,
-        bld_id: &buildings::BuildingKey,
-    ) -> Result<UserBuilding> {
-        info!("Constructing building: {} for user: {}", bld_id, usr_id);
+        player_id: &PlayerKey,
+        bld_id: &BuildingKey,
+    ) -> Result<PlayerBuilding> {
+        info!(
+            "Constructing building: {} for player: {}",
+            bld_id, player_id
+        );
         let bld_lvl = self
             .bld_lvl_repo
             .get_next_upgrade(&mut self.connection, bld_id, &0)?;
 
         // check for resources
-        if !self.has_enough_resources(usr_id, &bld_lvl)? {
+        if !self.has_enough_resources(player_id, &bld_lvl)? {
             return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
                 "Not enough resources",
@@ -61,8 +65,8 @@ impl BuildingService {
 
         // verify if maximum number of buildings was reached
         if !self
-            .usr_bld_repo
-            .can_construct(&mut self.connection, usr_id, bld_id)?
+            .player_bld_repo
+            .can_construct(&mut self.connection, player_id, bld_id)?
         {
             return Err(Error::from((
                 ErrorKind::ConstructBuildingError,
@@ -70,12 +74,12 @@ impl BuildingService {
             )));
         }
 
-        let res: Result<UserBuilding> = self.connection.transaction(|connection| {
+        let res: Result<PlayerBuilding> = self.connection.transaction(|connection| {
             info!("Initiating construction transaction");
             // deduct resources
             self.res_repo.deduct(
                 connection,
-                usr_id,
+                player_id,
                 &(
                     bld_lvl.req_food.unwrap_or(0),
                     bld_lvl.req_wood.unwrap_or(0),
@@ -84,21 +88,21 @@ impl BuildingService {
                 ),
             )?;
             // construct building
-            let usr_bld = self.usr_bld_repo.create(
+            let player_bld = self.player_bld_repo.create(
                 connection,
-                NewUserBuilding {
-                    user_id: *usr_id,
+                NewPlayerBuilding {
+                    player_id: *player_id,
                     building_id: *bld_id,
                     level: Some(0),
                     upgrade_time: Some(bld_lvl.upgrade_time),
                 },
             )?;
-            info!("Building constructed: {:?}", usr_bld);
-            Ok(usr_bld)
+            info!("Building constructed: {:?}", player_bld);
+            Ok(player_bld)
         });
 
         match res {
-            Ok(usr_bld) => Ok(usr_bld),
+            Ok(player_bld) => Ok(player_bld),
             Err(_) => Err(Error::from((
                 ErrorKind::ConstructBuildingError,
                 "Failed to construct building",
@@ -107,18 +111,18 @@ impl BuildingService {
     }
 
     #[instrument(skip(self))]
-    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::UserBuildingKey) -> Result<()> {
-        let (usr_bld, max_level) = self
-            .usr_bld_repo
-            .get_upgrade_tuple(&mut self.connection, usr_bld_id)?;
+    pub fn upgrade_building(&mut self, player_bld_id: &buildings::PlayerBuildingKey) -> Result<()> {
+        let (player_bld, max_level) = self
+            .player_bld_repo
+            .get_upgrade_tuple(&mut self.connection, player_bld_id)?;
         let bld_lvl = self.bld_lvl_repo.get_next_upgrade(
             &mut self.connection,
-            &usr_bld.building_id,
-            &usr_bld.level,
+            &player_bld.building_id,
+            &player_bld.level,
         )?;
 
         // check for resources
-        if !self.has_enough_resources(&usr_bld.user_id, &bld_lvl)? {
+        if !self.has_enough_resources(&player_bld.player_id, &bld_lvl)? {
             return Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Not enough resources",
@@ -126,19 +130,19 @@ impl BuildingService {
         }
 
         // check for max level constraints
-        if usr_bld.level >= max_level.unwrap_or(0) {
+        if player_bld.level >= max_level.unwrap_or(0) {
             return Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Building is at max level",
             )));
         }
 
-        let res: Result<UserBuilding> = self.connection.transaction(|connection| {
+        let res: Result<PlayerBuilding> = self.connection.transaction(|connection| {
             info!("Initiating upgrade transaction");
             // deduct resources
             self.res_repo.deduct(
                 connection,
-                &usr_bld.user_id,
+                &player_bld.player_id,
                 &(
                     bld_lvl.req_food.unwrap_or(0),
                     bld_lvl.req_wood.unwrap_or(0),
@@ -147,13 +151,13 @@ impl BuildingService {
                 ),
             )?;
             // upgrade building
-            let usr_bld = self.usr_bld_repo.set_upgrade_time(
+            let player_bld = self.player_bld_repo.set_upgrade_time(
                 connection,
-                usr_bld_id,
+                player_bld_id,
                 Some(bld_lvl.upgrade_time.as_str()),
             )?;
-            info!("Building upgrade started: {:?}", usr_bld);
-            Ok(usr_bld)
+            info!("Building upgrade started: {:?}", player_bld);
+            Ok(player_bld)
         });
 
         match res {
@@ -166,9 +170,9 @@ impl BuildingService {
     }
 
     #[instrument(skip(self))]
-    pub fn confirm_upgrade(&mut self, id: &user_building::UserBuildingKey) -> Result<()> {
-        let usr_bld = self.usr_bld_repo.get_by_id(&mut self.connection, id)?;
-        match usr_bld.upgrade_time {
+    pub fn confirm_upgrade(&mut self, id: &buildings::PlayerBuildingKey) -> Result<()> {
+        let player_bld = self.player_bld_repo.get_by_id(&mut self.connection, id)?;
+        match player_bld.upgrade_time {
             None => Err(Error::from((
                 ErrorKind::ConfirmUpgradeError,
                 "Building is not upgrading",
@@ -178,7 +182,7 @@ impl BuildingService {
                     Error::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
                 })?;
                 if time <= Utc::now() {
-                    self.usr_bld_repo.inc_level(&mut self.connection, id)?;
+                    self.player_bld_repo.inc_level(&mut self.connection, id)?;
                     Ok(())
                 } else {
                     Err(Error::from((
@@ -192,11 +196,11 @@ impl BuildingService {
 
     fn has_enough_resources(
         &mut self,
-        user_id: &user::UserKey,
+        player_id: &PlayerKey,
         bld_lvl: &BuildingLevel,
     ) -> Result<bool> {
-        debug!("Checking resources for user: {}", user_id);
-        let res = self.res_repo.get_by_id(&mut self.connection, user_id)?;
+        debug!("Checking resources for player: {}", player_id);
+        let res = self.res_repo.get_by_id(&mut self.connection, player_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);

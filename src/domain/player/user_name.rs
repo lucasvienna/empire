@@ -32,7 +32,7 @@ impl UserName {
     pub fn parse(s: String) -> Result<UserName> {
         let is_empty_or_whitespace = s.trim().is_empty();
 
-        // A grapheme is defined by the Unicode standard as a "user-perceived"
+        // A grapheme is defined by the Unicode standard as a "player-perceived"
         // character: `å` is a single grapheme, but it is composed of two characters
         // (`a` and `̊`).
         //
@@ -79,7 +79,7 @@ impl ToSql<Text, Pg> for UserName {
 mod tests {
     use claims::{assert_err, assert_ok};
 
-    use crate::domain::user::user_name::*;
+    use crate::domain::player::user_name::*;
 
     #[test]
     fn a_256_grapheme_long_name_is_valid() {

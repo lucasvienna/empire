@@ -1,5 +1,5 @@
 CREATE VIEW resource_generation AS
-SELECT ub.user_id,
+SELECT pb.player_id,
        SUM(br.population)    as population,
        SUM(br.food)          as food,
        SUM(br.wood)          as wood,
@@ -9,8 +9,8 @@ SELECT ub.user_id,
        SUM(br.wood_acc_cap)  as wood_acc_cap,
        SUM(br.stone_acc_cap) as stone_acc_cap,
        SUM(br.gold_acc_cap)  as gold_acc_cap
-FROM user_buildings ub
+FROM player_building pb
          LEFT JOIN public.building_resource br
-                   ON ub.building_id = br.building_id
-                       AND ub.level = br.building_level
-GROUP BY ub.user_id;
+                   ON pb.building_id = br.building_id
+                       AND pb.level = br.building_level
+GROUP BY pb.player_id;

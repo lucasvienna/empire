@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use diesel::prelude::*;
 use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
-use empire::domain::resource::ResourceType;
+use empire::domain::player::resource::ResourceType;
 use empire::schema::modifiers;
 
 mod common;

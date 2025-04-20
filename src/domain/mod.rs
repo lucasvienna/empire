@@ -1,12 +1,9 @@
-pub mod accumulator;
 pub mod app_state;
 pub mod auth;
-pub mod buildings;
 pub mod building_levels;
+pub mod buildings;
 pub mod error;
 pub mod factions;
 pub mod jobs;
 pub mod modifier;
-pub mod resource;
-pub mod user;
-pub mod user_building;
+pub mod player;

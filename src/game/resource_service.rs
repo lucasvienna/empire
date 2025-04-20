@@ -7,9 +7,9 @@ use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::DbConn;
-use crate::domain::resource::UserResource;
-use crate::domain::user;
-use crate::schema::{user_accumulator as acc, user_resources as rsc};
+use crate::domain::player::resource::PlayerResource;
+use crate::domain::player::PlayerKey;
+use crate::schema::{player_accumulator as acc, player_resource as rsc};
 use crate::Result;
 
 pub struct ResourceService {
@@ -36,16 +36,16 @@ impl ResourceService {
         }
     }
 
-    /// Collects resources for a user by transferring the maximum possible amount from their
+    /// Collects resources for a player by transferring the maximum possible amount from their
     /// resource accumulator to their resource storage, constrained by the storage capacity limits.
     ///
     /// # Parameters
     ///
-    /// - `user_id`: Reference to the primary key of the user whose resources will be collected.
+    /// - `player_id`: Reference to the primary key of the player whose resources will be collected.
     ///
     /// # Returns
     ///
-    /// Returns a `Result` containing the updated `Resource` structure representing the user's
+    /// Returns a `Result` containing the updated `Resource` structure representing the player's
     /// updated resources or an error if the operation fails.
     ///
     /// # Errors
@@ -54,10 +54,10 @@ impl ResourceService {
     /// - The database query to calculate the collectible resource amounts fails.
     /// - The transaction to update both the accumulator and the resource storage fails.
     #[instrument(skip(self))]
-    pub fn collect_resources(&mut self, user_id: &user::UserKey) -> Result<UserResource> {
+    pub fn collect_resources(&mut self, player_id: &PlayerKey) -> Result<PlayerResource> {
         let (food, wood, stone, gold) = acc::table
-            .inner_join(rsc::table.on(acc::user_id.eq(rsc::user_id)))
-            .filter(acc::user_id.eq(user_id))
+            .inner_join(rsc::table.on(acc::player_id.eq(rsc::player_id)))
+            .filter(acc::player_id.eq(player_id))
             .select((
                 least(acc::food, rsc::food_cap - rsc::food),
                 least(acc::wood, rsc::wood_cap - rsc::wood),
@@ -67,9 +67,9 @@ impl ResourceService {
             .first::<(i32, i32, i32, i32)>(&mut self.connection)?;
         debug!("Deltas: {:?}", (food, wood, stone, gold));
 
-        let res: Result<UserResource> = self.connection.transaction(|conn| {
+        let res: Result<PlayerResource> = self.connection.transaction(|conn| {
             // drain accumulator first
-            let updated_rows = diesel::update(acc::table.filter(acc::user_id.eq(user_id)))
+            let updated_rows = diesel::update(acc::table.filter(acc::player_id.eq(player_id)))
                 .set((
                     acc::food.eq(acc::food - food),
                     acc::wood.eq(acc::wood - wood),
@@ -79,14 +79,14 @@ impl ResourceService {
                 .execute(conn)?;
 
             // then increase resources
-            let res = diesel::update(rsc::table.filter(rsc::user_id.eq(user_id)))
+            let res = diesel::update(rsc::table.filter(rsc::player_id.eq(player_id)))
                 .set((
                     rsc::food.eq(rsc::food + food),
                     rsc::wood.eq(rsc::wood + wood),
                     rsc::stone.eq(rsc::stone + stone),
                     rsc::gold.eq(rsc::gold + gold),
                 ))
-                .returning(UserResource::as_returning())
+                .returning(PlayerResource::as_returning())
                 .get_result(conn)?;
 
             Ok(res)

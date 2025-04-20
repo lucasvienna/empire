@@ -2,11 +2,11 @@ use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
 use empire::controllers::{LoginPayload, RegisterPayload};
-use empire::db::users::UserRepository;
+use empire::db::players::PlayerRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::auth::AuthBody;
 use empire::domain::factions::FactionCode;
-use empire::domain::user::{NewUser, User, UserEmail, UserName};
+use empire::domain::player::{NewPlayer, Player, UserEmail, UserName};
 use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
 use serde_json::json;
@@ -244,13 +244,13 @@ async fn logout_succeeds() {
     assert_eq!(body.status, "ok");
 }
 
-/// Create a user. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn) -> User {
-    let user_repo = UserRepository {};
+/// Create a player. Uses internal DB functions.
+fn create_test_user(mut conn: DbConn) -> Player {
+    let user_repo = PlayerRepository {};
     user_repo
         .create(
             &mut conn,
-            NewUser {
+            NewPlayer {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),
@@ -260,7 +260,7 @@ fn create_test_user(mut conn: DbConn) -> User {
         .unwrap()
 }
 
-fn get_user_by_name(mut conn: DbConn, name: &str) -> empire::Result<User> {
-    let repo = UserRepository {};
+fn get_user_by_name(mut conn: DbConn, name: &str) -> empire::Result<Player> {
+    let repo = PlayerRepository {};
     repo.get_by_name(&mut conn, name)
 }

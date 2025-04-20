@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::domain::jobs::JobType;
-use crate::domain::resource::ResourceType;
-use crate::domain::{jobs, modifier, user};
+use crate::domain::player::resource::ResourceType;
+use crate::domain::{jobs, modifier, player};
 use crate::job_queue::{JobPriority, JobQueue};
 use crate::Error;
 
@@ -14,14 +14,14 @@ use crate::Error;
 pub enum ModifierJobPayload {
     ExpireModifier {
         modifier_id: Uuid,
-        user_id: Uuid,
+        player_id: Uuid,
     },
     RecalculateResources {
-        user_id: Uuid,
+        player_id: Uuid,
         resource_types: Vec<ResourceType>,
     },
     UpdateModifierCache {
-        user_id: Uuid,
+        player_id: Uuid,
     },
 }
 
@@ -38,12 +38,12 @@ impl ModifierScheduler {
     pub async fn schedule_expiration(
         &self,
         modifier_id: modifier::ModifierKey,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         expires_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::ExpireModifier {
             modifier_id,
-            user_id,
+            player_id,
         };
 
         self.job_queue
@@ -51,14 +51,14 @@ impl ModifierScheduler {
             .await
     }
 
-    /// Schedule an immediate recalculation of resources for a user
+    /// Schedule an immediate recalculation of resources for a player
     pub async fn schedule_resource_recalculation(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         resource_types: Vec<ResourceType>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::RecalculateResources {
-            user_id,
+            player_id,
             resource_types,
         };
 
@@ -66,19 +66,19 @@ impl ModifierScheduler {
             .enqueue(
                 JobType::Modifier,
                 payload,
-                JobPriority::High, // Higher priority since it affects user's resources
+                JobPriority::High, // Higher priority since it affects player's resources
                 Utc::now(),
             )
             .await
     }
 
-    /// Schedule a cache update for a user's modifiers
+    /// Schedule a cache update for a player's modifiers
     pub async fn schedule_cache_update(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         run_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
-        let payload = ModifierJobPayload::UpdateModifierCache { user_id };
+        let payload = ModifierJobPayload::UpdateModifierCache { player_id };
 
         self.job_queue
             .enqueue(
@@ -90,16 +90,16 @@ impl ModifierScheduler {
             .await
     }
 
-    /// Schedule multiple cache updates for a batch of users
+    /// Schedule multiple cache updates for a batch of players
     pub async fn schedule_batch_cache_update(
         &self,
-        user_ids: Vec<user::UserKey>,
+        player_ids: Vec<player::PlayerKey>,
         run_at: DateTime<Utc>,
     ) -> Result<Vec<jobs::JobKey>, Error> {
-        let mut job_ids = Vec::with_capacity(user_ids.len());
+        let mut job_ids = Vec::with_capacity(player_ids.len());
 
-        for user_id in user_ids {
-            let job_id = self.schedule_cache_update(user_id, run_at).await?;
+        for player_id in player_ids {
+            let job_id = self.schedule_cache_update(player_id, run_at).await?;
             job_ids.push(job_id);
         }
 

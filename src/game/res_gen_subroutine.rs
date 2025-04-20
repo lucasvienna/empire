@@ -9,13 +9,13 @@ use tracing::{debug, error, info, instrument};
 use crate::db::DbConn;
 use crate::game::TICK_RATE;
 
-pub static RES_GEN_QUERY: &str = "UPDATE user_accumulator acc
+pub static RES_GEN_QUERY: &str = "UPDATE player_accumulator acc
     SET food  = GREATEST(acc.food + rg.food / $1, rg.food_acc_cap),
         wood  = GREATEST(acc.wood + rg.wood / $1, rg.wood_acc_cap),
         stone = GREATEST(acc.stone + rg.stone / $1, rg.stone_acc_cap),
         gold  = GREATEST(acc.gold + rg.gold / $1, rg.gold_acc_cap)
     FROM resource_generation rg
-    WHERE acc.user_id = rg.user_id;";
+    WHERE acc.player_id = rg.player_id;";
 
 /// Initializes a background task responsible for periodic resource generation.
 ///
@@ -32,7 +32,7 @@ pub static RES_GEN_QUERY: &str = "UPDATE user_accumulator acc
 ///
 /// # Behavior
 /// - Updates the `resources` table every `TICK_RATE` seconds.
-/// - Increments the `food`, `wood`, `stone`, and `gold` columns for each user by their
+/// - Increments the `food`, `wood`, `stone`, and `gold` columns for each player by their
 ///   respective resource generation rates stored in the `resource_generation` table.
 /// - Logs any errors encountered during the update operation.
 /// - Logs the number of users whose resources were updated successfully.

@@ -31,7 +31,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   -c log_statement=all \
   -c log_min_duration_statement=0 \
   -c log_min_messages=info \
-  -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d ' \
+  -c log_line_prefix='%t [%p]: [%l-1] player=%u,db=%d ' \
   -N 1000
   # ^ Increased maximum number of connections for testing purposes
   sleep 5
@@ -45,11 +45,11 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
     sleep 1
   done
 
-  # Create the application user
+  # Create the application player
   CREATE_QUERY="CREATE USER ${APP_DATABASE__USERNAME} WITH PASSWORD '${APP_DATABASE__PASSWORD}';"
   docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${CREATE_QUERY}"
 
-  # Grant create db privileges to the app user
+  # Grant create db privileges to the app player
   GRANT_QUERY="ALTER USER ${APP_DATABASE__USERNAME} CREATEDB;"
   docker exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${GRANT_QUERY}"
 fi

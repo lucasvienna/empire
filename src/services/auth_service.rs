@@ -4,7 +4,7 @@ use argon2::{password_hash, Argon2, PasswordHasher};
 
 use crate::configuration::JwtSettings;
 use crate::domain::auth::{encode_token, AuthError, Claims};
-use crate::domain::user::User;
+use crate::domain::player::Player;
 
 /// Hashes a password using the Argon2id algorithm with a randomly generated salt.
 ///
@@ -25,14 +25,14 @@ pub fn hash_password(pwd: impl AsRef<[u8]>) -> Result<String, password_hash::Err
     Ok(password_hash)
 }
 
-/// Creates a JSON Web Token (JWT) for a user with the provided settings.
+/// Creates a JSON Web Token (JWT) for a player with the provided settings.
 ///
-/// This function generates a JWT containing the claim information of the user. The token
-/// includes a subject (`sub`, the user ID), an expiry time (`exp`), and an issued-at time (`iat`).
+/// This function generates a JWT containing the claim information of the player. The token
+/// includes a subject (`sub`, the player ID), an expiry time (`exp`), and an issued-at time (`iat`).
 /// It uses the secret configured in the `LazyLock` `KEYS` to sign the token.
 ///
 /// # Parameters
-/// - `user`: The `User` for whom the token is being generated.
+/// - `player`: The `User` for whom the token is being generated.
 /// - `jwt_settings`: Configuration settings containing the expiration time for the token.
 ///
 /// # Returns
@@ -41,7 +41,10 @@ pub fn hash_password(pwd: impl AsRef<[u8]>) -> Result<String, password_hash::Err
 ///
 /// # Errors
 /// - Returns `AuthError::TokenCreation` if encoding the token fails.
-pub fn create_token_for_user(user: User, jwt_settings: &JwtSettings) -> Result<String, AuthError> {
+pub fn create_token_for_user(
+    user: Player,
+    jwt_settings: &JwtSettings,
+) -> Result<String, AuthError> {
     let now = chrono::Utc::now();
     let expires_in = chrono::Duration::seconds(jwt_settings.expires_in as i64);
     let claims = Claims {

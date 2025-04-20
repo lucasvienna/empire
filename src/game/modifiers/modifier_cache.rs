@@ -7,8 +7,8 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::domain::modifier::ModifierTarget;
-use crate::domain::resource::ResourceType;
-use crate::domain::user;
+use crate::domain::player;
+use crate::domain::player::resource::ResourceType;
 use crate::{Error, ErrorKind};
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ pub struct CacheEntry {
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct CacheKey {
-    pub user_id: user::UserKey,
+    pub player_id: player::PlayerKey,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
 }
@@ -35,7 +35,7 @@ pub struct ModifierCache {
     cache: Arc<RwLock<HashMap<CacheKey, CacheEntry>>>,
     /// Default TTL for cache entries
     default_ttl: chrono::Duration,
-    /// Maximum entries per user to prevent memory issues
+    /// Maximum entries per player to prevent memory issues
     max_entries_per_user: usize,
 }
 
@@ -72,13 +72,16 @@ impl ModifierCache {
     ) -> Result<(), Error> {
         let mut cache = self.cache.write().await;
 
-        // Check user entry limit
-        let user_entries = cache.keys().filter(|k| k.user_id == key.user_id).count();
+        // Check player entry limit
+        let user_entries = cache
+            .keys()
+            .filter(|k| k.player_id == key.player_id)
+            .count();
 
         if user_entries >= self.max_entries_per_user {
             return Err(Error::new(
                 ErrorKind::CacheError,
-                "Cache limit exceeded for user",
+                "Cache limit exceeded for player",
             ));
         }
 
@@ -134,19 +137,19 @@ impl ModifierCache {
         cache.remove(key);
     }
 
-    /// Invalidate all entries for a user
-    pub async fn invalidate_user(&self, user_id: Uuid) {
+    /// Invalidate all entries for a player
+    pub async fn invalidate_user(&self, player_id: Uuid) {
         let mut cache = self.cache.write().await;
-        cache.retain(|k, _| k.user_id != user_id);
+        cache.retain(|k, _| k.player_id != player_id);
     }
 
-    /// Get the next expiration time for a user's modifiers
-    pub async fn next_expiration(&self, user_id: Uuid) -> Option<DateTime<Utc>> {
+    /// Get the next expiration time for a player's modifiers
+    pub async fn next_expiration(&self, player_id: Uuid) -> Option<DateTime<Utc>> {
         let cache = self.cache.read().await;
 
         cache
             .iter()
-            .filter(|(k, _)| k.user_id == user_id)
+            .filter(|(k, _)| k.player_id == player_id)
             .filter_map(|(_, v)| v.expires_at)
             .min()
     }
@@ -168,7 +171,7 @@ mod tests {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 100);
 
         let key = CacheKey {
-            user_id: Uuid::new_v4(),
+            player_id: Uuid::new_v4(),
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Gold),
         };
@@ -191,7 +194,7 @@ mod tests {
     async fn test_version_conflict() {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 100);
         let key = CacheKey {
-            user_id: Uuid::new_v4(),
+            player_id: Uuid::new_v4(),
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Gold),
         };
@@ -211,7 +214,7 @@ mod tests {
     async fn test_expiration() {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 100);
         let key = CacheKey {
-            user_id: Uuid::new_v4(),
+            player_id: Uuid::new_v4(),
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Gold),
         };
@@ -233,16 +236,16 @@ mod tests {
     #[tokio::test]
     async fn test_cleanup() {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 100);
-        let user_id = Uuid::new_v4();
+        let player_id = Uuid::new_v4();
 
         let key1 = CacheKey {
-            user_id,
+            player_id,
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Gold),
         };
 
         let key2 = CacheKey {
-            user_id,
+            player_id,
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Wood),
         };
@@ -276,12 +279,12 @@ mod tests {
     #[tokio::test]
     async fn test_user_limit() {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 2);
-        let user_id = Uuid::new_v4();
+        let player_id = Uuid::new_v4();
 
         // Add up to limit
         for i in 0..2 {
             let key = CacheKey {
-                user_id,
+                player_id,
                 target_type: ModifierTarget::Resource,
                 target_resource: if i == 0 {
                     Some(ResourceType::Gold)
@@ -294,7 +297,7 @@ mod tests {
 
         // Try to exceed limit
         let key = CacheKey {
-            user_id,
+            player_id,
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Wood),
         };
@@ -306,20 +309,20 @@ mod tests {
     #[tokio::test]
     async fn test_next_expiration() {
         let cache = ModifierCache::new(chrono::Duration::hours(1), 100);
-        let user_id = Uuid::new_v4();
+        let player_id = Uuid::new_v4();
 
         let now = Utc::now();
         let exp1 = now + chrono::Duration::hours(1);
         let exp2 = now + chrono::Duration::hours(2);
 
         let key1 = CacheKey {
-            user_id,
+            player_id,
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Gold),
         };
 
         let key2 = CacheKey {
-            user_id,
+            player_id,
             target_type: ModifierTarget::Resource,
             target_resource: Some(ResourceType::Wood),
         };
@@ -333,7 +336,7 @@ mod tests {
             .await
             .unwrap();
 
-        let next_exp = cache.next_expiration(user_id).await.unwrap();
+        let next_exp = cache.next_expiration(player_id).await.unwrap();
         assert_eq!(next_exp, exp1);
     }
 }

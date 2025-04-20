@@ -27,11 +27,7 @@ impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for Buildin
         Ok(bld)
     }
 
-    fn update(
-        &self,
-        conn: &mut DbConn,
-        changeset: &UpdateBuilding,
-    ) -> Result<Building> {
+    fn update(&self, conn: &mut DbConn, changeset: &UpdateBuilding) -> Result<Building> {
         let bld = diesel::update(building).set(changeset).get_result(conn)?;
         Ok(bld)
     }

@@ -145,7 +145,7 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
         .as_str(),
     )
     .execute(&mut conn)
-    .expect("Failed to grant database privileges to test user.");
+    .expect("Failed to grant database privileges to test player.");
     // First, grant schema permissions
     sql_query(
         format!(
@@ -155,7 +155,7 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
         .as_str(),
     )
     .execute(&mut conn)
-    .expect("Failed to grant schema privileges to test user");
+    .expect("Failed to grant schema privileges to test player");
     // Then grant table permissions
     sql_query(
         format!(
@@ -165,7 +165,7 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
         .as_str(),
     )
     .execute(&mut conn)
-    .expect("Failed to grant table privileges to test user in public schema");
+    .expect("Failed to grant table privileges to test player in public schema");
     // Additionally, to ensure future tables get the same permissions
     sql_query(
         format!(

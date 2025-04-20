@@ -6,9 +6,9 @@ use diesel::prelude::*;
 use empire::domain::factions::FactionCode;
 use empire::domain::modifier::active_modifier::{ModifierSourceType, NewActiveModifier};
 use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
-use empire::domain::resource::ResourceType;
-use empire::domain::user::{NewUser, User, UserName};
-use empire::schema::{active_modifiers, modifiers, users};
+use empire::domain::player::resource::ResourceType;
+use empire::domain::player::{NewPlayer, Player, UserName};
+use empire::schema::{active_modifiers, modifiers, player};
 use uuid::Uuid;
 
 mod common;
@@ -18,13 +18,13 @@ async fn test_timespan_validation() {
     let db_pool = common::init_server().db_pool;
     let mut conn = db_pool.get().unwrap();
 
-    // Create a test user and modifier first
-    let user_id = create_test_user(&mut conn);
+    // Create a test player and modifier first
+    let player_id = create_test_user(&mut conn);
     let modifier_id = create_test_modifier(&mut conn);
 
     // Test case 1: Valid timespan (expires_at > started_at)
     let valid_modifier = NewActiveModifier {
-        user_id,
+        player_id,
         modifier_id,
         started_at: None,
         expires_at: Some(Utc::now() + Duration::hours(1)),
@@ -39,7 +39,7 @@ async fn test_timespan_validation() {
 
     // Test case 2: Invalid timespan (expires_at < started_at)
     let invalid_modifier = NewActiveModifier {
-        user_id,
+        player_id,
         modifier_id,
         started_at: None,
         expires_at: Some(Utc::now() - Duration::hours(1)),
@@ -57,7 +57,7 @@ async fn test_timespan_validation() {
 
     // Test case 3: Valid null expiration
     let no_expiry_modifier = NewActiveModifier {
-        user_id,
+        player_id,
         modifier_id,
         started_at: None,
         expires_at: None,
@@ -80,12 +80,12 @@ async fn test_cascade_deletion() {
     let mut conn = db_pool.get().unwrap();
 
     // Create test data
-    let user_id = create_test_user(&mut conn);
+    let player_id = create_test_user(&mut conn);
     let modifier_id = create_test_modifier(&mut conn);
 
     // Create an active modifier
     let active_modifier = NewActiveModifier {
-        user_id,
+        player_id,
         modifier_id,
         started_at: None,
         expires_at: None,
@@ -98,14 +98,14 @@ async fn test_cascade_deletion() {
         .execute(&mut conn)
         .expect("Failed to insert test active modifier");
 
-    // Test case 1: Cascade on user deletion
+    // Test case 1: Cascade on player deletion
     let delete_user_result =
-        diesel::delete(users::table.filter(users::id.eq(&user_id))).execute(&mut conn);
+        diesel::delete(player::table.filter(player::id.eq(&player_id))).execute(&mut conn);
     assert!(delete_user_result.is_ok(), "Failed to delete user");
 
     // Verify active modifier was deleted
     let remaining_modifiers = active_modifiers::table
-        .filter(active_modifiers::user_id.eq(&user_id))
+        .filter(active_modifiers::player_id.eq(&player_id))
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();
@@ -115,11 +115,11 @@ async fn test_cascade_deletion() {
     );
 
     // Create new data for the modifier cascade test
-    let user_id = create_test_user(&mut conn);
+    let player_id = create_test_user(&mut conn);
     let modifier_id = create_test_modifier(&mut conn);
 
     let active_modifier = NewActiveModifier {
-        user_id,
+        player_id,
         modifier_id,
         started_at: None,
         expires_at: None,
@@ -149,21 +149,21 @@ async fn test_cascade_deletion() {
     );
 }
 
-// Helper function to create a test user
+// Helper function to create a test player
 fn create_test_user(conn: &mut PgConnection) -> Uuid {
-    let new_user = NewUser {
+    let new_user = NewPlayer {
         name: UserName::parse("test_user".to_string()).unwrap(),
         pwd_hash: "test_hash".to_string(),
         email: None,
         faction: FactionCode::Human,
     };
 
-    let user: User = diesel::insert_into(users::table)
+    let new_player: Player = diesel::insert_into(player::table)
         .values(&new_user)
         .get_result(conn)
-        .expect("Failed to create test user");
+        .expect("Failed to create test player");
 
-    user.id
+    new_player.id
 }
 
 // Helper function to create a test modifier

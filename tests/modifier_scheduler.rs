@@ -18,11 +18,11 @@ async fn test_schedule_expiration() {
     let scheduler = ModifierScheduler::new(queue);
 
     let modifier_id = Uuid::new_v4();
-    let user_id = Uuid::new_v4();
+    let player_id = Uuid::new_v4();
     let expires_at = Utc::now().duration_trunc(TimeDelta::seconds(1)).unwrap() + Duration::hours(1);
 
     let job_id = scheduler
-        .schedule_expiration(modifier_id, user_id, expires_at)
+        .schedule_expiration(modifier_id, player_id, expires_at)
         .await
         .unwrap();
 
@@ -40,10 +40,10 @@ async fn test_schedule_expiration() {
     match payload {
         ModifierJobPayload::ExpireModifier {
             modifier_id: mid,
-            user_id: uid,
+            player_id: uid,
         } => {
             assert_eq!(mid, modifier_id);
-            assert_eq!(uid, user_id);
+            assert_eq!(uid, player_id);
         }
         _ => panic!("Wrong payload type"),
     }

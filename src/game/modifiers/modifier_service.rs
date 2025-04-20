@@ -9,8 +9,8 @@ use crate::db::modifiers::ModifiersRepository;
 use crate::db::{DbPool, Repository};
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::{Modifier, ModifierTarget};
-use crate::domain::resource::ResourceType;
-use crate::domain::user;
+use crate::domain::player;
+use crate::domain::player::resource::ResourceType;
 use crate::game::modifiers::modifier_cache::{CacheKey, ModifierCache};
 use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::Error;
@@ -40,7 +40,7 @@ impl ModifierService {
         }
     }
 
-    /// Apply a new modifier to a user and update all relevant systems
+    /// Apply a new modifier to a player and update all relevant systems
     pub async fn apply_modifier(&mut self, new_modifier: NewActiveModifier) -> Result<(), Error> {
         let mut conn = self.db_pool.get()?;
         // Store the modifier in the database
@@ -51,7 +51,7 @@ impl ModifierService {
             .mod_repo
             .get_by_id(&mut conn, &active_mod.modifier_id)?;
         let cache_key = self.create_cache_key(
-            active_mod.user_id,
+            active_mod.player_id,
             modifier.target_type,
             modifier.target_resource,
         );
@@ -62,7 +62,7 @@ impl ModifierService {
         // Calculate and cache new values
         let total_multiplier = self
             .calculate_total_multiplier(
-                active_mod.user_id,
+                active_mod.player_id,
                 modifier.target_type,
                 modifier.target_resource,
             )
@@ -76,31 +76,34 @@ impl ModifierService {
         // Schedule expiration job if needed
         if let Some(expires_at) = active_mod.expires_at {
             self.scheduler
-                .schedule_expiration(active_mod.id, active_mod.user_id, expires_at)
+                .schedule_expiration(active_mod.id, active_mod.player_id, expires_at)
                 .await?;
         }
 
         info!(
-            "Applied modifier {} to user {}",
-            modifier.name, active_mod.user_id
+            "Applied modifier {} to player {}",
+            modifier.name, active_mod.player_id
         );
         Ok(())
     }
 
-    /// Get all active modifiers for a user
-    pub fn get_active_modifiers(&self, user_id: &user::UserKey) -> Result<Vec<ActiveModifier>, Error> {
+    /// Get all active modifiers for a player
+    pub fn get_active_modifiers(
+        &self,
+        player_id: &player::PlayerKey,
+    ) -> Result<Vec<ActiveModifier>, Error> {
         let mut conn = self.db_pool.get()?;
-        self.active_mod_repo.get_by_user_id(&mut conn, user_id)
+        self.active_mod_repo.get_by_player_id(&mut conn, player_id)
     }
 
     /// Get the total modifier multiplier for a specific target and resource
     pub async fn get_total_multiplier(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
-        let cache_key = self.create_cache_key(user_id, target_type, target_resource);
+        let cache_key = self.create_cache_key(player_id, target_type, target_resource);
 
         // Try to get from cache first
         if let Some(entry) = self.cache.get(&cache_key).await {
@@ -111,12 +114,12 @@ impl ModifierService {
         debug!("Cache miss for modifier calculation");
         // Calculate and cache if not found
         let total_multiplier = self
-            .calculate_total_multiplier(user_id, target_type, target_resource)
+            .calculate_total_multiplier(player_id, target_type, target_resource)
             .await?;
 
         // Get the nearest expiration time from active modifiers
         let expires_at = self
-            .get_nearest_expiration(user_id, target_type, target_resource)
+            .get_nearest_expiration(player_id, target_type, target_resource)
             .await?;
 
         // Cache the result
@@ -130,12 +133,12 @@ impl ModifierService {
     /// Calculate the total modifier multiplier from all active modifiers
     async fn calculate_total_multiplier(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
         let mut conn = self.db_pool.get()?;
-        let active_modifiers = self.get_active_modifiers(&user_id)?;
+        let active_modifiers = self.get_active_modifiers(&player_id)?;
 
         // Group modifiers by stacking group
         let mut stacking_groups: HashMap<Option<String>, Vec<Modifier>> = HashMap::new();
@@ -173,11 +176,11 @@ impl ModifierService {
     /// Get the nearest expiration time for modifiers matching the criteria
     async fn get_nearest_expiration(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<Option<DateTime<Utc>>, Error> {
-        let active_modifiers = self.get_active_modifiers(&user_id)?;
+        let active_modifiers = self.get_active_modifiers(&player_id)?;
 
         Ok(active_modifiers
             .into_iter()
@@ -197,12 +200,12 @@ impl ModifierService {
     /// Create a cache key for the given parameters
     fn create_cache_key(
         &self,
-        user_id: user::UserKey,
+        player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> CacheKey {
         CacheKey {
-            user_id,
+            player_id,
             target_type,
             target_resource,
         }

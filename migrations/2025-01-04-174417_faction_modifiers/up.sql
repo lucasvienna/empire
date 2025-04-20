@@ -54,13 +54,13 @@ BEGIN
     IF old_faction_code IS NOT NULL THEN
         DELETE
         FROM active_modifiers
-        WHERE user_id = OLD.id
+        WHERE player_id = OLD.id
           AND modifier_id IN (SELECT id FROM modifiers WHERE name LIKE old_faction_code || '_%')
           AND source_type = 'faction';
 
 
         -- Record changes in modifier history
-        INSERT INTO modifier_history (user_id, modifier_id, action_type, magnitude, source_type, occurred_at, reason)
+        INSERT INTO modifier_history (player_id, modifier_id, action_type, magnitude, source_type, occurred_at, reason)
         SELECT OLD.id,
                m.id,
                'removed',
@@ -73,7 +73,7 @@ BEGIN
     END IF;
 
     -- Apply new faction modifiers
-    INSERT INTO active_modifiers (user_id, modifier_id, source_type)
+    INSERT INTO active_modifiers (player_id, modifier_id, source_type)
     SELECT NEW.id,
            m.id,
            'faction'
@@ -93,7 +93,7 @@ BEGIN
     -- b) applications are always logged after removals
     change_time := clock_timestamp();
     -- Record changes in modifier history
-    INSERT INTO modifier_history (user_id, modifier_id, action_type, magnitude, source_type, occurred_at, reason)
+    INSERT INTO modifier_history (player_id, modifier_id, action_type, magnitude, source_type, occurred_at, reason)
     SELECT NEW.id,
            m.id,
            'applied',
@@ -111,16 +111,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers for user faction changes
-CREATE TRIGGER user_faction_modifiers_insert
+-- Create triggers for player faction changes
+CREATE TRIGGER player_faction_modifiers_insert
     AFTER INSERT
-    ON users
+    ON player
     FOR EACH ROW
 EXECUTE FUNCTION manage_faction_modifiers();
 
-CREATE TRIGGER user_faction_modifiers_update
+CREATE TRIGGER player_faction_modifiers_update
     AFTER UPDATE OF faction
-    ON users
+    ON player
     FOR EACH ROW
     WHEN (OLD.faction IS DISTINCT FROM NEW.faction)
 EXECUTE FUNCTION manage_faction_modifiers();

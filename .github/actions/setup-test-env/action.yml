@@ -12,11 +12,11 @@ inputs:
     required: true
     type: string
   app_user:
-    description: 'Database application user'
+    description: 'Database application player'
     required: true
     type: string
   app_pwd:
-    description: 'Password for the database application user'
+    description: 'Password for the database application player'
     required: true
     type: string
   pgpassword:

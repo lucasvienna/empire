@@ -1,7 +1,7 @@
-CREATE TABLE user_buildings
+CREATE TABLE player_building
 (
     id           UUID        NOT NULL DEFAULT generate_ulid(),
-    user_id      UUID        NOT NULL,
+    player_id      UUID        NOT NULL,
     building_id  INTEGER     NOT NULL,
     level        INTEGER     NOT NULL DEFAULT 0,
     upgrade_time TEXT        NULL     DEFAULT NULL, -- RFC 3339
@@ -9,23 +9,23 @@ CREATE TABLE user_buildings
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES player (id) ON DELETE CASCADE,
     FOREIGN KEY (building_id) REFERENCES building (id)
 );
 
-CREATE TRIGGER set_user_buildings_updated_at
+CREATE TRIGGER set_player_building_updated_at
     BEFORE UPDATE
-    ON user_buildings
+    ON player_building
     FOR EACH ROW
 EXECUTE PROCEDURE set_current_timestamp_updated_at();
 
-CREATE OR REPLACE FUNCTION new_user_buildings_fn()
+CREATE OR REPLACE FUNCTION new_player_building_fn()
     RETURNS TRIGGER
     LANGUAGE PLPGSQL
 AS
 $$
 BEGIN
-    INSERT INTO user_buildings (user_id, building_id, level)
+    INSERT INTO player_building (player_id, building_id, level)
     SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
     FROM building
     WHERE faction = NEW.faction
@@ -35,22 +35,22 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER new_user_buildings_trigger
+CREATE TRIGGER new_player_building_trigger
     AFTER INSERT OR UPDATE
-    ON users
+    ON player
     FOR EACH ROW
-EXECUTE FUNCTION new_user_buildings_fn();
+EXECUTE FUNCTION new_player_building_fn();
 
-CREATE OR REPLACE FUNCTION change_user_buildings_fn()
+CREATE OR REPLACE FUNCTION change_player_building_fn()
     RETURNS TRIGGER
     LANGUAGE PLPGSQL
 AS
 $$
 BEGIN
-    -- whenever a user switches from neutral to another faction,
+    -- whenever a player switches from neutral to another faction,
     -- insert all pre-built buildings for that faction
     IF OLD.faction = 'neutral' THEN
-        INSERT INTO user_buildings (user_id, building_id, level)
+        INSERT INTO player_building (player_id, building_id, level)
         SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
         FROM building
         WHERE faction = NEW.faction
@@ -60,16 +60,16 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER faction_select_user_buildings_trigger
+CREATE TRIGGER faction_select_player_building_trigger
     AFTER UPDATE OF faction
-    ON users
+    ON player
     FOR EACH ROW
     WHEN (OLD.faction IS DISTINCT FROM NEW.faction)
-EXECUTE FUNCTION change_user_buildings_fn();
+EXECUTE FUNCTION change_player_building_fn();
 
 -- TODO: add a trigger to switch buildings when the switch changes the faction
 
-CREATE OR REPLACE FUNCTION update_user_resources_caps_fn()
+CREATE OR REPLACE FUNCTION update_player_resource_caps_fn()
     RETURNS TRIGGER
     LANGUAGE PLPGSQL
 AS
@@ -86,12 +86,12 @@ BEGIN
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
-        UPDATE user_resources
+        UPDATE player_resource
         SET food_cap  = food_cap + new_caps.food_cap,
             wood_cap  = wood_cap + new_caps.wood_cap,
             stone_cap = stone_cap + new_caps.stone_cap,
             gold_cap  = gold_cap + new_caps.gold_cap
-        WHERE user_id = NEW.user_id;
+        WHERE player_id = NEW.player_id;
 
     ELSIF TG_OP = 'UPDATE' THEN
         -- Get the previous cap values from building_resource
@@ -108,20 +108,20 @@ BEGIN
         WHERE building_id = NEW.building_id
           AND building_level = NEW.level;
 
-        UPDATE user_resources
+        UPDATE player_resource
         SET food_cap  = food_cap - old_caps.food_cap + new_caps.food_cap,
             wood_cap  = wood_cap - old_caps.wood_cap + new_caps.wood_cap,
             stone_cap = stone_cap - old_caps.stone_cap + new_caps.stone_cap,
             gold_cap  = gold_cap - old_caps.gold_cap + new_caps.gold_cap
-        WHERE user_id = NEW.user_id;
+        WHERE player_id = NEW.player_id;
     END IF;
 
     RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER update_user_resources_caps_trigger
+CREATE TRIGGER update_player_resource_caps_trigger
     AFTER INSERT OR UPDATE
-    ON user_buildings
+    ON player_building
     FOR EACH ROW
-EXECUTE FUNCTION update_user_resources_caps_fn();
+EXECUTE FUNCTION update_player_resource_caps_fn();

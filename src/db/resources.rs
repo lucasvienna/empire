@@ -3,41 +3,56 @@ use tracing::debug;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::error::Result;
-use crate::domain::resource::{self, NewResource, UpdateResource, UserResource};
-use crate::schema::user_resources::dsl::*;
+use crate::domain::player::resource::{
+    self, NewPlayerResource, PlayerResource, UpdatePlayerResource,
+};
+use crate::schema::player_resource::dsl::*;
 
 #[derive(Debug)]
 pub struct ResourcesRepository {}
 
-impl Repository<UserResource, NewResource, &UpdateResource, resource::PK> for ResourcesRepository {
-    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<UserResource>> {
+impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, resource::PK>
+    for ResourcesRepository
+{
+    fn get_all(&self, connection: &mut DbConn) -> Result<Vec<PlayerResource>> {
         debug!("Getting all resources");
-        let buildings = user_resources
-            .select(UserResource::as_select())
+        let buildings = player_resource
+            .select(PlayerResource::as_select())
             .load(connection)?;
         Ok(buildings)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, user_pk: &resource::PK) -> Result<UserResource> {
-        debug!("Getting resource by ID: {}", user_pk);
-        let resource = user_resources.find(user_pk).first(connection)?;
+    fn get_by_id(
+        &self,
+        connection: &mut DbConn,
+        player_key: &resource::PK,
+    ) -> Result<PlayerResource> {
+        debug!("Getting resource by ID: {}", player_key);
+        let resource = player_resource.find(player_key).first(connection)?;
         debug!("Got resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn create(&self, connection: &mut DbConn, entity: NewResource) -> Result<UserResource> {
+    fn create(&self, connection: &mut DbConn, entity: NewPlayerResource) -> Result<PlayerResource> {
         debug!("Creating resource: {:?}", entity);
-        let resource = diesel::insert_into(user_resources)
+        let resource = diesel::insert_into(player_resource)
             .values(entity)
-            .returning(UserResource::as_returning())
+            .returning(PlayerResource::as_returning())
             .get_result(connection)?;
         debug!("Created resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn update(&self, connection: &mut DbConn, changeset: &UpdateResource) -> Result<UserResource> {
-        debug!("Updating resource '{}': {:?}", changeset.user_id, changeset);
-        let resource = diesel::update(user_resources)
+    fn update(
+        &self,
+        connection: &mut DbConn,
+        changeset: &UpdatePlayerResource,
+    ) -> Result<PlayerResource> {
+        debug!(
+            "Updating resource '{}': {:?}",
+            changeset.player_id, changeset
+        );
+        let resource = diesel::update(player_resource)
             .set(changeset)
             .get_result(connection)?;
         debug!("Updated resource: {:?}", resource);
@@ -46,26 +61,29 @@ impl Repository<UserResource, NewResource, &UpdateResource, resource::PK> for Re
 
     fn delete(&self, connection: &mut DbConn, id: &resource::PK) -> Result<usize> {
         debug!("Deleting resource: {}", id);
-        let res = diesel::delete(user_resources.find(id)).execute(connection)?;
+        let res = diesel::delete(player_resource.find(id)).execute(connection)?;
         debug!("Deleted resource: {}", res);
         Ok(res)
     }
 }
 
-/// Deducts resources from a user: food, wood, stone, gold
+/// Deducts resources from a player: food, wood, stone, gold
 pub type Deduction = (i32, i32, i32, i32);
 
 impl ResourcesRepository {
     pub fn deduct(
         &self,
         connection: &mut DbConn,
-        user_pk: &resource::PK,
+        player_key: &resource::PK,
         amounts: &Deduction,
-    ) -> Result<UserResource> {
-        debug!("Deducting resources {:?} from user {}", amounts, user_pk);
-        let res: UserResource = user_resources.find(user_pk).first(connection)?;
+    ) -> Result<PlayerResource> {
+        debug!(
+            "Deducting resources {:?} from player {}",
+            amounts, player_key
+        );
+        let res: PlayerResource = player_resource.find(player_key).first(connection)?;
         debug!("Current resources: {:?}", res);
-        let updated_res = diesel::update(user_resources.find(user_pk))
+        let updated_res = diesel::update(player_resource.find(player_key))
             .set((
                 food.eq(food - amounts.0),
                 wood.eq(wood - amounts.1),

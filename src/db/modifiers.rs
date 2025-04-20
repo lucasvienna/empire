@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::domain::modifier::{Modifier, ModifierKey as ModifierKey, NewModifier, UpdateModifier};
+use crate::domain::modifier::{Modifier, ModifierKey, NewModifier, UpdateModifier};
 use crate::schema::modifiers::dsl::*;
 use crate::Result;
 
@@ -26,11 +26,7 @@ impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for Modifie
         Ok(modifier)
     }
 
-    fn update(
-        &self,
-        connection: &mut DbConn,
-        changeset: &UpdateModifier,
-    ) -> Result<Modifier> {
+    fn update(&self, connection: &mut DbConn, changeset: &UpdateModifier) -> Result<Modifier> {
         let modifier = diesel::update(modifiers)
             .set(changeset)
             .get_result(connection)?;

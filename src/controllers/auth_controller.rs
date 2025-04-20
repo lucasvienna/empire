@@ -13,13 +13,13 @@ use tracing::{error, info, instrument, warn};
 
 use crate::configuration::Settings;
 use crate::db::extractor::DatabaseConnection;
-use crate::db::users::UserRepository;
+use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::{AuthBody, AuthError, Claims};
 use crate::domain::factions::FactionCode;
-use crate::domain::user;
-use crate::domain::user::NewUser;
+use crate::domain::player;
+use crate::domain::player::NewPlayer;
 use crate::services::auth_service::{create_token_for_user, hash_password};
 use crate::ErrorKind;
 
@@ -40,14 +40,14 @@ impl Debug for RegisterPayload {
     }
 }
 
-impl TryFrom<RegisterPayload> for NewUser {
+impl TryFrom<RegisterPayload> for NewPlayer {
     type Error = crate::Error;
 
     fn try_from(value: RegisterPayload) -> Result<Self, Self::Error> {
-        let name = user::UserName::parse(value.username)?;
-        let email: Option<user::UserEmail> = match value.email {
+        let name = player::UserName::parse(value.username)?;
+        let email: Option<player::UserEmail> = match value.email {
             None => None,
-            Some(email) => Some(user::UserEmail::parse(email)?),
+            Some(email) => Some(player::UserEmail::parse(email)?),
         };
         let pwd_hash = hash_password(&value.password)
             .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
@@ -82,9 +82,9 @@ async fn register(
     settings: Settings,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let repo = UserRepository {};
-    let new_user = NewUser::try_from(payload).map_err(|err| {
-        error!("Failed to parse user: {}", err);
+    let repo = PlayerRepository {};
+    let new_user = NewPlayer::try_from(payload).map_err(|err| {
+        error!("Failed to parse player: {}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::BAD_REQUEST, Json(body))
     })?;
@@ -97,20 +97,20 @@ async fn register(
             }
         }
         Err(err) => {
-            error!("Failed to check if user exists: {}", err);
+            error!("Failed to check if player exists: {}", err);
             let body = json!({ "status": "error", "message": "Please try again later" });
             return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(body)));
         }
     }
 
     let created_user = repo.create(&mut conn, new_user).map_err(|err| {
-        error!("Failed to insert user: {:#?}", err);
+        error!("Failed to insert player: {:#?}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::INTERNAL_SERVER_ERROR, Json(body))
     })?;
     info!(
-        user_id = created_user.id.to_string(),
-        "Created user successfully"
+        player_id = created_user.id.to_string(),
+        "Created player successfully"
     );
 
     Ok(StatusCode::CREATED)
@@ -128,11 +128,11 @@ async fn login(
         return Err(AuthError::MissingCredentials);
     }
 
-    let repo = UserRepository {};
+    let repo = PlayerRepository {};
     let user = repo
         .get_by_name(&mut conn, &payload.username)
         .map_err(|err| {
-            warn!("Invalid user: {}", err);
+            warn!("Invalid player: {}", err);
             AuthError::WrongCredentials
         })?;
 
@@ -142,7 +142,7 @@ async fn login(
         .verify_password(payload.password.as_ref(), &hash)
         .is_err()
     {
-        warn!("Invalid password for user: {}", user.name);
+        warn!("Invalid password for player: {}", user.name);
         return Err(AuthError::WrongCredentials);
     }
 

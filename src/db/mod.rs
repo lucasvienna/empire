@@ -10,10 +10,10 @@ pub mod extractor;
 pub mod factions;
 pub mod migrations;
 pub mod modifiers;
+pub mod player_buildings;
+pub mod players;
 pub mod resource_generation;
 pub mod resources;
-pub mod user_buildings;
-pub mod users;
 
 pub use connection::{DbConn, DbPool};
 

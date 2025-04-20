@@ -12,7 +12,7 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::resource::ResourceType;
+use crate::domain::player::resource::ResourceType;
 use crate::schema::modifiers;
 
 pub mod active_modifier;

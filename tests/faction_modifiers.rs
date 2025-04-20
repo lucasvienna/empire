@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
-use empire::db::users::UserRepository;
+use empire::db::players::PlayerRepository;
 use empire::db::{DbConn, Repository};
 use empire::domain::factions::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
-use empire::domain::user::{NewUser, User, UserName};
-use empire::schema::{active_modifiers, modifier_history, modifiers};
+use empire::domain::player::{NewPlayer, Player, UserName};
+use empire::schema::{active_modifiers, modifier_history, modifiers, player};
 use empire::services::auth_service::hash_password;
 
 mod common;
@@ -17,13 +17,13 @@ async fn test_faction_modifier_on_create() {
     let app = common::spawn_app();
     let mut conn = app.db_pool.get().unwrap();
 
-    // Create a user with Human faction
+    // Create a player with Human faction
     let user = create_test_user(&mut conn, FactionCode::Human);
 
     // Verify active modifiers
     let active_modifiers: Vec<(String, BigDecimal)> = active_modifiers::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&active_modifiers::modifier_id)))
-        .filter(active_modifiers::user_id.eq(&user.id))
+        .filter(active_modifiers::player_id.eq(&user.id))
         .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();
@@ -63,7 +63,7 @@ async fn test_faction_modifier_on_create() {
     // Verify modifier history
     let history: Vec<(String, ModifierActionType, BigDecimal)> = modifier_history::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&modifier_history::modifier_id)))
-        .filter(modifier_history::user_id.eq(&user.id))
+        .filter(modifier_history::player_id.eq(&user.id))
         .select((
             modifiers::name,
             modifier_history::action_type,
@@ -77,7 +77,7 @@ async fn test_faction_modifier_on_create() {
         history
             .iter()
             .all(|(_, action, _)| ModifierActionType::Applied.eq(action)),
-        "All actions should be 'applied' for new user"
+        "All actions should be 'applied' for new player"
     );
 }
 
@@ -86,19 +86,19 @@ async fn test_faction_change() {
     let app = common::spawn_app();
     let mut conn = app.db_pool.get().unwrap();
 
-    // Create user with Human faction
+    // Create player with Human faction
     let user = create_test_user(&mut conn, FactionCode::Human);
 
     // Change faction to Orc
-    diesel::update(empire::schema::users::table.filter(empire::schema::users::id.eq(user.id)))
-        .set(empire::schema::users::faction.eq(FactionCode::Orc))
+    diesel::update(player::table.filter(player::id.eq(user.id)))
+        .set(player::faction.eq(FactionCode::Orc))
         .execute(&mut conn)
         .unwrap();
 
     // Verify active modifiers
     let active_modifiers: Vec<(String, BigDecimal)> = active_modifiers::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&active_modifiers::modifier_id)))
-        .filter(active_modifiers::user_id.eq(&user.id))
+        .filter(active_modifiers::player_id.eq(&user.id))
         .select((modifiers::name, modifiers::magnitude))
         .load::<(String, BigDecimal)>(&mut conn)
         .unwrap();
@@ -137,7 +137,7 @@ async fn test_faction_change() {
     // Verify modifier history
     let history: Vec<(String, ModifierActionType, BigDecimal)> = modifier_history::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&modifier_history::modifier_id)))
-        .filter(modifier_history::user_id.eq(&user.id))
+        .filter(modifier_history::player_id.eq(&user.id))
         .order_by(modifier_history::occurred_at.asc())
         .select((
             modifiers::name,
@@ -173,12 +173,12 @@ async fn test_faction_change() {
 }
 
 // Helper function to create test users
-fn create_test_user(conn: &mut DbConn, faction: FactionCode) -> User {
-    let user_repo = UserRepository {};
+fn create_test_user(conn: &mut DbConn, faction: FactionCode) -> Player {
+    let user_repo = PlayerRepository {};
     user_repo
         .create(
             conn,
-            NewUser {
+            NewPlayer {
                 name: UserName::parse("test_user".to_string()).unwrap(),
                 pwd_hash: hash_password(b"1234").unwrap(),
                 email: None,
