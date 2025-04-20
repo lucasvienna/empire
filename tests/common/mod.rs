@@ -132,6 +132,11 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
     sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .execute(&mut conn)
         .expect("Failed to create test schema");
+
+    // === SWITCH CONNECTION TO TEST DATABASE ===
+    db_settings.database_name = config.database_name.clone();
+    let mut conn = PgConnection::establish(db_settings.connection_string().expose_secret())
+        .expect("Failed to connect to database.");
     sql_query(
         format!(
             r#"GRANT ALL ON DATABASE "{}" TO "{}";"#,
@@ -141,10 +146,17 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
     )
     .execute(&mut conn)
     .expect("Failed to grant database privileges to test user.");
-
-    // === SET EPHEMERAL DATABASE UP ===
-    let mut conn = PgConnection::establish(config.connection_string().expose_secret())
-        .expect("Failed to connect to database.");
+    // First, grant schema permissions
+    sql_query(
+        format!(
+            r#"GRANT USAGE, CREATE ON SCHEMA public TO "{}";"#,
+            config.username
+        )
+        .as_str(),
+    )
+    .execute(&mut conn)
+    .expect("Failed to grant schema privileges to test user");
+    // Then grant table permissions
     sql_query(
         format!(
             r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{}";"#,
@@ -154,6 +166,20 @@ fn initialize_test_pool(config: &mut DatabaseSettings) -> (DbPool, &mut Database
     )
     .execute(&mut conn)
     .expect("Failed to grant table privileges to test user in public schema");
+    // Additionally, to ensure future tables get the same permissions
+    sql_query(
+        format!(
+            r#"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{}";"#,
+            config.username
+        )
+        .as_str(),
+    )
+    .execute(&mut conn)
+    .expect("Failed to set default privileges for future tables");
+
+    // === SET EPHEMERAL DATABASE UP ===
+    let mut conn = PgConnection::establish(config.connection_string().expose_secret())
+        .expect("Failed to connect to database.");
     run_pending(&mut conn).expect("Failed to run migrations");
     (initialize_pool(config), config)
 }

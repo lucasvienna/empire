@@ -22,10 +22,17 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   docker run \
   --env POSTGRES_USER="${SUPERUSER}" \
   --env POSTGRES_PASSWORD="${SUPERUSER_PWD}" \
+  --env POSTGRESQL_LOG_STATEMENT=all \
+  --env POSTGRESQL_LOG_MIN_DURATION_STATEMENT=0 \
   --publish "${APP_DATABASE__PORT}":5432 \
   --detach \
   --name "${CONTAINER_NAME}" \
-  postgres:14 -N 1000
+  postgres \
+  -c log_statement=all \
+  -c log_min_duration_statement=0 \
+  -c log_min_messages=info \
+  -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d ' \
+  -N 1000
   # ^ Increased maximum number of connections for testing purposes
   sleep 5
 
