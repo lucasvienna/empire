@@ -1,6 +1,6 @@
 CREATE TYPE modifier_source_type AS ENUM ('faction', 'item', 'skill', 'research', 'event');
 
-CREATE TABLE IF NOT EXISTS user_active_modifiers
+CREATE TABLE IF NOT EXISTS active_modifiers
 (
     id          UUID                 NOT NULL DEFAULT generate_ulid(),
     user_id     UUID                 NOT NULL,
@@ -21,13 +21,13 @@ CREATE TABLE IF NOT EXISTS user_active_modifiers
 );
 
 -- Create composite index for efficient queries
-CREATE INDEX user_active_modifiers_user_expires_idx ON user_active_modifiers (user_id, expires_at);
-CREATE INDEX user_active_modifiers_modifier_idx ON user_active_modifiers (modifier_id);
-CREATE INDEX user_active_modifiers_source_idx ON user_active_modifiers (source_type, source_id);
+CREATE INDEX active_modifiers_user_expires_idx ON active_modifiers (user_id, expires_at);
+CREATE INDEX active_modifiers_modifier_idx ON active_modifiers (modifier_id);
+CREATE INDEX active_modifiers_source_idx ON active_modifiers (source_type, source_id);
 
 -- Add trigger for updating timestamp
-CREATE TRIGGER set_user_active_modifiers_updated_at
+CREATE TRIGGER set_active_modifiers_updated_at
     BEFORE UPDATE
-    ON user_active_modifiers
+    ON active_modifiers
     FOR EACH ROW
 EXECUTE FUNCTION set_current_timestamp_updated_at();

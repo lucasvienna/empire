@@ -2,6 +2,7 @@ use diesel::AsChangeset;
 
 use crate::domain::error::Result;
 
+pub mod active_modifiers;
 pub mod building_levels;
 pub mod buildings;
 pub mod connection;

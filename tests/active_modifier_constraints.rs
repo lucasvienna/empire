@@ -4,11 +4,11 @@ use bigdecimal::BigDecimal;
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use empire::domain::faction::FactionCode;
-use empire::domain::modifier::active_modifier::{ModifierSourceType, NewUserActiveModifier};
+use empire::domain::modifier::active_modifier::{ModifierSourceType, NewActiveModifier};
 use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::resource::ResourceType;
 use empire::domain::user::{NewUser, User, UserName};
-use empire::schema::{modifiers, user_active_modifiers, users};
+use empire::schema::{active_modifiers, modifiers, users};
 use uuid::Uuid;
 
 mod common;
@@ -23,7 +23,7 @@ async fn test_timespan_validation() {
     let modifier_id = create_test_modifier(&mut conn);
 
     // Test case 1: Valid timespan (expires_at > started_at)
-    let valid_modifier = NewUserActiveModifier {
+    let valid_modifier = NewActiveModifier {
         user_id,
         modifier_id,
         started_at: None,
@@ -32,13 +32,13 @@ async fn test_timespan_validation() {
         source_id: None,
     };
 
-    let result = diesel::insert_into(user_active_modifiers::table)
+    let result = diesel::insert_into(active_modifiers::table)
         .values(&valid_modifier)
         .execute(&mut conn);
     assert!(result.is_ok(), "Failed to insert valid timespan modifier");
 
     // Test case 2: Invalid timespan (expires_at < started_at)
-    let invalid_modifier = NewUserActiveModifier {
+    let invalid_modifier = NewActiveModifier {
         user_id,
         modifier_id,
         started_at: None,
@@ -47,7 +47,7 @@ async fn test_timespan_validation() {
         source_id: None,
     };
 
-    let result = diesel::insert_into(user_active_modifiers::table)
+    let result = diesel::insert_into(active_modifiers::table)
         .values(&invalid_modifier)
         .execute(&mut conn);
     assert!(
@@ -56,7 +56,7 @@ async fn test_timespan_validation() {
     );
 
     // Test case 3: Valid null expiration
-    let no_expiry_modifier = NewUserActiveModifier {
+    let no_expiry_modifier = NewActiveModifier {
         user_id,
         modifier_id,
         started_at: None,
@@ -65,7 +65,7 @@ async fn test_timespan_validation() {
         source_id: None,
     };
 
-    let result = diesel::insert_into(user_active_modifiers::table)
+    let result = diesel::insert_into(active_modifiers::table)
         .values(&no_expiry_modifier)
         .execute(&mut conn);
     assert!(
@@ -84,7 +84,7 @@ async fn test_cascade_deletion() {
     let modifier_id = create_test_modifier(&mut conn);
 
     // Create an active modifier
-    let active_modifier = NewUserActiveModifier {
+    let active_modifier = NewActiveModifier {
         user_id,
         modifier_id,
         started_at: None,
@@ -93,7 +93,7 @@ async fn test_cascade_deletion() {
         source_id: None,
     };
 
-    diesel::insert_into(user_active_modifiers::table)
+    diesel::insert_into(active_modifiers::table)
         .values(&active_modifier)
         .execute(&mut conn)
         .expect("Failed to insert test active modifier");
@@ -104,8 +104,8 @@ async fn test_cascade_deletion() {
     assert!(delete_user_result.is_ok(), "Failed to delete user");
 
     // Verify active modifier was deleted
-    let remaining_modifiers = user_active_modifiers::table
-        .filter(user_active_modifiers::user_id.eq(&user_id))
+    let remaining_modifiers = active_modifiers::table
+        .filter(active_modifiers::user_id.eq(&user_id))
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();
@@ -118,7 +118,7 @@ async fn test_cascade_deletion() {
     let user_id = create_test_user(&mut conn);
     let modifier_id = create_test_modifier(&mut conn);
 
-    let active_modifier = NewUserActiveModifier {
+    let active_modifier = NewActiveModifier {
         user_id,
         modifier_id,
         started_at: None,
@@ -127,7 +127,7 @@ async fn test_cascade_deletion() {
         source_id: None,
     };
 
-    diesel::insert_into(user_active_modifiers::table)
+    diesel::insert_into(active_modifiers::table)
         .values(&active_modifier)
         .execute(&mut conn)
         .expect("Failed to insert test active modifier");
@@ -138,8 +138,8 @@ async fn test_cascade_deletion() {
     assert!(delete_modifier_result.is_ok(), "Failed to delete modifier");
 
     // Verify active modifier was deleted
-    let remaining_modifiers = user_active_modifiers::table
-        .filter(user_active_modifiers::modifier_id.eq(&modifier_id))
+    let remaining_modifiers = active_modifiers::table
+        .filter(active_modifiers::modifier_id.eq(&modifier_id))
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();

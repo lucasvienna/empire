@@ -5,14 +5,14 @@ use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{
-    deserialize, serialize, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
-    Selectable,
+    deserialize, serialize, AsChangeset, AsExpression, FromSqlRow, Identifiable, Insertable,
+    Queryable, Selectable,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::domain::{modifier, user};
-use crate::schema::user_active_modifiers;
+use crate::schema::active_modifiers;
 
 pub type PK = Uuid;
 
@@ -70,9 +70,9 @@ impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourc
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_active_modifiers)]
+#[diesel(table_name = active_modifiers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct UserActiveModifier {
+pub struct ActiveModifier {
     pub id: PK,
     pub user_id: user::PK,
     pub modifier_id: modifier::PK,
@@ -85,13 +85,24 @@ pub struct UserActiveModifier {
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_active_modifiers)]
+#[diesel(table_name = active_modifiers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewUserActiveModifier {
-    pub user_id: Uuid,
-    pub modifier_id: Uuid,
+pub struct NewActiveModifier {
+    pub user_id: user::PK,
+    pub modifier_id: modifier::PK,
     pub started_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: ModifierSourceType,
+    pub source_id: Option<Uuid>,
+}
+
+#[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = active_modifiers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct UpdateActiveModifier {
+    pub id: PK,
+    pub started_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub source_type: Option<ModifierSourceType>,
     pub source_id: Option<Uuid>,
 }

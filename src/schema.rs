@@ -35,6 +35,23 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ModifierSourceType;
+
+    active_modifiers (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        modifier_id -> Uuid,
+        started_at -> Timestamptz,
+        expires_at -> Nullable<Timestamptz>,
+        source_type -> ModifierSourceType,
+        source_id -> Nullable<Uuid>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     building_levels (id) {
         id -> Uuid,
         building_id -> Int4,
@@ -177,23 +194,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
-    use super::sql_types::ModifierSourceType;
-
-    user_active_modifiers (id) {
-        id -> Uuid,
-        user_id -> Uuid,
-        modifier_id -> Uuid,
-        started_at -> Timestamptz,
-        expires_at -> Nullable<Timestamptz>,
-        source_type -> ModifierSourceType,
-        source_id -> Nullable<Uuid>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     user_buildings (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -237,20 +237,21 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(active_modifiers -> modifiers (modifier_id));
+diesel::joinable!(active_modifiers -> users (user_id));
 diesel::joinable!(building_levels -> buildings (building_id));
 diesel::joinable!(building_resources -> buildings (building_id));
 diesel::joinable!(buildings -> factions (faction));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> users (user_id));
 diesel::joinable!(user_accumulator -> users (user_id));
-diesel::joinable!(user_active_modifiers -> modifiers (modifier_id));
-diesel::joinable!(user_active_modifiers -> users (user_id));
 diesel::joinable!(user_buildings -> buildings (building_id));
 diesel::joinable!(user_buildings -> users (user_id));
 diesel::joinable!(user_resources -> users (user_id));
 diesel::joinable!(users -> factions (faction));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    active_modifiers,
     building_levels,
     building_resources,
     buildings,
@@ -259,7 +260,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     modifier_history,
     modifiers,
     user_accumulator,
-    user_active_modifiers,
     user_buildings,
     user_resources,
     users,

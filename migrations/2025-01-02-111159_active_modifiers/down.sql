@@ -1,2 +1,2 @@
-DROP TABLE user_active_modifiers;
+DROP TABLE active_modifiers;
 DROP TYPE modifier_source_type;
