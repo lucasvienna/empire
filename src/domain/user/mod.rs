@@ -2,7 +2,7 @@ mod user_email;
 mod user_name;
 
 use std::fmt;
-
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 pub use user_email::UserEmail;
 pub use user_name::UserName;
@@ -12,18 +12,18 @@ use crate::domain::factions::FactionCode;
 use crate::schema::users;
 
 /// User Primary Key
-pub type PK = Uuid;
+pub type UserKey = Uuid;
 
 #[derive(Queryable, Selectable, Identifiable, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = users, check_for_backend(diesel::pg::Pg))]
 pub struct User {
-    pub id: PK,
+    pub id: UserKey,
     pub name: String,
     pub pwd_hash: String,
     pub email: Option<String>,
     pub faction: FactionCode,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl fmt::Debug for User {
@@ -58,9 +58,10 @@ impl fmt::Debug for NewUser {
     }
 }
 
-#[derive(AsChangeset, Clone, PartialEq, Eq)]
+#[derive(Identifiable, AsChangeset, Clone, PartialEq, Eq)]
 #[diesel(table_name = users, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateUser {
+    pub id: UserKey,
     pub name: Option<UserName>,
     pub pwd_hash: Option<String>,
     pub email: Option<UserEmail>,

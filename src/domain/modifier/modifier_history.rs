@@ -72,8 +72,8 @@ impl FromSql<crate::schema::sql_types::ModifierActionType, Pg> for ModifierActio
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ModifierHistory {
     pub id: PK,
-    pub user_id: user::PK,
-    pub modifier_id: modifier::PK,
+    pub user_id: user::UserKey,
+    pub modifier_id: modifier::ModifierKey,
     pub action_type: ModifierActionType,
     pub magnitude: BigDecimal,
     pub occurred_at: DateTime<Utc>,
@@ -88,8 +88,8 @@ pub struct ModifierHistory {
 #[derive(Insertable, Debug)]
 #[diesel(table_name = modifier_history)]
 pub struct NewModifierHistory {
-    pub user_id: user::PK,
-    pub modifier_id: modifier::PK,
+    pub user_id: user::UserKey,
+    pub modifier_id: modifier::ModifierKey,
     pub action_type: ModifierActionType,
     pub magnitude: BigDecimal,
     pub source_type: ModifierSourceType,

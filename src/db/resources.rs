@@ -9,7 +9,7 @@ use crate::schema::user_resources::dsl::*;
 #[derive(Debug)]
 pub struct ResourcesRepository {}
 
-impl Repository<UserResource, NewResource, UpdateResource, resource::PK> for ResourcesRepository {
+impl Repository<UserResource, NewResource, &UpdateResource, resource::PK> for ResourcesRepository {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<UserResource>> {
         debug!("Getting all resources");
         let buildings = user_resources
@@ -35,14 +35,9 @@ impl Repository<UserResource, NewResource, UpdateResource, resource::PK> for Res
         Ok(resource)
     }
 
-    fn update(
-        &self,
-        connection: &mut DbConn,
-        id: &resource::PK,
-        changeset: UpdateResource,
-    ) -> Result<UserResource> {
-        debug!("Updating resource '{}': {:?}", id, changeset);
-        let resource = diesel::update(user_resources.find(id))
+    fn update(&self, connection: &mut DbConn, changeset: &UpdateResource) -> Result<UserResource> {
+        debug!("Updating resource '{}': {:?}", changeset.user_id, changeset);
+        let resource = diesel::update(user_resources)
             .set(changeset)
             .get_result(connection)?;
         debug!("Updated resource: {:?}", resource);

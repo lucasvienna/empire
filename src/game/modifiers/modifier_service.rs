@@ -88,7 +88,7 @@ impl ModifierService {
     }
 
     /// Get all active modifiers for a user
-    pub fn get_active_modifiers(&self, user_id: &user::PK) -> Result<Vec<ActiveModifier>, Error> {
+    pub fn get_active_modifiers(&self, user_id: &user::UserKey) -> Result<Vec<ActiveModifier>, Error> {
         let mut conn = self.db_pool.get()?;
         self.active_mod_repo.get_by_user_id(&mut conn, user_id)
     }
@@ -96,7 +96,7 @@ impl ModifierService {
     /// Get the total modifier multiplier for a specific target and resource
     pub async fn get_total_multiplier(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
@@ -130,7 +130,7 @@ impl ModifierService {
     /// Calculate the total modifier multiplier from all active modifiers
     async fn calculate_total_multiplier(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
@@ -173,7 +173,7 @@ impl ModifierService {
     /// Get the nearest expiration time for modifiers matching the criteria
     async fn get_nearest_expiration(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<Option<DateTime<Utc>>, Error> {
@@ -197,7 +197,7 @@ impl ModifierService {
     /// Create a cache key for the given parameters
     fn create_cache_key(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> CacheKey {

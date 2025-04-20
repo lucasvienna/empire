@@ -73,8 +73,7 @@ impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = faction)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(table_name = faction, check_for_backend(diesel::pg::Pg))]
 /// Represents a faction entity in the game with its properties.
 pub struct Faction {
     /// Unique identifier of the faction using FactionCode
@@ -88,7 +87,7 @@ pub struct Faction {
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = faction)]
+#[diesel(table_name = faction, check_for_backend(diesel::pg::Pg))]
 /// Data structure for creating a new faction.
 pub struct NewFaction {
     /// Unique identifier for the new faction
@@ -97,10 +96,12 @@ pub struct NewFaction {
     pub name: String,
 }
 
-#[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = faction)]
+#[derive(Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = faction, check_for_backend(diesel::pg::Pg))]
 /// Data structure for updating an existing faction's properties.
 pub struct UpdateFaction {
+    /// Unique identifier for the faction
+    pub id: FactionKey,
     /// New display name for the faction
-    pub name: String,
+    pub name: Option<String>,
 }

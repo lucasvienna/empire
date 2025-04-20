@@ -1,16 +1,16 @@
-use std::io::Write;
-
+use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 
 use crate::domain::user::{self, User};
 use crate::schema::user_resources;
 
-pub type PK = user::PK;
+pub type PK = user::UserKey;
 
 #[derive(
     AsExpression,
@@ -66,23 +66,13 @@ impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
 }
 
 #[derive(
-    Queryable,
-    Selectable,
-    Identifiable,
-    AsChangeset,
-    Associations,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
+    Queryable, Selectable, Identifiable, Associations, Debug, Clone, PartialEq, Eq, PartialOrd, Ord,
 )]
 #[diesel(table_name = user_resources, primary_key(user_id))]
 #[diesel(belongs_to(User))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct UserResource {
-    pub user_id: user::PK,
+    pub user_id: user::UserKey,
     pub food: i32,
     pub wood: i32,
     pub stone: i32,
@@ -91,23 +81,24 @@ pub struct UserResource {
     pub wood_cap: i32,
     pub stone_cap: i32,
     pub gold_cap: i32,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_resources)]
+#[diesel(table_name = user_resources, check_for_backend(diesel::pg::Pg))]
 pub struct NewResource {
-    pub user_id: user::PK,
+    pub user_id: user::UserKey,
     pub food: Option<i32>,
     pub wood: Option<i32>,
     pub stone: Option<i32>,
     pub gold: Option<i32>,
 }
 
-#[derive(AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = user_resources)]
+#[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = user_resources, primary_key(user_id))]
 pub struct UpdateResource {
+    pub user_id: user::UserKey,
     pub food: Option<i32>,
     pub wood: Option<i32>,
     pub stone: Option<i32>,

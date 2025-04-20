@@ -37,8 +37,8 @@ impl ModifierScheduler {
     /// Schedule a job to expire a modifier at the specified time
     pub async fn schedule_expiration(
         &self,
-        modifier_id: modifier::PK,
-        user_id: user::PK,
+        modifier_id: modifier::ModifierKey,
+        user_id: user::UserKey,
         expires_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::ExpireModifier {
@@ -54,7 +54,7 @@ impl ModifierScheduler {
     /// Schedule an immediate recalculation of resources for a user
     pub async fn schedule_resource_recalculation(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         resource_types: Vec<ResourceType>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::RecalculateResources {
@@ -75,7 +75,7 @@ impl ModifierScheduler {
     /// Schedule a cache update for a user's modifiers
     pub async fn schedule_cache_update(
         &self,
-        user_id: user::PK,
+        user_id: user::UserKey,
         run_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::UpdateModifierCache { user_id };
@@ -93,7 +93,7 @@ impl ModifierScheduler {
     /// Schedule multiple cache updates for a batch of users
     pub async fn schedule_batch_cache_update(
         &self,
-        user_ids: Vec<user::PK>,
+        user_ids: Vec<user::UserKey>,
         run_at: DateTime<Utc>,
     ) -> Result<Vec<jobs::JobKey>, Error> {
         let mut job_ids = Vec::with_capacity(user_ids.len());

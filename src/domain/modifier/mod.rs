@@ -19,7 +19,7 @@ pub mod active_modifier;
 pub mod modifier_history;
 pub mod modifier_state;
 
-pub type PK = Uuid;
+pub type ModifierKey = Uuid;
 
 #[derive(
     AsExpression,
@@ -119,10 +119,9 @@ impl FromSql<crate::schema::sql_types::ModifierTarget, Pg> for ModifierTarget {
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(table_name = modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct Modifier {
-    pub id: PK,
+    pub id: ModifierKey,
     pub name: String,
     pub description: String,
     pub modifier_type: ModifierType,
@@ -135,8 +134,7 @@ pub struct Modifier {
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(table_name = modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct NewModifier {
     pub name: String,
     pub description: String,
@@ -147,11 +145,10 @@ pub struct NewModifier {
     pub stacking_group: Option<String>,
 }
 
-#[derive(AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateModifier {
-    pub id: PK,
+    pub id: ModifierKey,
     pub name: Option<String>,
     pub description: Option<String>,
     pub modifier_type: Option<ModifierType>,

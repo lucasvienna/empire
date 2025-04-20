@@ -210,12 +210,12 @@ fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> User {
 }
 
 /// Delete a user. Uses internal DB functions.
-fn delete_test_user(user_id: user::PK, mut conn: DbConn) -> usize {
+fn delete_test_user(user_id: user::UserKey, mut conn: DbConn) -> usize {
     let user_repo = UserRepository {};
     user_repo.delete(&mut conn, &user_id).unwrap()
 }
 
-fn get_bearer(user_id: user::PK) -> Authorization<Bearer> {
+fn get_bearer(user_id: user::UserKey) -> Authorization<Bearer> {
     let now = chrono::Utc::now();
     let token = encode_token(Claims {
         sub: user_id,

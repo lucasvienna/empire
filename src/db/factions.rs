@@ -7,7 +7,7 @@ use crate::schema::faction::dsl::*;
 
 pub struct FactionRepository {}
 
-impl Repository<Faction, NewFaction, UpdateFaction, FactionKey> for FactionRepository {
+impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepository {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Faction>> {
         let fac_list = faction.select(Faction::as_select()).load(connection)?;
         Ok(fac_list)
@@ -26,13 +26,8 @@ impl Repository<Faction, NewFaction, UpdateFaction, FactionKey> for FactionRepos
         Ok(new_faction)
     }
 
-    fn update(
-        &self,
-        connection: &mut DbConn,
-        faction_id: &FactionKey,
-        changeset: UpdateFaction,
-    ) -> Result<Faction> {
-        let updated_faction = diesel::update(faction.find(faction_id))
+    fn update(&self, connection: &mut DbConn, changeset: &UpdateFaction) -> Result<Faction> {
+        let updated_faction = diesel::update(faction)
             .set(changeset)
             .get_result(connection)?;
         Ok(updated_faction)

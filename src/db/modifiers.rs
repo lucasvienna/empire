@@ -1,13 +1,13 @@
 use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
-use crate::domain::modifier::{Modifier, NewModifier, UpdateModifier, PK as ModifierKey};
+use crate::domain::modifier::{Modifier, ModifierKey as ModifierKey, NewModifier, UpdateModifier};
 use crate::schema::modifiers::dsl::*;
 use crate::Result;
 
 pub struct ModifiersRepository {}
 
-impl Repository<Modifier, NewModifier, UpdateModifier, ModifierKey> for ModifiersRepository {
+impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for ModifiersRepository {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Modifier>> {
         let mod_list = modifiers.select(Modifier::as_select()).load(connection)?;
         Ok(mod_list)
@@ -29,10 +29,9 @@ impl Repository<Modifier, NewModifier, UpdateModifier, ModifierKey> for Modifier
     fn update(
         &self,
         connection: &mut DbConn,
-        modifier_id: &ModifierKey,
-        changeset: UpdateModifier,
+        changeset: &UpdateModifier,
     ) -> Result<Modifier> {
-        let modifier = diesel::update(modifiers.find(modifier_id))
+        let modifier = diesel::update(modifiers)
             .set(changeset)
             .get_result(connection)?;
         Ok(modifier)

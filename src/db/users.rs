@@ -2,12 +2,12 @@ use diesel::prelude::*;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::error::Result;
-use crate::domain::user::{NewUser, UpdateUser, User, PK as UserKey};
+use crate::domain::user::{NewUser, UpdateUser, User, UserKey};
 use crate::schema::users::dsl::*;
 
 pub struct UserRepository;
 
-impl Repository<User, NewUser, UpdateUser, UserKey> for UserRepository {
+impl Repository<User, NewUser, &UpdateUser, UserKey> for UserRepository {
     fn get_all(&self, conn: &mut DbConn) -> Result<Vec<User>> {
         let usr_list = users.select(User::as_select()).load(conn)?;
         Ok(usr_list)
@@ -26,10 +26,8 @@ impl Repository<User, NewUser, UpdateUser, UserKey> for UserRepository {
         Ok(user)
     }
 
-    fn update(&self, conn: &mut DbConn, user_id: &UserKey, changeset: UpdateUser) -> Result<User> {
-        let user = diesel::update(users.find(user_id))
-            .set(changeset)
-            .get_result(conn)?;
+    fn update(&self, conn: &mut DbConn, changeset: &UpdateUser) -> Result<User> {
+        let user = diesel::update(users).set(changeset).get_result(conn)?;
         Ok(user)
     }
 

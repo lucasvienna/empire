@@ -11,7 +11,7 @@ use crate::schema::{building, user_buildings};
 #[derive(Debug)]
 pub struct UserBuildingRepository {}
 
-impl Repository<UserBuilding, NewUserBuilding, UpdateUserBuilding, user_building::PK>
+impl Repository<UserBuilding, NewUserBuilding, &UpdateUserBuilding, user_building::UserBuildingKey>
     for UserBuildingRepository
 {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<UserBuilding>> {
@@ -21,7 +21,7 @@ impl Repository<UserBuilding, NewUserBuilding, UpdateUserBuilding, user_building
         Ok(buildings)
     }
 
-    fn get_by_id(&self, connection: &mut DbConn, id: &user_building::PK) -> Result<UserBuilding> {
+    fn get_by_id(&self, connection: &mut DbConn, id: &user_building::UserBuildingKey) -> Result<UserBuilding> {
         let building = user_buildings::table.find(id).first(connection)?;
         Ok(building)
     }
@@ -37,16 +37,15 @@ impl Repository<UserBuilding, NewUserBuilding, UpdateUserBuilding, user_building
     fn update(
         &self,
         connection: &mut DbConn,
-        id: &user_building::PK,
-        entity: UpdateUserBuilding,
+        entity: &UpdateUserBuilding,
     ) -> Result<UserBuilding> {
-        let building = diesel::update(user_buildings::table.find(id))
+        let building = diesel::update(user_buildings::table)
             .set(entity)
             .get_result(connection)?;
         Ok(building)
     }
 
-    fn delete(&self, connection: &mut DbConn, id: &user_building::PK) -> Result<usize> {
+    fn delete(&self, connection: &mut DbConn, id: &user_building::UserBuildingKey) -> Result<usize> {
         let res = diesel::delete(user_buildings::table.find(id)).execute(connection)?;
         Ok(res)
     }
@@ -64,7 +63,7 @@ impl UserBuildingRepository {
     pub fn can_construct(
         &self,
         connection: &mut DbConn,
-        usr_id: &user::PK,
+        usr_id: &user::UserKey,
         bld_id: &buildings::BuildingKey,
     ) -> Result<bool> {
         info!(
@@ -91,7 +90,7 @@ impl UserBuildingRepository {
     pub fn get_upgrade_tuple(
         &self,
         connection: &mut DbConn,
-        usr_bld_id: &user_building::PK,
+        usr_bld_id: &user_building::UserBuildingKey,
     ) -> Result<UpgradeTuple> {
         let upgrade_tuple = user_buildings::table
             .left_join(building::table)
@@ -104,7 +103,7 @@ impl UserBuildingRepository {
     pub fn set_upgrade_time(
         &self,
         connection: &mut DbConn,
-        pk: &user_building::PK,
+        pk: &user_building::UserBuildingKey,
         upgrade_time: Option<&str>,
     ) -> Result<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(pk))
@@ -120,7 +119,7 @@ impl UserBuildingRepository {
     pub fn inc_level(
         &self,
         connection: &mut DbConn,
-        id: &user_building::PK,
+        id: &user_building::UserBuildingKey,
     ) -> Result<UserBuilding> {
         let building = diesel::update(user_buildings::table.find(id))
             .set((

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
@@ -11,18 +12,20 @@ pub type BuildingLevelKey = Uuid;
     Queryable, Selectable, Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord,
 )]
 #[diesel(table_name = building_level)]
+#[diesel(belongs_to(Building))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct BuildingLevel {
     pub id: BuildingLevelKey,
     pub building_id: i32,
-    pub level: i32,
+    #[diesel(column_name = level)]
+    pub building_level: i32,
     pub upgrade_time: String,
     pub req_food: Option<i32>,
     pub req_wood: Option<i32>,
     pub req_stone: Option<i32>,
     pub req_gold: Option<i32>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// Data required to create a new building level
@@ -30,7 +33,8 @@ pub struct BuildingLevel {
 #[diesel(table_name = building_level, check_for_backend(diesel::pg::Pg))]
 pub struct NewBuildingLevel {
     pub building_id: i32,
-    pub level: i32,
+    #[diesel(column_name = level)]
+    pub building_level: i32,
     pub upgrade_time: String,
     pub req_food: Option<i32>,
     pub req_wood: Option<i32>,

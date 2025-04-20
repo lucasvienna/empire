@@ -55,10 +55,14 @@ pub struct UpdateUserPayload {
     pub faction: Option<FactionCode>,
 }
 
-impl TryFrom<UpdateUserPayload> for UpdateUser {
+/// Wrapper for user id and payload
+struct UpdateUserId(user::UserKey, UpdateUserPayload);
+
+impl TryFrom<UpdateUserId> for UpdateUser {
     type Error = Error;
 
-    fn try_from(value: UpdateUserPayload) -> Result<Self, Self::Error> {
+    fn try_from(payload: UpdateUserId) -> Result<Self, Self::Error> {
+        let UpdateUserId(id, value) = payload;
         let name: Option<user::UserName> = match value.username {
             None => None,
             Some(username) => Some(user::UserName::parse(username)?),
@@ -77,6 +81,7 @@ impl TryFrom<UpdateUserPayload> for UpdateUser {
         };
 
         let update = Self {
+            id,
             name,
             email,
             pwd_hash,
@@ -89,7 +94,7 @@ impl TryFrom<UpdateUserPayload> for UpdateUser {
 /// Struct for response data
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserBody {
-    pub id: user::PK,
+    pub id: user::UserKey,
     pub username: String,
     pub email: Option<String>,
     pub faction: FactionCode,
@@ -132,7 +137,7 @@ async fn get_users(
 #[debug_handler(state = AppState)]
 async fn get_user_by_id(
     DatabaseConnection(mut conn): DatabaseConnection,
-    Path(user_id): Path<user::PK>,
+    Path(user_id): Path<user::UserKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
     let repo = UserRepository {};
 
@@ -176,12 +181,12 @@ async fn create_user(
 #[debug_handler(state = AppState)]
 async fn update_user(
     DatabaseConnection(mut conn): DatabaseConnection,
-    Path(user_id): Path<user::PK>,
+    Path(user_id): Path<user::UserKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let repo = UserRepository {};
 
-    let update: UpdateUser = match UpdateUser::try_from(payload) {
+    let update: UpdateUser = match UpdateUser::try_from(UpdateUserId(user_id, payload)) {
         Ok(update) => update,
         Err(err) => {
             error!("Failed to parse user: {}", err);
@@ -193,7 +198,7 @@ async fn update_user(
         .get_by_id(&mut conn, &user_id)
         .map_err(|err| StatusCode::NOT_FOUND)?;
 
-    let updated_user = repo.update(&mut conn, &user_id, update).map_err(|err| {
+    let updated_user = repo.update(&mut conn, &update).map_err(|err| {
         error!("Failed to update user: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -206,7 +211,7 @@ async fn update_user(
 #[debug_handler(state = AppState)]
 async fn delete_user(
     DatabaseConnection(mut conn): DatabaseConnection,
-    Path(user_id): Path<user::PK>,
+    Path(user_id): Path<user::UserKey>,
 ) -> Result<StatusCode, StatusCode> {
     let repo = UserRepository {};
 

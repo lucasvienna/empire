@@ -1,4 +1,4 @@
-use diesel::AsChangeset;
+use diesel::{AsChangeset, Identifiable};
 
 use crate::domain::error::Result;
 
@@ -19,7 +19,7 @@ pub use connection::{DbConn, DbPool};
 
 pub trait Repository<Entity, NewEntity, UpdateEntity, PK = i32>: Send + Sync
 where
-    UpdateEntity: AsChangeset,
+    UpdateEntity: Identifiable + AsChangeset,
 {
     /// get all entities
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<Entity>>;
@@ -31,7 +31,7 @@ where
     fn create(&self, connection: &mut DbConn, entity: NewEntity) -> Result<Entity>;
 
     /// update an entity
-    fn update(&self, connection: &mut DbConn, id: &PK, changeset: UpdateEntity) -> Result<Entity>;
+    fn update(&self, connection: &mut DbConn, changeset: UpdateEntity) -> Result<Entity>;
 
     /// delete an entity by its id
     fn delete(&self, connection: &mut DbConn, id: &PK) -> Result<usize>;

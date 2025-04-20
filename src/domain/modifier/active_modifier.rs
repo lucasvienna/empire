@@ -70,12 +70,11 @@ impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourc
 }
 
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = active_modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct ActiveModifier {
     pub id: PK,
-    pub user_id: user::PK,
-    pub modifier_id: modifier::PK,
+    pub user_id: user::UserKey,
+    pub modifier_id: modifier::ModifierKey,
     pub started_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: ModifierSourceType,
@@ -85,20 +84,18 @@ pub struct ActiveModifier {
 }
 
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = active_modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct NewActiveModifier {
-    pub user_id: user::PK,
-    pub modifier_id: modifier::PK,
+    pub user_id: user::UserKey,
+    pub modifier_id: modifier::ModifierKey,
     pub started_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: ModifierSourceType,
     pub source_id: Option<Uuid>,
 }
 
-#[derive(AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[diesel(table_name = active_modifiers)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateActiveModifier {
     pub id: PK,
     pub started_at: Option<DateTime<Utc>>,

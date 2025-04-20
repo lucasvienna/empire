@@ -10,7 +10,7 @@ use crate::Result;
 
 pub struct ActiveModifiersRepository {}
 
-impl Repository<ActiveModifier, NewActiveModifier, UpdateActiveModifier, ActiveModifierKey>
+impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, ActiveModifierKey>
     for ActiveModifiersRepository
 {
     fn get_all(&self, connection: &mut DbConn) -> Result<Vec<ActiveModifier>> {
@@ -40,10 +40,9 @@ impl Repository<ActiveModifier, NewActiveModifier, UpdateActiveModifier, ActiveM
     fn update(
         &self,
         connection: &mut DbConn,
-        mod_id: &ActiveModifierKey,
-        changeset: UpdateActiveModifier,
+        changeset: &UpdateActiveModifier,
     ) -> Result<ActiveModifier> {
-        let modifier = diesel::update(active_modifiers.find(mod_id))
+        let modifier = diesel::update(active_modifiers)
             .set(changeset)
             .get_result(connection)?;
         Ok(modifier)
@@ -59,7 +58,7 @@ impl ActiveModifiersRepository {
     pub fn get_by_user_id(
         &self,
         connection: &mut DbConn,
-        usr_id: &user::PK,
+        usr_id: &user::UserKey,
     ) -> Result<Vec<ActiveModifier>> {
         let active_mods = active_modifiers
             .filter(user_id.eq(usr_id))

@@ -8,7 +8,7 @@ use crate::schema::building::dsl::*;
 #[derive(Debug)]
 pub struct BuildingRepository {}
 
-impl Repository<Building, NewBuilding, UpdateBuilding, BuildingKey> for BuildingRepository {
+impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for BuildingRepository {
     fn get_all(&self, conn: &mut DbConn) -> Result<Vec<Building>> {
         let bld_list = building.select(Building::as_select()).load(conn)?;
         Ok(bld_list)
@@ -30,12 +30,9 @@ impl Repository<Building, NewBuilding, UpdateBuilding, BuildingKey> for Building
     fn update(
         &self,
         conn: &mut DbConn,
-        bld_id: &BuildingKey,
-        changeset: UpdateBuilding,
+        changeset: &UpdateBuilding,
     ) -> Result<Building> {
-        let bld = diesel::update(building.find(bld_id))
-            .set(changeset)
-            .get_result(conn)?;
+        let bld = diesel::update(building).set(changeset).get_result(conn)?;
         Ok(bld)
     }
 

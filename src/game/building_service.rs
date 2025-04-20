@@ -43,7 +43,7 @@ impl BuildingService {
     #[instrument(skip(self))]
     pub fn construct_building(
         &mut self,
-        usr_id: &user::PK,
+        usr_id: &user::UserKey,
         bld_id: &buildings::BuildingKey,
     ) -> Result<UserBuilding> {
         info!("Constructing building: {} for user: {}", bld_id, usr_id);
@@ -107,7 +107,7 @@ impl BuildingService {
     }
 
     #[instrument(skip(self))]
-    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::PK) -> Result<()> {
+    pub fn upgrade_building(&mut self, usr_bld_id: &user_building::UserBuildingKey) -> Result<()> {
         let (usr_bld, max_level) = self
             .usr_bld_repo
             .get_upgrade_tuple(&mut self.connection, usr_bld_id)?;
@@ -166,7 +166,7 @@ impl BuildingService {
     }
 
     #[instrument(skip(self))]
-    pub fn confirm_upgrade(&mut self, id: &user_building::PK) -> Result<()> {
+    pub fn confirm_upgrade(&mut self, id: &user_building::UserBuildingKey) -> Result<()> {
         let usr_bld = self.usr_bld_repo.get_by_id(&mut self.connection, id)?;
         match usr_bld.upgrade_time {
             None => Err(Error::from((
@@ -192,7 +192,7 @@ impl BuildingService {
 
     fn has_enough_resources(
         &mut self,
-        user_id: &user::PK,
+        user_id: &user::UserKey,
         bld_lvl: &BuildingLevel,
     ) -> Result<bool> {
         debug!("Checking resources for user: {}", user_id);

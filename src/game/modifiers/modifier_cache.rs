@@ -25,7 +25,7 @@ pub struct CacheEntry {
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct CacheKey {
-    pub user_id: user::PK,
+    pub user_id: user::UserKey,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
 }

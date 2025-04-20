@@ -54,7 +54,7 @@ impl ResourceService {
     /// - The database query to calculate the collectible resource amounts fails.
     /// - The transaction to update both the accumulator and the resource storage fails.
     #[instrument(skip(self))]
-    pub fn collect_resources(&mut self, user_id: &user::PK) -> Result<UserResource> {
+    pub fn collect_resources(&mut self, user_id: &user::UserKey) -> Result<UserResource> {
         let (food, wood, stone, gold) = acc::table
             .inner_join(rsc::table.on(acc::user_id.eq(rsc::user_id)))
             .filter(acc::user_id.eq(user_id))
