@@ -15,12 +15,13 @@ mod common;
 #[tokio::test]
 async fn test_faction_modifier_on_create() {
     let app = common::spawn_app();
-    let mut conn = app.db_pool.get().unwrap();
+    let conn = app.db_pool.get().unwrap();
 
     // Create a player with Human faction
-    let user = create_test_user(&mut conn, FactionCode::Human);
+    let user = create_test_user(conn, FactionCode::Human);
 
     // Verify active modifiers
+    let mut conn = app.db_pool.get().unwrap();
     let active_modifiers: Vec<(String, BigDecimal)> = active_modifiers::table
         .inner_join(modifiers::table.on(modifiers::id.eq(&active_modifiers::modifier_id)))
         .filter(active_modifiers::player_id.eq(&user.id))
@@ -84,11 +85,12 @@ async fn test_faction_modifier_on_create() {
 #[tokio::test]
 async fn test_faction_change() {
     let app = common::spawn_app();
-    let mut conn = app.db_pool.get().unwrap();
+    let conn = app.db_pool.get().unwrap();
 
     // Create player with Human faction
-    let user = create_test_user(&mut conn, FactionCode::Human);
+    let user = create_test_user(conn, FactionCode::Human);
 
+    let mut conn = app.db_pool.get().unwrap();
     // Change faction to Orc
     diesel::update(player::table.filter(player::id.eq(user.id)))
         .set(player::faction.eq(FactionCode::Orc))
@@ -173,17 +175,14 @@ async fn test_faction_change() {
 }
 
 // Helper function to create test users
-fn create_test_user(conn: &mut DbConn, faction: FactionCode) -> Player {
-    let user_repo = PlayerRepository {};
+fn create_test_user(conn: DbConn, faction: FactionCode) -> Player {
+    let mut user_repo = PlayerRepository::from_connection(conn);
     user_repo
-        .create(
-            conn,
-            NewPlayer {
-                name: UserName::parse("test_user".to_string()).unwrap(),
-                pwd_hash: hash_password(b"1234").unwrap(),
-                email: None,
-                faction,
-            },
-        )
+        .create(NewPlayer {
+            name: UserName::parse("test_user".to_string()).unwrap(),
+            pwd_hash: hash_password(b"1234").unwrap(),
+            email: None,
+            faction,
+        })
         .unwrap()
 }

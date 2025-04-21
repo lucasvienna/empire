@@ -6,14 +6,14 @@ use diesel::QueryDsl;
 use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
-use crate::db::DbConn;
+use crate::db::{DbPool, Repository};
 use crate::domain::player::resource::PlayerResource;
 use crate::domain::player::PlayerKey;
 use crate::schema::{player_accumulator as acc, player_resource as rsc};
 use crate::Result;
 
 pub struct ResourceService {
-    connection: DbConn,
+    db_pool: DbPool,
     res_repo: ResourcesRepository,
 }
 
@@ -29,11 +29,11 @@ define_sql_function! {
 }
 
 impl ResourceService {
-    pub fn new(connection: DbConn) -> ResourceService {
-        ResourceService {
-            connection,
-            res_repo: ResourcesRepository {},
-        }
+    pub fn new(db_pool: DbPool) -> Result<ResourceService> {
+        Ok(ResourceService {
+            res_repo: ResourcesRepository::try_from_pool(&db_pool)?,
+            db_pool,
+        })
     }
 
     /// Collects resources for a player by transferring the maximum possible amount from their
@@ -55,6 +55,7 @@ impl ResourceService {
     /// - The transaction to update both the accumulator and the resource storage fails.
     #[instrument(skip(self))]
     pub fn collect_resources(&mut self, player_id: &PlayerKey) -> Result<PlayerResource> {
+        let mut connection = self.db_pool.get()?;
         let (food, wood, stone, gold) = acc::table
             .inner_join(rsc::table.on(acc::player_id.eq(rsc::player_id)))
             .filter(acc::player_id.eq(player_id))
@@ -64,10 +65,10 @@ impl ResourceService {
                 least(acc::stone, rsc::stone_cap - rsc::stone),
                 least(acc::gold, rsc::gold_cap - rsc::gold),
             ))
-            .first::<(i32, i32, i32, i32)>(&mut self.connection)?;
+            .first::<(i32, i32, i32, i32)>(&mut connection)?;
         debug!("Deltas: {:?}", (food, wood, stone, gold));
 
-        let res: Result<PlayerResource> = self.connection.transaction(|conn| {
+        let res: Result<PlayerResource> = connection.transaction(|conn| {
             // drain accumulator first
             let updated_rows = diesel::update(acc::table.filter(acc::player_id.eq(player_id)))
                 .set((

@@ -78,18 +78,18 @@ impl Debug for LoginPayload {
 #[instrument(skip(conn, settings))]
 #[debug_handler(state = AppState)]
 async fn register(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     settings: Settings,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
     let new_user = NewPlayer::try_from(payload).map_err(|err| {
         error!("Failed to parse player: {}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::BAD_REQUEST, Json(body))
     })?;
 
-    match repo.exists_by_name(&mut conn, &new_user.name) {
+    match repo.exists_by_name(&new_user.name) {
         Ok(exists) => {
             if exists {
                 let body = json!({ "status": "error", "message": "Username already taken" });
@@ -103,7 +103,7 @@ async fn register(
         }
     }
 
-    let created_user = repo.create(&mut conn, new_user).map_err(|err| {
+    let created_user = repo.create(new_user).map_err(|err| {
         error!("Failed to insert player: {:#?}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::INTERNAL_SERVER_ERROR, Json(body))
@@ -119,7 +119,7 @@ async fn register(
 #[instrument(skip(conn, jar, settings))]
 #[debug_handler(state = AppState)]
 async fn login(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     jar: CookieJar,
     settings: Settings,
     Json(payload): Json<LoginPayload>,
@@ -128,13 +128,11 @@ async fn login(
         return Err(AuthError::MissingCredentials);
     }
 
-    let repo = PlayerRepository {};
-    let user = repo
-        .get_by_name(&mut conn, &payload.username)
-        .map_err(|err| {
-            warn!("Invalid player: {}", err);
-            AuthError::WrongCredentials
-        })?;
+    let mut repo = PlayerRepository::from_connection(conn);
+    let user = repo.get_by_name(&payload.username).map_err(|err| {
+        warn!("Invalid player: {}", err);
+        AuthError::WrongCredentials
+    })?;
 
     let argon2 = Argon2::default();
     let hash = PasswordHash::new(&user.pwd_hash).map_err(|_| AuthError::ArgonError)?;

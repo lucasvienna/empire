@@ -36,7 +36,7 @@ async fn test_collect_resource() {
         .execute(&mut conn)
         .expect("Failed to update resources");
 
-    let mut srv = ResourceService::new(db_pool.get().unwrap());
+    let mut srv = ResourceService::new(db_pool).expect("Failed to create service");
     let res = srv
         .collect_resources(&user.id)
         .expect("Failed to collect resources");
@@ -59,17 +59,13 @@ async fn test_collect_resource() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn) -> Player {
-    let user_repo = PlayerRepository {};
-    user_repo
-        .create(
-            &mut conn,
-            NewPlayer {
-                name: UserName::parse("test_user".to_string()).unwrap(),
-                pwd_hash: hash_password(b"1234").unwrap(),
-                email: None,
-                faction: FactionCode::Human,
-            },
-        )
-        .unwrap()
+fn create_test_user(conn: DbConn) -> Player {
+    let mut repo = PlayerRepository::from_connection(conn);
+    repo.create(NewPlayer {
+        name: UserName::parse("test_user".to_string()).unwrap(),
+        pwd_hash: hash_password(b"1234").unwrap(),
+        email: None,
+        faction: FactionCode::Human,
+    })
+    .expect("Failed to create player")
 }

@@ -48,6 +48,42 @@ where
     }
 }
 
+/// An extractor that provides direct access to the database connection pool.
+///
+/// # Overview
+///
+/// This type implements [`FromRequestParts`] to fetch a reference to the [`DbPool`]
+/// directly. This is useful when you need access to the pool itself rather than
+/// a single connection.
+///
+/// # Error Handling
+///
+/// While this extractor typically won't fail (as it only clones a reference),
+/// it still returns a [`StatusCode::INTERNAL_SERVER_ERROR`] with an error message
+/// if the pool reference cannot be obtained.
+///
+/// # Notes
+///
+/// 1. This extractor is less commonly needed than [`DatabaseConnection`], as most
+///    handlers only need a single connection.
+/// 2. Like [`DatabaseConnection`], this type relies on [`FromRef`] to access the
+///    pool from your application state.
+pub struct DatabasePool(pub DbPool);
+
+impl<S> FromRequestParts<S> for DatabasePool
+where
+    S: Send + Sync,
+    DbPool: FromRef<S>,
+{
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let pool = Pool::from_ref(state);
+        trace!("Acquired database pool reference.");
+        Ok(Self(pool))
+    }
+}
+
 impl FromRef<AppState> for DbPool {
     fn from_ref(state: &AppState) -> Self {
         state.db_pool.deref().clone()

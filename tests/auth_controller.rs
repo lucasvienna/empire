@@ -245,22 +245,19 @@ async fn logout_succeeds() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn) -> Player {
-    let user_repo = PlayerRepository {};
+fn create_test_user(conn: DbConn) -> Player {
+    let mut user_repo = PlayerRepository::from_connection(conn);
     user_repo
-        .create(
-            &mut conn,
-            NewPlayer {
-                name: UserName::parse("test_user".to_string()).unwrap(),
-                pwd_hash: hash_password(b"1234").unwrap(),
-                email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),
-                faction: FactionCode::Human,
-            },
-        )
-        .unwrap()
+        .create(NewPlayer {
+            name: UserName::parse("test_user".to_string()).unwrap(),
+            pwd_hash: hash_password(b"1234").unwrap(),
+            email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),
+            faction: FactionCode::Human,
+        })
+        .expect("Failed to create user")
 }
 
-fn get_user_by_name(mut conn: DbConn, name: &str) -> empire::Result<Player> {
-    let repo = PlayerRepository {};
-    repo.get_by_name(&mut conn, name)
+fn get_user_by_name(conn: DbConn, name: &str) -> empire::Result<Player> {
+    let mut repo = PlayerRepository::from_connection(conn);
+    repo.get_by_name(name)
 }

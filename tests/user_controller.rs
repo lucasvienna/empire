@@ -193,25 +193,22 @@ async fn delete() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(mut conn: DbConn, faction: Option<FactionCode>) -> Player {
-    let user_repo = PlayerRepository {};
+fn create_test_user(conn: DbConn, faction: Option<FactionCode>) -> Player {
+    let mut user_repo = PlayerRepository::from_connection(conn);
     user_repo
-        .create(
-            &mut conn,
-            NewPlayer {
-                name: UserName::parse("test_user".to_string()).unwrap(),
-                pwd_hash: hash_password(b"1234").unwrap(),
-                email: None,
-                faction: faction.unwrap_or(FactionCode::Human),
-            },
-        )
-        .unwrap()
+        .create(NewPlayer {
+            name: UserName::parse("test_user".to_string()).unwrap(),
+            pwd_hash: hash_password(b"1234").unwrap(),
+            email: None,
+            faction: faction.unwrap_or(FactionCode::Human),
+        })
+        .expect("Failed to create player")
 }
 
 /// Delete a player. Uses internal DB functions.
-fn delete_test_user(player_id: PlayerKey, mut conn: DbConn) -> usize {
-    let user_repo = PlayerRepository {};
-    user_repo.delete(&mut conn, &player_id).unwrap()
+fn delete_test_user(player_id: PlayerKey, conn: DbConn) -> usize {
+    let mut user_repo = PlayerRepository::from_connection(conn);
+    user_repo.delete(&player_id).unwrap()
 }
 
 fn get_bearer(player_id: PlayerKey) -> Authorization<Bearer> {

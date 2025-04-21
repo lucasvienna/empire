@@ -2,13 +2,15 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
+use crate::domain::buildings::Building;
 use crate::domain::player::{Player, PlayerKey};
 use crate::schema::player_building;
 
 pub type PlayerBuildingKey = Uuid;
 
-#[derive(Queryable, Selectable, Identifiable, Associations, Debug)]
+#[derive(Identifiable, Queryable, Selectable, Associations, Debug)]
 #[diesel(belongs_to(Player))]
+#[diesel(belongs_to(Building))]
 #[diesel(table_name = player_building, check_for_backend(diesel::pg::Pg))]
 pub struct PlayerBuilding {
     pub id: PlayerBuildingKey,

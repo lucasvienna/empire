@@ -7,3 +7,4 @@ pub mod factions;
 pub mod jobs;
 pub mod modifier;
 pub mod player;
+pub mod resource_generation;

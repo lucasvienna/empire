@@ -11,6 +11,7 @@ use tracing::{error, instrument, trace, warn};
 
 use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
+use crate::db::Repository;
 use crate::domain::auth::decode_token;
 
 #[derive(Debug, Serialize)]
@@ -21,7 +22,7 @@ pub struct ErrorResponse {
 
 #[instrument(skip(conn, cookie_jar, req, next))]
 pub async fn auth_middleware(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     cookie_jar: CookieJar,
     mut req: Request,
     next: Next,
@@ -61,8 +62,8 @@ pub async fn auth_middleware(
         .claims;
 
     let player_id = claims.sub;
-    let player_repo = PlayerRepository {};
-    let user = player_repo.find_by_id(&mut conn, &player_id).map_err(|e| {
+    let mut player_repo = PlayerRepository::from_connection(conn);
+    let user = player_repo.find_by_id(&player_id).map_err(|e| {
         error!("Error fetching player from database: {}", e);
         let json_error = ErrorResponse {
             status: "fail",

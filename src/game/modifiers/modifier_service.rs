@@ -42,14 +42,11 @@ impl ModifierService {
 
     /// Apply a new modifier to a player and update all relevant systems
     pub async fn apply_modifier(&mut self, new_modifier: NewActiveModifier) -> Result<(), Error> {
-        let mut conn = self.db_pool.get()?;
         // Store the modifier in the database
-        let active_mod = self.active_mod_repo.create(&mut conn, new_modifier)?;
+        let active_mod = self.active_mod_repo.create(new_modifier)?;
 
         // Calculate new aggregate values for affected resources/targets
-        let modifier = self
-            .mod_repo
-            .get_by_id(&mut conn, &active_mod.modifier_id)?;
+        let modifier = self.mod_repo.get_by_id(&active_mod.modifier_id)?;
         let cache_key = self.create_cache_key(
             active_mod.player_id,
             modifier.target_type,
@@ -89,16 +86,15 @@ impl ModifierService {
 
     /// Get all active modifiers for a player
     pub fn get_active_modifiers(
-        &self,
+        &mut self,
         player_id: &player::PlayerKey,
     ) -> Result<Vec<ActiveModifier>, Error> {
-        let mut conn = self.db_pool.get()?;
-        self.active_mod_repo.get_by_player_id(&mut conn, player_id)
+        self.active_mod_repo.get_by_player_id(player_id)
     }
 
     /// Get the total modifier multiplier for a specific target and resource
     pub async fn get_total_multiplier(
-        &self,
+        &mut self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
@@ -132,21 +128,18 @@ impl ModifierService {
 
     /// Calculate the total modifier multiplier from all active modifiers
     async fn calculate_total_multiplier(
-        &self,
+        &mut self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
-        let mut conn = self.db_pool.get()?;
         let active_modifiers = self.get_active_modifiers(&player_id)?;
 
         // Group modifiers by stacking group
         let mut stacking_groups: HashMap<Option<String>, Vec<Modifier>> = HashMap::new();
 
         for active_mod in active_modifiers {
-            let modifier = self
-                .mod_repo
-                .get_by_id(&mut conn, &active_mod.modifier_id)?;
+            let modifier = self.mod_repo.get_by_id(&active_mod.modifier_id)?;
 
             // Filter by target type and resource
             if modifier.target_type != target_type {
@@ -175,7 +168,7 @@ impl ModifierService {
 
     /// Get the nearest expiration time for modifiers matching the criteria
     async fn get_nearest_expiration(
-        &self,
+        &mut self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,

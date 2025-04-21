@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::domain::{modifier, player};
 use crate::schema::active_modifiers;
 
-pub type PK = Uuid;
+pub type ActiveModifierKey = Uuid;
 
 #[derive(
     AsExpression,
@@ -72,7 +72,7 @@ impl FromSql<crate::schema::sql_types::ModifierSourceType, Pg> for ModifierSourc
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct ActiveModifier {
-    pub id: PK,
+    pub id: ActiveModifierKey,
     pub player_id: player::PlayerKey,
     pub modifier_id: modifier::ModifierKey,
     pub started_at: DateTime<Utc>,
@@ -97,7 +97,7 @@ pub struct NewActiveModifier {
 #[derive(Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = active_modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateActiveModifier {
-    pub id: PK,
+    pub id: ActiveModifierKey,
     pub started_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
     pub source_type: Option<ModifierSourceType>,

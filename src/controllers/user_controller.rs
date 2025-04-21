@@ -118,11 +118,11 @@ impl From<Player> for UserBody {
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn get_users(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
 ) -> Result<Json<UserListBody>, StatusCode> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
 
-    let result = repo.get_all(&mut conn).map_err(|err| {
+    let result = repo.get_all().map_err(|err| {
         error!("Failed to fetch users: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -136,12 +136,12 @@ async fn get_users(
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn get_user_by_id(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
 
-    let user = repo.get_by_id(&mut conn, &player_id).map_err(|err| {
+    let user = repo.get_by_id(&player_id).map_err(|err| {
         error!("Failed to fetch player: {}", err);
         StatusCode::NOT_FOUND
     })?;
@@ -153,10 +153,10 @@ async fn get_user_by_id(
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn create_user(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     Json(payload): Json<NewUserPayload>,
 ) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
     let new_user = match NewPlayer::try_from(payload) {
         Ok(new_user) => new_user,
         Err(err) => {
@@ -165,7 +165,7 @@ async fn create_user(
         }
     };
 
-    let created_user = repo.create(&mut conn, new_user).map_err(|err| {
+    let created_user = repo.create(new_user).map_err(|err| {
         error!("Failed to insert player: {:#?}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -180,13 +180,13 @@ async fn create_user(
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn update_user(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     Path(player_id): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
 
-    let update: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_id, payload)) {
+    let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_id, payload)) {
         Ok(update) => update,
         Err(err) => {
             error!("Failed to parse player: {}", err);
@@ -195,10 +195,10 @@ async fn update_user(
     };
 
     let user = repo
-        .get_by_id(&mut conn, &player_id)
+        .get_by_id(&player_id)
         .map_err(|err| StatusCode::NOT_FOUND)?;
 
-    let updated_user = repo.update(&mut conn, &update).map_err(|err| {
+    let updated_user = repo.update(&changeset).map_err(|err| {
         error!("Failed to update player: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -210,12 +210,12 @@ async fn update_user(
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn delete_user(
-    DatabaseConnection(mut conn): DatabaseConnection,
+    DatabaseConnection(conn): DatabaseConnection,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {
-    let repo = PlayerRepository {};
+    let mut repo = PlayerRepository::from_connection(conn);
 
-    let count = repo.delete(&mut conn, &player_id).map_err(|err| {
+    let count = repo.delete(&player_id).map_err(|err| {
         error!("Failed to delete player: {}", err);
         StatusCode::NOT_FOUND
     })?;
