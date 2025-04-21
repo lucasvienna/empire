@@ -1,13 +1,13 @@
-use std::ops::Deref;
+use std::sync::Arc;
 
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
-use diesel::r2d2::Pool;
+use derive_more::Deref;
 use tracing::{error, trace};
 
-use crate::db::{DbConn, DbPool};
-use crate::domain::app_state::AppState;
+use crate::db::DbConn;
+use crate::domain::app_state::{AppPool, AppState};
 
 /// An extractor that acquires a database connection from a configured connection pool.
 ///
@@ -27,17 +27,18 @@ use crate::domain::app_state::AppState;
 /// 2. This extractor uses the [`FromRef`] trait to retrieve the appropriate
 ///    connection pool reference from your state. Ensure your application state
 ///    type provides the needed reference to the pool.
+#[derive(Deref)]
 pub struct DatabaseConnection(pub DbConn);
 
 impl<S> FromRequestParts<S> for DatabaseConnection
 where
     S: Send + Sync,
-    DbPool: FromRef<S>,
+    DatabasePool: FromRef<S>,
 {
     type Rejection = (StatusCode, String);
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let pool = Pool::from_ref(state);
+        let pool = DatabasePool::from_ref(state);
         let conn = pool.get().map_err(|err| {
             error!("Failed to get a database connection: {}", err);
             (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
@@ -68,24 +69,25 @@ where
 ///    handlers only need a single connection.
 /// 2. Like [`DatabaseConnection`], this type relies on [`FromRef`] to access the
 ///    pool from your application state.
-pub struct DatabasePool(pub DbPool);
+#[derive(Deref)]
+pub struct DatabasePool(pub AppPool);
 
 impl<S> FromRequestParts<S> for DatabasePool
 where
     S: Send + Sync,
-    DbPool: FromRef<S>,
+    DatabasePool: FromRef<S>,
 {
     type Rejection = (StatusCode, String);
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let pool = Pool::from_ref(state);
+        let pool = DatabasePool::from_ref(state);
         trace!("Acquired database pool reference.");
-        Ok(Self(pool))
+        Ok(pool)
     }
 }
 
-impl FromRef<AppState> for DbPool {
-    fn from_ref(state: &AppState) -> Self {
-        state.db_pool.deref().clone()
+impl FromRef<AppState> for DatabasePool {
+    fn from_ref(AppState(app): &AppState) -> Self {
+        DatabasePool(Arc::clone(&app.db_pool))
     }
 }

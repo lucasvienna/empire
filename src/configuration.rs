@@ -10,9 +10,10 @@ use serde::Deserialize;
 use serde_aux::prelude::deserialize_number_from_string;
 use tracing::{debug, instrument, trace};
 
+use crate::domain::app_state::AppState;
 use crate::Result;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, FromRef, Debug, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub server: ServerSettings,
@@ -196,6 +197,12 @@ where
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let settings = Settings::from_ref(state);
         Ok(settings)
+    }
+}
+
+impl FromRef<AppState> for Settings {
+    fn from_ref(state: &AppState) -> Self {
+        state.settings.clone()
     }
 }
 

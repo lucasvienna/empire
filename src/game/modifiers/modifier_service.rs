@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
@@ -16,7 +17,7 @@ use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::Error;
 
 pub struct ModifierService {
-    cache: ModifierCache,
+    cache: Arc<ModifierCache>,
     scheduler: ModifierScheduler,
     mod_repo: ModifiersRepository,
     active_mod_repo: ActiveModifiersRepository,
@@ -25,7 +26,7 @@ pub struct ModifierService {
 
 impl ModifierService {
     pub fn new(
-        cache: ModifierCache,
+        cache: Arc<ModifierCache>,
         scheduler: ModifierScheduler,
         mod_repo: ModifiersRepository,
         active_mod_repo: ActiveModifiersRepository,

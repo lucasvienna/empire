@@ -6,24 +6,24 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, error, info, trace, warn};
 use ulid::Ulid;
 
-use crate::db::DbPool;
+use crate::domain::app_state::AppPool;
 use crate::domain::jobs::Job;
 use crate::job_queue::JobQueue;
 use crate::Error;
 
 struct JobProcessor {
     id: String,
-    pool: DbPool,
+    db_pool: AppPool,
     shutdown_rx: broadcast::Receiver<()>,
 }
 
 impl JobProcessor {
-    fn new(pool: DbPool, shutdown_rx: broadcast::Receiver<()>) -> Self {
+    fn new(db_pool: AppPool, shutdown_rx: broadcast::Receiver<()>) -> Self {
         let id = format!("task-goblin-{}", Ulid::new());
         debug!("Starting worker {}", id);
         Self {
             id,
-            pool,
+            db_pool,
             shutdown_rx,
         }
     }
@@ -82,9 +82,9 @@ pub struct WorkerPool {
 }
 
 impl WorkerPool {
-    pub fn new(queue: JobQueue) -> Self {
+    pub fn new(queue: Arc<JobQueue>) -> Self {
         Self {
-            queue: Arc::new(queue),
+            queue,
             workers: Vec::new(),
         }
     }

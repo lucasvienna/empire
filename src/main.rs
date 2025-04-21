@@ -1,4 +1,5 @@
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use anyhow::Result;
 use empire::db::{connection, migrations};
@@ -20,7 +21,7 @@ async fn main() -> Result<ExitCode> {
         migrations::run_pending(&mut conn).expect("Failed to execute pending migrations.");
     }
 
-    launch(settings, pool).await?;
+    launch(settings, Arc::new(pool)).await?;
 
     Ok(ExitCode::SUCCESS)
 }

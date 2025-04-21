@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use serde::Serialize;
 use tokio::sync::broadcast;
 
-use crate::db::DbPool;
+use crate::domain::app_state::AppPool;
 use crate::domain::jobs::{Job, JobKey, JobStatus, JobType, NewJob};
 use crate::schema::job::dsl::job;
 use crate::schema::job::*;
@@ -20,12 +20,12 @@ pub enum JobPriority {
 
 #[derive(Debug, Clone)]
 pub struct JobQueue {
-    pool: DbPool,
+    pool: AppPool,
     shutdown_tx: broadcast::Sender<()>,
 }
 
 impl JobQueue {
-    pub fn new(pool: DbPool) -> Self {
+    pub fn new(pool: AppPool) -> Self {
         let (shutdown_tx, _) = broadcast::channel(1);
         Self { pool, shutdown_tx }
     }
@@ -38,7 +38,7 @@ impl JobQueue {
         job_priority: JobPriority,
         job_run_at: DateTime<Utc>,
     ) -> Result<JobKey> {
-        let mut conn = self.pool.get().expect("Failed to get database connection");
+        let mut conn = self.pool.get()?;
         let pld = serde_json::to_value(job_payload)?;
 
         let new_job = NewJob {
@@ -61,10 +61,10 @@ impl JobQueue {
     }
 
     /// Gets the next available job for processing
-    pub async fn get_next_job(&self, worker_id: &str) -> Result<Option<Job>, Error> {
-        let mut conn = self.pool.get().expect("Failed to get database connection");
+    pub async fn get_next_job(&self, worker_id: &str) -> Result<Option<Job>> {
+        let mut conn = self.pool.get()?;
 
-        let next: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>, Error> {
+        let next: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>> {
             let now = Utc::now();
             // First, select the job we want to process
             let next_job: Option<Job> = job
@@ -97,7 +97,7 @@ impl JobQueue {
 
     /// Marks a job as completed
     pub async fn complete_job(&self, job_id: JobKey) -> Result<(), Error> {
-        let mut conn = self.pool.get().expect("Failed to get database connection");
+        let mut conn = self.pool.get()?;
 
         diesel::update(job.filter(id.eq(&job_id)))
             .set((
@@ -112,7 +112,7 @@ impl JobQueue {
 
     /// Marks a job as failed
     pub async fn fail_job(&self, job_id: JobKey, error: impl AsRef<str>) -> Result<(), Error> {
-        let mut conn = self.pool.get().expect("Failed to get database connection");
+        let mut conn = self.pool.get()?;
 
         diesel::update(job)
             .filter(id.eq(job_id))

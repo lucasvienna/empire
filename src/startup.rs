@@ -1,3 +1,5 @@
+use std::ops::Deref;
+use std::sync::Arc;
 use std::thread::available_parallelism;
 
 use tokio::signal;
@@ -6,7 +8,7 @@ use tracing::{info, warn};
 
 use crate::configuration::Settings;
 use crate::db::connection::DbPool;
-use crate::domain::app_state::AppState;
+use crate::domain::app_state::{App, AppPool, AppState};
 use crate::game::res_gen_subroutine::init_res_gen;
 use crate::job_queue::job_processor::WorkerPool;
 use crate::net::server;
@@ -31,19 +33,20 @@ use crate::Result;
 /// - Initialization of the server's listener or router fails.
 /// - Retrieving the server's local address fails.
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
-pub async fn launch(config: Settings, pool: DbPool) -> Result<()> {
+pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
     let token = CancellationToken::new();
-    let app_state = AppState::new(pool.clone(), config.clone());
-    let subroutines = start_subroutines(pool.clone(), token.clone());
+    let app = Arc::new(App::with_pool(pool.clone(), config.clone()));
+    let subroutines = start_subroutines(pool.deref().clone(), token.clone());
 
     let default_workers = available_parallelism()?.get();
-    let mut worker_pool = WorkerPool::new(app_state.job_queue.as_ref().clone());
+    let mut worker_pool = WorkerPool::new(Arc::clone(&app.job_queue));
     worker_pool
         .start(config.server.workers.unwrap_or(default_workers))
         .await?;
     let worker_monitor = shutdown_handler(token.clone(), worker_pool);
 
-    let (listener, router) = server::init(AppState::new(pool, config)).await?;
+    let app_state = AppState(app);
+    let (listener, router) = server::init(app_state).await?;
 
     info!("Empire server started!");
     info!("Listening on {}", listener.local_addr()?);
@@ -120,12 +123,24 @@ async fn shutdown_signal(token: CancellationToken) {
             .await;
     };
 
+    #[cfg(unix)]
+    let interrupt = async {
+        signal::unix::signal(signal::unix::SignalKind::interrupt())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
+
+    #[cfg(not(unix))]
+    let interrupt = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => token.cancel(),
         _ = terminate => token.cancel(),
+        _ = interrupt => token.cancel(),
     }
 
     info!("Shutting down...");
