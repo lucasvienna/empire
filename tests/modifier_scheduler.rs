@@ -12,7 +12,7 @@ mod common;
 
 #[tokio::test]
 async fn test_schedule_expiration() {
-    let pool = common::init_server().db_pool;
+    let pool = Arc::new(common::init_server().db_pool);
     let mut connection = pool.get().expect("Failed to get connection from pool");
     let queue = Arc::new(JobQueue::new(pool));
     let scheduler = ModifierScheduler::new(queue);

@@ -16,6 +16,7 @@ async fn main() -> Result<ExitCode> {
 
     let settings = configuration::get_settings().expect("Failed to read configuration.");
     let pool = connection::initialize_pool(&settings.database);
+
     {
         let mut conn = pool.get()?;
         migrations::run_pending(&mut conn).expect("Failed to execute pending migrations.");

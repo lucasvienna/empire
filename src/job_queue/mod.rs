@@ -10,6 +10,7 @@ use crate::schema::job::*;
 use crate::{Error, ErrorKind, Result};
 
 pub mod job_processor;
+pub mod worker_pool;
 
 #[derive(Debug, Clone, Copy)]
 pub enum JobPriority {

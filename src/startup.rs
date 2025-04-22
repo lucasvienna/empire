@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::Arc;
 use std::thread::available_parallelism;
 
@@ -7,10 +6,9 @@ use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
 use crate::configuration::Settings;
-use crate::db::connection::DbPool;
 use crate::domain::app_state::{App, AppPool, AppState};
 use crate::game::res_gen_subroutine::init_res_gen;
-use crate::job_queue::job_processor::WorkerPool;
+use crate::job_queue::worker_pool::WorkerPool;
 use crate::net::server;
 use crate::Result;
 
@@ -36,14 +34,14 @@ use crate::Result;
 pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
     let token = CancellationToken::new();
     let app = Arc::new(App::with_pool(pool.clone(), config.clone()));
-    let subroutines = start_subroutines(pool.deref().clone(), token.clone());
+    let subroutines = start_subroutines(&pool, token.clone());
 
     let default_workers = available_parallelism()?.get();
-    let mut worker_pool = WorkerPool::new(Arc::clone(&app.job_queue));
+    let mut worker_pool = WorkerPool::new(Arc::clone(&app.job_queue), token.clone());
     worker_pool
-        .start(config.server.workers.unwrap_or(default_workers))
+        .initialise_workers(config.server.workers.unwrap_or(default_workers))
         .await?;
-    let worker_monitor = shutdown_handler(token.clone(), worker_pool);
+    let worker_monitor = worker_pool.run();
 
     let app_state = AppState(app);
     let (listener, router) = server::init(app_state).await?;
@@ -63,7 +61,7 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
 
 /// Starts background subroutines required for the Empire server to function.
 ///
-/// The function initializes and runs various subroutines (e.g., resource generation)
+/// The function initialises and runs various subroutines (e.g. resource generation)
 /// using the provided database connection and listens for shutdown signals
 /// through the `CancellationToken`.
 ///
@@ -75,14 +73,14 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
 /// * `connection` - A `DbConn` providing access to the database for the subroutines.
 /// * `token` - A `CancellationToken` used to detect shutdown signals and terminate subroutines.
 ///
-/// # Behavior
+/// # Behaviour
 ///
-/// This function utilizes `tokio::select!` to concurrently monitor the cancellation token and
-/// any ongoing subroutine (e.g., `res_gen`). When either the token is cancelled or the
+/// This function uses `tokio::select!` to concurrently monitor the cancellation token and
+/// any ongoing subroutine (e.g. `res_gen`). When either the token is cancelled or the
 /// subroutine completes, the function exits. Ensure that any subroutines are endless.
 ///
 /// Additional subroutines can be added inside the `tokio::select!` block by adding new arms.
-async fn start_subroutines(db_pool: DbPool, token: CancellationToken) {
+async fn start_subroutines(db_pool: &AppPool, token: CancellationToken) {
     let conn = db_pool.get().expect("Failed to get database connection.");
     let res_gen = init_res_gen(conn);
 
@@ -146,27 +144,3 @@ async fn shutdown_signal(token: CancellationToken) {
     info!("Shutting down...");
 }
 
-/// Handles the graceful shutdown process for the application's worker pool.
-///
-/// This function waits for a cancellation signal via the provided token and then initiates
-/// the shutdown sequence for the worker pool. It ensures that all workers complete their
-/// current tasks and terminate properly.
-///
-/// # Arguments
-///
-/// * `token` - A `CancellationToken` that signals when shutdown should begin
-/// * `worker_pool` - The `WorkerPool` instance that manages the application's background workers
-///
-/// # Behavior
-///
-/// The function will:
-/// 1. Wait for the cancellation token to be triggered
-/// 2. Attempt to shut down the worker pool gracefully
-/// 3. Log any errors that occur during the shutdown process
-async fn shutdown_handler(token: CancellationToken, mut worker_pool: WorkerPool) {
-    token.cancelled().await;
-    info!("Shutting down worker pool...");
-    if let Err(e) = worker_pool.shutdown().await {
-        warn!("Error shutting down worker pool: {}", e);
-    }
-}

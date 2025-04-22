@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use tokio::sync::broadcast;
-use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 use tracing::{debug, error, info, trace, warn};
 use ulid::Ulid;
@@ -11,14 +10,14 @@ use crate::domain::jobs::Job;
 use crate::job_queue::JobQueue;
 use crate::Error;
 
-struct JobProcessor {
+pub struct JobProcessor {
     id: String,
     db_pool: AppPool,
     shutdown_rx: broadcast::Receiver<()>,
 }
 
 impl JobProcessor {
-    fn new(db_pool: AppPool, shutdown_rx: broadcast::Receiver<()>) -> Self {
+    pub fn new(db_pool: AppPool, shutdown_rx: broadcast::Receiver<()>) -> Self {
         let id = format!("task-goblin-{}", Ulid::new());
         debug!("Starting worker {}", id);
         Self {
@@ -28,7 +27,7 @@ impl JobProcessor {
         }
     }
 
-    async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
+    pub async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
 
         loop {
@@ -73,72 +72,5 @@ impl JobProcessor {
         // For now, we'll just log the job
         info!("Processing job {:?}", job);
         Ok(())
-    }
-}
-
-pub struct WorkerPool {
-    pub queue: Arc<JobQueue>,
-    workers: Vec<JoinHandle<()>>,
-}
-
-impl WorkerPool {
-    pub fn new(queue: Arc<JobQueue>) -> Self {
-        Self {
-            queue,
-            workers: Vec::new(),
-        }
-    }
-
-    pub async fn start(&mut self, worker_count: usize) -> Result<(), Error> {
-        info!("Starting worker pool with {} workers", worker_count);
-        for _ in 0..worker_count {
-            let queue = self.queue.clone();
-            let shutdown_rx = self.queue.subscribe_shutdown();
-            let pool = queue.pool.clone();
-
-            let handle = tokio::spawn(async move {
-                let mut processor = JobProcessor::new(pool, shutdown_rx);
-                if let Err(e) = processor.run(queue).await {
-                    error!("Worker error: {}", e);
-                }
-            });
-
-            self.workers.push(handle);
-        }
-        info!("Worker pool started");
-
-        Ok(())
-    }
-
-    pub async fn shutdown(&mut self) -> Result<(), Error> {
-        // Signal all workers to shut down
-        self.queue.shutdown().await?;
-
-        // Take ownership of the workers vector
-        let workers = std::mem::take(&mut self.workers);
-
-        // Create a timeout future
-        let shutdown_timeout = tokio::time::sleep(Duration::from_secs(30));
-
-        // Wait for all workers with timeout
-        tokio::select! {
-            _ = async {
-                for handle in workers {
-                    // Ignore errors from cancelled tasks
-                    let _ = handle.await;
-                }
-            } => {
-                info!("All workers shut down successfully");
-            }
-            _ = shutdown_timeout => {
-                warn!("Worker shutdown timed out");
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn worker_count(&self) -> usize {
-        self.workers.len()
     }
 }
