@@ -1,3 +1,16 @@
+//! Server startup and lifecycle management module.
+//!
+//! This module is responsible for:
+//! - Initializing and launching the HTTP server
+//! - Managing server lifecycle and graceful shutdown
+//! - Starting background services and subroutines
+//! - Handling system signals for graceful termination
+//! - Coordinating worker pools and job queues
+//!
+//! The module provides the main entry point for starting the Empire server
+//! and ensures proper initialisation of all required components including
+//! database connections, background tasks, and HTTP services.
+
 use std::sync::Arc;
 use std::thread::available_parallelism;
 
@@ -143,4 +156,3 @@ async fn shutdown_signal(token: CancellationToken) {
 
     info!("Shutting down...");
 }
-

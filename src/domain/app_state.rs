@@ -1,3 +1,15 @@
+//! Application state management module.
+//!
+//! This module provides the core application state management functionality:
+//! - Shared database connection pool management
+//! - Background job queue coordination
+//! - Global application settings access
+//! - Thread-safe state sharing across request handlers
+//!
+//! The module implements the necessary traits for axum's state extraction system
+//! and provides convenient constructors for creating and managing application state.
+//! All components are wrapped in Arc for thread-safe sharing across the application.
+
 use std::fmt::Formatter;
 use std::sync::Arc;
 
@@ -42,10 +54,6 @@ impl std::fmt::Debug for App {
     }
 }
 
-#[derive(Clone, FromRequestParts, Deref)]
-#[from_request(via(State))]
-pub struct AppState(pub Arc<App>);
-
 impl App {
     /// Creates a new [`App`] instance with a fresh database pool.
     ///
@@ -85,3 +93,15 @@ impl App {
         }
     }
 }
+
+/// Represents a wrapper around the application state that implements axum's state extraction.
+///
+/// This type provides a thread-safe, reference-counted access to the core application state (`App`)
+/// and implements the necessary traits for axum to extract it from requests. It wraps the `App`
+/// instance in an `Arc` to allow safe sharing across multiple threads and request handlers.
+///
+/// The `FromRequestParts` derive enables automatic extraction in route handlers,
+/// while `Deref` allows transparent access to the underlying `App` methods and fields.
+#[derive(Clone, FromRequestParts, Deref)]
+#[from_request(via(State))]
+pub struct AppState(pub Arc<App>);

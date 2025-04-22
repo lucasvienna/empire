@@ -1,3 +1,14 @@
+//! Router configuration module that sets up the application's HTTP routing
+//! and middleware stack.
+//!
+//! This module is responsible for:
+//! - Configuring middleware layers for request processing
+//! - Setting up request ID generation and propagation
+//! - Establishing request tracing and logging
+//! - Implementing security features like CORS and authentication
+//! - Defining the application's route structure
+//! - Managing timeouts and error handling
+
 use std::time::Duration;
 
 use axum::body::Body;
@@ -17,8 +28,27 @@ use crate::domain::app_state::AppState;
 use crate::net::auth::auth_middleware;
 use crate::net::request_id::MakeRequestUlid;
 
+/// HTTP header name used for request ID tracking across the application.
+/// This header is set and propagated through middleware layers to enable
+/// request tracing and correlation.
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
+/// Initialises and configures the application router with all necessary middleware and routes.
+///
+/// # Arguments
+///
+/// * `state` - Application state containing shared resources like database connections and configuration
+///
+/// # Returns
+///
+/// Returns a configured Router instance with the following features:
+/// - Request ID generation and propagation
+/// - Request tracing and logging
+/// - Panic recovery
+/// - CORS support
+/// - Response compression
+/// - Request timeout
+/// - Authentication middleware for protected routes
 pub fn init(state: AppState) -> Router {
     let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
