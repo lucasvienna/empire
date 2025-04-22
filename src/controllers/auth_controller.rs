@@ -75,11 +75,10 @@ impl Debug for LoginPayload {
     }
 }
 
-#[instrument(skip(conn, settings))]
+#[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 async fn register(
     DatabaseConnection(conn): DatabaseConnection,
-    settings: Settings,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let mut repo = PlayerRepository::from_connection(conn);
