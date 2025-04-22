@@ -34,7 +34,7 @@ impl ResourceService {
     pub fn new(pool: &AppPool) -> ResourceService {
         ResourceService {
             pool: Arc::clone(pool),
-            res_repo: ResourcesRepository::new(&pool),
+            res_repo: ResourcesRepository::new(pool),
         }
     }
 

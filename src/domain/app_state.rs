@@ -20,11 +20,39 @@ use crate::configuration::Settings;
 use crate::db::{connection, DbPool};
 use crate::job_queue::JobQueue;
 
-/// Shared database pool
+/// Thread-safe reference-counted wrapper around a database connection pool.
+///
+/// This type alias combines [`Arc`] (atomic reference counting) with [`DbPool`]
+/// to provide thread-safe sharing of database connections across the application.
+/// It ensures efficient connection management and safe concurrent access to the database.
+///
+/// # Notes
+/// The pool implements [`FromRef<AppState>`] for ease of access at the controller level.
+/// It can be used with `State(pool): State<AppPool>`.
 pub type AppPool = Arc<DbPool>;
 
-/// Shared job queue
+impl FromRef<AppState> for AppPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.db_pool.clone()
+    }
+}
+
+/// Thread-safe reference-counted wrapper around a job queue implementation.
+///
+/// This type alias combines [`Arc`] (atomic reference counting) with [`JobQueue`]
+/// to provide thread-safe sharing of the background job processing system across
+/// the application. It ensures safe concurrent access to job scheduling and execution.
+///
+/// # Notes
+/// The queue implements [`FromRef<AppState>`] for ease of access at the controller level.
+/// It can be used with `State(queue): State<AppQueue>`.
 pub type AppQueue = Arc<JobQueue>;
+
+impl FromRef<AppState> for AppQueue {
+    fn from_ref(state: &AppState) -> Self {
+        state.job_queue.clone()
+    }
+}
 
 /// Represents the core application state shared across all requests.
 ///
