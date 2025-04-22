@@ -4,8 +4,10 @@ use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use tokio::sync::RwLock;
+use tracing::trace;
 use uuid::Uuid;
 
+use crate::configuration::CacheSettings;
 use crate::domain::modifier::ModifierTarget;
 use crate::domain::player;
 use crate::domain::player::resource::ResourceType;
@@ -41,11 +43,22 @@ pub struct ModifierCache {
 
 impl ModifierCache {
     pub fn new(default_ttl: chrono::Duration, max_entries_per_user: usize) -> Self {
+        trace!(
+            "Initializing modifier cache with TTL: {} and max entries per user: {}",
+            default_ttl,
+            max_entries_per_user
+        );
         Self {
             cache: Arc::new(RwLock::new(HashMap::new())),
             default_ttl,
             max_entries_per_user,
         }
+    }
+
+    pub fn from_settings(settings: &CacheSettings) -> Self {
+        trace!("Initializing modifier cache from settings");
+        let default_ttl = chrono::Duration::seconds(settings.default_ttl as i64);
+        ModifierCache::new(default_ttl, settings.max_user_entries)
     }
 
     /// Get a cached modifier value if it exists and is valid

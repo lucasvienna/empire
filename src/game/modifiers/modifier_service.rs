@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use axum::extract::FromRef;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use tracing::{debug, info};
@@ -8,37 +9,38 @@ use tracing::{debug, info};
 use crate::db::active_modifiers::ActiveModifiersRepository;
 use crate::db::modifiers::ModifiersRepository;
 use crate::db::Repository;
-use crate::domain::app_state::AppPool;
+use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::{Modifier, ModifierTarget};
 use crate::domain::player;
 use crate::domain::player::resource::ResourceType;
 use crate::game::modifiers::modifier_cache::{CacheKey, ModifierCache};
 use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
+use crate::game::modifiers::modifier_system::ModifierSystem;
 use crate::Error;
 
 pub struct ModifierService {
     pool: AppPool,
     cache: Arc<ModifierCache>,
-    scheduler: ModifierScheduler,
+    scheduler: Arc<ModifierScheduler>,
     mod_repo: ModifiersRepository,
     active_mod_repo: ActiveModifiersRepository,
 }
 
+impl FromRef<AppState> for ModifierService {
+    fn from_ref(input: &AppState) -> Self {
+        ModifierService::new(&input.db_pool, &input.modifier_system)
+    }
+}
+
 impl ModifierService {
-    pub fn new(
-        pool: AppPool,
-        cache: Arc<ModifierCache>,
-        scheduler: ModifierScheduler,
-        mod_repo: ModifiersRepository,
-        active_mod_repo: ActiveModifiersRepository,
-    ) -> Self {
+    pub fn new(pool: &AppPool, mod_routine: &ModifierSystem) -> Self {
         Self {
-            pool,
-            cache,
-            scheduler,
-            mod_repo,
-            active_mod_repo,
+            pool: Arc::clone(pool),
+            cache: Arc::clone(&mod_routine.cache),
+            scheduler: Arc::clone(&mod_routine.scheduler),
+            mod_repo: ModifiersRepository::new(pool),
+            active_mod_repo: ActiveModifiersRepository::new(pool),
         }
     }
 

@@ -30,8 +30,10 @@ pub struct ModifierScheduler {
 }
 
 impl ModifierScheduler {
-    pub fn new(job_queue: Arc<JobQueue>) -> Self {
-        Self { job_queue }
+    pub fn new(job_queue: &Arc<JobQueue>) -> Self {
+        Self {
+            job_queue: Arc::clone(job_queue),
+        }
     }
 
     /// Schedule a job to expire a modifier at the specified time

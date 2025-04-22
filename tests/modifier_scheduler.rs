@@ -15,7 +15,7 @@ async fn test_schedule_expiration() {
     let pool = Arc::new(common::init_server().db_pool);
     let mut connection = pool.get().expect("Failed to get connection from pool");
     let queue = Arc::new(JobQueue::new(pool));
-    let scheduler = ModifierScheduler::new(queue);
+    let scheduler = ModifierScheduler::new(&queue);
 
     let modifier_id = Uuid::new_v4();
     let player_id = Uuid::new_v4();

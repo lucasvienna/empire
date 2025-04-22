@@ -1,6 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
+use axum::extract::FromRef;
 use diesel::prelude::*;
 use diesel::sql_types::Int4;
 use diesel::QueryDsl;
@@ -8,11 +9,17 @@ use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::Repository;
-use crate::domain::app_state::AppPool;
+use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::player::resource::PlayerResource;
 use crate::domain::player::PlayerKey;
+use crate::game::service::ApiService;
 use crate::schema::{player_accumulator as acc, player_resource as rsc};
 use crate::Result;
+
+define_sql_function! {
+    #[sql_name = "LEAST"]
+    fn least(a: Int4, b: Int4) -> Int4
+}
 
 pub struct ResourceService {
     pool: AppPool,
@@ -25,19 +32,22 @@ impl fmt::Debug for ResourceService {
     }
 }
 
-define_sql_function! {
-    #[sql_name = "LEAST"]
-    fn least(a: Int4, b: Int4) -> Int4
+impl FromRef<AppState> for ResourceService {
+    fn from_ref(state: &AppState) -> Self {
+        ResourceService::new(&state.db_pool)
+    }
 }
 
-impl ResourceService {
-    pub fn new(pool: &AppPool) -> ResourceService {
+impl ApiService for ResourceService {
+    fn new(pool: &AppPool) -> Self {
         ResourceService {
             pool: Arc::clone(pool),
             res_repo: ResourcesRepository::new(pool),
         }
     }
+}
 
+impl ResourceService {
     /// Collects resources for a player by transferring the maximum possible amount from their
     /// resource accumulator to their resource storage, constrained by the storage capacity limits.
     ///

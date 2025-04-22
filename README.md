@@ -8,4 +8,4 @@
     - SQL trigger (again :D)
 - [x] Figure out serialization of upgrade durations
     - UTC string
-- [ ] Figure out resource generation (chron job? server ticks?)
+- [x] Figure out resource generation (chron job? server ticks?)

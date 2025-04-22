@@ -18,6 +18,7 @@ pub struct Settings {
     pub database: DatabaseSettings,
     pub server: ServerSettings,
     pub jwt: JwtSettings,
+    pub cache: CacheSettings,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -43,6 +44,12 @@ pub struct ServerSettings {
 pub struct JwtSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub expires_in: u64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct CacheSettings {
+    pub default_ttl: isize,
+    pub max_user_entries: usize,
 }
 
 /// The possible runtime environment for our application.

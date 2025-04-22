@@ -1,3 +1,4 @@
+use empire::game::service::ApiService;
 use std::sync::Arc;
 
 use diesel::prelude::*;

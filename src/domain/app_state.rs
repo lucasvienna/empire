@@ -18,6 +18,7 @@ use derive_more::Deref;
 
 use crate::configuration::Settings;
 use crate::db::{connection, DbPool};
+use crate::game::modifiers::modifier_system::ModifierSystem;
 use crate::job_queue::JobQueue;
 
 /// Thread-safe reference-counted wrapper around a database connection pool.
@@ -68,6 +69,8 @@ pub struct App {
     /// Centralised job queue system that handles background tasks, scheduled operations,
     /// and asynchronous processing of requests
     pub job_queue: AppQueue,
+    /// Centralised modifier sub-system that manages the application's modifier subroutines
+    pub modifier_system: ModifierSystem,
     /// Global application configuration containing environment-specific settings
     /// and runtime parameters
     pub settings: Settings,
@@ -95,9 +98,12 @@ impl App {
     pub fn new(settings: Settings) -> App {
         let db_pool = Arc::new(connection::initialize_pool(&settings.database));
         let job_queue = Arc::new(JobQueue::new(db_pool.clone()));
+        let modifier_system = ModifierSystem::with_job_queue(&settings, &job_queue);
+
         App {
             db_pool,
             job_queue,
+            modifier_system,
             settings,
         }
     }
@@ -114,9 +120,12 @@ impl App {
     /// A new [`App`] instance with the provided database pool and a new job queue
     pub fn with_pool(db_pool: AppPool, settings: Settings) -> App {
         let job_queue = Arc::new(JobQueue::new(db_pool.clone()));
+        let modifier_system = ModifierSystem::with_job_queue(&settings, &job_queue);
+
         App {
             db_pool,
             job_queue,
+            modifier_system,
             settings,
         }
     }

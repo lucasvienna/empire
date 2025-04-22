@@ -1,2 +1,5 @@
 server:
   axum_host: 0.0.0.0
+cache:
+  default_ttl: 1800 # 30 minutes in seconds
+  max_user_entries: 100

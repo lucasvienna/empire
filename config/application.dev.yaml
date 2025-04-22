@@ -2,3 +2,6 @@ server:
   axum_host: 127.0.0.1
 database:
   pool_size: 5
+cache:
+  default_ttl: 30 # seconds
+  max_user_entries: 10000

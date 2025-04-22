@@ -8,7 +8,6 @@ use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_pending;
 use empire::domain::app_state::{App, AppState};
-use empire::job_queue::JobQueue;
 use empire::net::router;
 use empire::Result;
 use secrecy::{ExposeSecret, SecretString};
@@ -53,12 +52,7 @@ pub fn init_server() -> TestServer {
     let (pool, db_settings) = initialize_test_pool(&mut settings.database);
     settings.database = db_settings.clone();
     let db_pool = Arc::new(pool.clone());
-    let job_queue = Arc::new(JobQueue::new(db_pool.clone()));
-    let app = Arc::new(App {
-        db_pool,
-        job_queue,
-        settings,
-    });
+    let app = Arc::new(App::with_pool(db_pool, settings));
 
     TestServer {
         router: router::init(AppState(app)),
@@ -77,7 +71,7 @@ pub fn init_server() -> TestServer {
 ///
 /// # Panics
 /// This function will panic if:
-/// - The test server initialization fails.
+/// - The test server initialisation fails.
 /// - The server fails to start serving requests.
 ///
 /// [`TestApp`]: TestApp
@@ -97,7 +91,7 @@ pub fn spawn_app() -> TestApp {
     }
 }
 
-/// Initializes the test database pool.
+/// Initialises the test database pool.
 ///
 /// This function performs the following steps:
 /// - Reads the configuration from the application settings.
