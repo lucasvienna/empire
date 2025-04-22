@@ -4,10 +4,12 @@
 //! in the database through the PlayerRepository struct.
 
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::error::Result;
 use crate::domain::player::{NewPlayer, Player, PlayerKey, UpdatePlayer};
 use crate::schema::player::dsl::*;
@@ -18,9 +20,9 @@ use crate::schema::player::dsl::*;
 /// as well as specialised queries for player-specific operations.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct PlayerRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for PlayerRepository {
@@ -33,45 +35,44 @@ impl fmt::Debug for PlayerRepository {
 ///
 /// Provides standard CRUD operations for Player entities using diesel.
 impl Repository<Player, NewPlayer, &UpdatePlayer, PlayerKey> for PlayerRepository {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
-    }
-
-    fn get_all(&mut self) -> Result<Vec<Player>> {
-        let player_list = player
-            .select(Player::as_select())
-            .load(&mut self.connection)?;
+    fn get_all(&self) -> Result<Vec<Player>> {
+        let mut conn = self.pool.get()?;
+        let player_list = player.select(Player::as_select()).load(&mut conn)?;
         Ok(player_list)
     }
 
-    fn get_by_id(&mut self, player_id: &PlayerKey) -> Result<Player> {
-        let player_ = player.find(player_id).first(&mut self.connection)?;
+    fn get_by_id(&self, player_id: &PlayerKey) -> Result<Player> {
+        let mut conn = self.pool.get()?;
+        let player_ = player.find(player_id).first(&mut conn)?;
         Ok(player_)
     }
 
-    fn create(&mut self, entity: NewPlayer) -> Result<Player> {
+    fn create(&self, entity: NewPlayer) -> Result<Player> {
+        let mut conn = self.pool.get()?;
         let player_ = diesel::insert_into(player)
             .values(entity)
             .returning(Player::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(player_)
     }
 
-    fn update(&mut self, changeset: &UpdatePlayer) -> Result<Player> {
+    fn update(&self, changeset: &UpdatePlayer) -> Result<Player> {
+        let mut conn = self.pool.get()?;
         let player_ = diesel::update(player)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(player_)
     }
 
-    fn delete(&mut self, player_id: &PlayerKey) -> Result<usize> {
-        let deleted_count = diesel::delete(player.find(player_id)).execute(&mut self.connection)?;
+    fn delete(&self, player_id: &PlayerKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let deleted_count = diesel::delete(player.find(player_id)).execute(&mut conn)?;
         Ok(deleted_count)
     }
 }
@@ -86,11 +87,9 @@ impl PlayerRepository {
     /// * `Ok(Some(Player))` if the player is found
     /// * `Ok(None)` if no player exists with the given ID
     /// * `Err` if a database error occurs
-    pub fn find_by_id(&mut self, player_id: &PlayerKey) -> Result<Option<Player>> {
-        let player_: Option<Player> = player
-            .find(player_id)
-            .first(&mut self.connection)
-            .optional()?;
+    pub fn find_by_id(&self, player_id: &PlayerKey) -> Result<Option<Player>> {
+        let mut conn = self.pool.get()?;
+        let player_: Option<Player> = player.find(player_id).first(&mut conn).optional()?;
         Ok(player_)
     }
 
@@ -102,10 +101,11 @@ impl PlayerRepository {
     /// # Returns
     /// * `Ok(Player)` if the player is found
     /// * `Err` if no player exists with the given name or a database error occurs
-    pub fn get_by_name(&mut self, player_name: impl AsRef<str>) -> Result<Player> {
+    pub fn get_by_name(&self, player_name: impl AsRef<str>) -> Result<Player> {
+        let mut conn = self.pool.get()?;
         let player_ = player
             .filter(name.eq(player_name.as_ref()))
-            .first(&mut self.connection)?;
+            .first(&mut conn)?;
         Ok(player_)
     }
 
@@ -118,10 +118,11 @@ impl PlayerRepository {
     /// * `Ok(Some(Player))` if the player is found
     /// * `Ok(None)` if no player exists with the given name
     /// * `Err` if a database error occurs
-    pub fn find_by_name(&mut self, player_name: impl AsRef<str>) -> Result<Option<Player>> {
+    pub fn find_by_name(&self, player_name: impl AsRef<str>) -> Result<Option<Player>> {
+        let mut conn = self.pool.get()?;
         let player_: Option<Player> = player
             .filter(name.eq(player_name.as_ref()))
-            .first(&mut self.connection)
+            .first(&mut conn)
             .optional()?;
         Ok(player_)
     }
@@ -135,7 +136,7 @@ impl PlayerRepository {
     /// * `Ok(true)` if a player with the given name exists
     /// * `Ok(false)` if no player exists with the given name
     /// * `Err` if a database error occurs
-    pub fn exists_by_name(&mut self, player_name: impl AsRef<str>) -> Result<bool> {
+    pub fn exists_by_name(&self, player_name: impl AsRef<str>) -> Result<bool> {
         let player_ = self.find_by_name(player_name)?;
         Ok(player_.is_some())
     }

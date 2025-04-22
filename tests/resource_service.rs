@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use diesel::prelude::*;
 use diesel::update;
 use empire::db::players::PlayerRepository;
-use empire::db::{DbConn, Repository};
+use empire::db::Repository;
+use empire::domain::app_state::AppPool;
 use empire::domain::factions::FactionCode;
 use empire::domain::player::accumulator::PlayerAccumulator;
 use empire::domain::player::{NewPlayer, Player, UserName};
@@ -13,9 +16,9 @@ mod common;
 
 #[tokio::test]
 async fn test_collect_resource() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = Arc::new(common::init_server().db_pool);
     let mut conn = db_pool.get().unwrap();
-    let user = create_test_user(db_pool.get().unwrap());
+    let user = create_test_user(&db_pool);
     update(acc::table.filter(acc::player_id.eq(&user.id)))
         .set((
             acc::food.eq(1000),
@@ -36,7 +39,7 @@ async fn test_collect_resource() {
         .execute(&mut conn)
         .expect("Failed to update resources");
 
-    let mut srv = ResourceService::new(db_pool).expect("Failed to create service");
+    let srv = ResourceService::new(&db_pool);
     let res = srv
         .collect_resources(&user.id)
         .expect("Failed to collect resources");
@@ -59,8 +62,8 @@ async fn test_collect_resource() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(conn: DbConn) -> Player {
-    let mut repo = PlayerRepository::from_connection(conn);
+fn create_test_user(pool: &AppPool) -> Player {
+    let repo = PlayerRepository::new(pool);
     repo.create(NewPlayer {
         name: UserName::parse("test_user".to_string()).unwrap(),
         pwd_hash: hash_password(b"1234").unwrap(),

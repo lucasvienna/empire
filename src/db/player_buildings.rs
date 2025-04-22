@@ -1,9 +1,11 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 use tracing::info;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::{DbConn, Repository};
+use crate::domain::app_state::AppPool;
 use crate::domain::buildings::{Building, BuildingKey};
 use crate::domain::error::Result;
 use crate::domain::player::buildings::{
@@ -18,9 +20,9 @@ use crate::schema::{building, player_building};
 /// including construction validation, upgrades, and level management.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct PlayerBuildingRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for PlayerBuildingRepository {
@@ -32,47 +34,46 @@ impl fmt::Debug for PlayerBuildingRepository {
 impl Repository<PlayerBuilding, NewPlayerBuilding, &UpdatePlayerBuilding, PlayerBuildingKey>
     for PlayerBuildingRepository
 {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
-    }
-
-    fn get_all(&mut self) -> Result<Vec<PlayerBuilding>> {
+    fn get_all(&self) -> Result<Vec<PlayerBuilding>> {
+        let mut conn = self.pool.get()?;
         let buildings = player_building::table
             .select(PlayerBuilding::as_select())
-            .load(&mut self.connection)?;
+            .load(&mut conn)?;
         Ok(buildings)
     }
 
-    fn get_by_id(&mut self, id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
-        let building = player_building::table
-            .find(id)
-            .first(&mut self.connection)?;
+    fn get_by_id(&self, id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
+        let mut conn = self.pool.get()?;
+        let building = player_building::table.find(id).first(&mut conn)?;
         Ok(building)
     }
 
-    fn create(&mut self, entity: NewPlayerBuilding) -> Result<PlayerBuilding> {
+    fn create(&self, entity: NewPlayerBuilding) -> Result<PlayerBuilding> {
+        let mut conn = self.pool.get()?;
         let building = diesel::insert_into(player_building::table)
             .values(entity)
             .returning(PlayerBuilding::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(building)
     }
 
-    fn update(&mut self, entity: &UpdatePlayerBuilding) -> Result<PlayerBuilding> {
+    fn update(&self, entity: &UpdatePlayerBuilding) -> Result<PlayerBuilding> {
+        let mut conn = self.pool.get()?;
         let building = diesel::update(player_building::table)
             .set(entity)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(building)
     }
 
-    fn delete(&mut self, id: &PlayerBuildingKey) -> Result<usize> {
-        let res = diesel::delete(player_building::table.find(id)).execute(&mut self.connection)?;
+    fn delete(&self, id: &PlayerBuildingKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let res = diesel::delete(player_building::table.find(id)).execute(&mut conn)?;
         Ok(res)
     }
 }
@@ -84,6 +85,18 @@ impl Repository<PlayerBuilding, NewPlayerBuilding, &UpdatePlayerBuilding, Player
 type UpgradeTuple = (PlayerBuilding, Option<i32>);
 
 impl PlayerBuildingRepository {
+    pub fn construct(
+        &self,
+        conn: &mut DbConn,
+        new_building: NewPlayerBuilding,
+    ) -> Result<PlayerBuilding> {
+        let new_building = diesel::insert_into(player_building::table)
+            .values(new_building)
+            .returning(PlayerBuilding::as_returning())
+            .get_result(conn)?;
+        Ok(new_building)
+    }
+
     /// Checks if a player can construct a specific building.
     ///
     /// Validates if the player hasn't reached the maximum allowed number of buildings
@@ -95,7 +108,12 @@ impl PlayerBuildingRepository {
     ///
     /// # Returns
     /// `true` if the player can construct the building, `false` otherwise
-    pub fn can_construct(&mut self, player_id: &PlayerKey, bld_id: &BuildingKey) -> Result<bool> {
+    pub fn can_construct(
+        &self,
+        conn: &mut DbConn,
+        player_id: &PlayerKey,
+        bld_id: &BuildingKey,
+    ) -> Result<bool> {
         info!(
             "Checking if player {} can construct building: {}",
             player_id, bld_id
@@ -103,12 +121,12 @@ impl PlayerBuildingRepository {
         let bld = building::table
             .find(bld_id)
             .select(Building::as_select())
-            .first(&mut self.connection)?;
+            .first(conn)?;
         let count = player_building::table
             .filter(player_building::player_id.eq(player_id))
             .filter(player_building::building_id.eq(bld_id))
             .count()
-            .get_result::<i64>(&mut self.connection)?;
+            .get_result::<i64>(conn)?;
         info!(
             "Player {} has {} buildings of type {}. Maximum is {}",
             player_id, count, bld_id, bld.max_count
@@ -123,7 +141,11 @@ impl PlayerBuildingRepository {
     ///
     /// # Arguments
     /// * `player_bld_id` - The unique identifier of the player's building
-    pub fn get_upgrade_tuple(&mut self, player_bld_id: &PlayerBuildingKey) -> Result<UpgradeTuple> {
+    pub fn get_upgrade_tuple(
+        &self,
+        conn: &mut DbConn,
+        player_bld_id: &PlayerBuildingKey,
+    ) -> Result<UpgradeTuple> {
         use crate::schema::building::columns as bld;
         use crate::schema::player_building::columns as pb;
 
@@ -131,7 +153,7 @@ impl PlayerBuildingRepository {
             .left_join(building::table)
             .filter(pb::id.eq(player_bld_id))
             .select((PlayerBuilding::as_select(), bld::max_level.nullable()))
-            .first::<UpgradeTuple>(&mut self.connection)?;
+            .first::<UpgradeTuple>(conn)?;
         Ok(upgrade_tuple)
     }
 
@@ -144,14 +166,15 @@ impl PlayerBuildingRepository {
     /// # Returns
     /// Updated PlayerBuilding instance
     pub fn set_upgrade_time(
-        &mut self,
+        &self,
+        conn: &mut DbConn,
         player_building_key: &PlayerBuildingKey,
         upgrade_time: Option<&str>,
     ) -> Result<PlayerBuilding> {
         let building = diesel::update(player_building::table.find(player_building_key))
             .set(player_building::upgrade_time.eq(upgrade_time))
             .returning(PlayerBuilding::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(conn)?;
         Ok(building)
     }
 
@@ -162,14 +185,14 @@ impl PlayerBuildingRepository {
     ///
     /// # Returns
     /// Updated PlayerBuilding instance with incremented level
-    pub fn inc_level(&mut self, id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
+    pub fn inc_level(&self, conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
         let building = diesel::update(player_building::table.find(id))
             .set((
                 player_building::level.eq(player_building::level + 1),
                 player_building::upgrade_time.eq(None::<String>),
             ))
             .returning(PlayerBuilding::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(conn)?;
         Ok(building)
     }
 }

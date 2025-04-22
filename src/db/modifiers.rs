@@ -1,8 +1,10 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::modifier::{Modifier, ModifierKey, NewModifier, UpdateModifier};
 use crate::schema::modifiers::dsl::*;
 use crate::Result;
@@ -12,9 +14,9 @@ use crate::Result;
 /// This struct provides CRUD operations for [`Modifier`] entities using a database connection.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct ModifiersRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for ModifiersRepository {
@@ -25,24 +27,19 @@ impl fmt::Debug for ModifiersRepository {
 
 /// Implementation of the [`Repository`] trait for [`ModifiersRepository`].
 impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for ModifiersRepository {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
-    }
-
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
     /// Retrieves all modifiers from the database.
     ///
     /// # Returns
     /// A Result containing a vector of [`Modifier`] entities
-    fn get_all(&mut self) -> Result<Vec<Modifier>> {
-        let mod_list = modifiers
-            .select(Modifier::as_select())
-            .load(&mut self.connection)?;
+    fn get_all(&self) -> Result<Vec<Modifier>> {
+        let mut conn = self.pool.get()?;
+        let mod_list = modifiers.select(Modifier::as_select()).load(&mut conn)?;
         Ok(mod_list)
     }
 
@@ -53,8 +50,9 @@ impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for Modifie
     ///
     /// # Returns
     /// A Result containing the found [`Modifier`]
-    fn get_by_id(&mut self, modifier_id: &ModifierKey) -> Result<Modifier> {
-        let modifier = modifiers.find(modifier_id).first(&mut self.connection)?;
+    fn get_by_id(&self, modifier_id: &ModifierKey) -> Result<Modifier> {
+        let mut conn = self.pool.get()?;
+        let modifier = modifiers.find(modifier_id).first(&mut conn)?;
         Ok(modifier)
     }
 
@@ -65,11 +63,12 @@ impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for Modifie
     ///
     /// # Returns
     /// A Result containing the created [`Modifier`]
-    fn create(&mut self, entity: NewModifier) -> Result<Modifier> {
+    fn create(&self, entity: NewModifier) -> Result<Modifier> {
+        let mut conn = self.pool.get()?;
         let modifier = diesel::insert_into(modifiers)
             .values(entity)
             .returning(Modifier::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(modifier)
     }
 
@@ -80,10 +79,11 @@ impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for Modifie
     ///
     /// # Returns
     /// A Result containing the updated [`Modifier`]
-    fn update(&mut self, changeset: &UpdateModifier) -> Result<Modifier> {
+    fn update(&self, changeset: &UpdateModifier) -> Result<Modifier> {
+        let mut conn = self.pool.get()?;
         let modifier = diesel::update(modifiers)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(modifier)
     }
 
@@ -94,9 +94,9 @@ impl Repository<Modifier, NewModifier, &UpdateModifier, ModifierKey> for Modifie
     ///
     /// # Returns
     /// A Result containing the number of affected rows
-    fn delete(&mut self, modifier_id: &ModifierKey) -> Result<usize> {
-        let deleted_count =
-            diesel::delete(modifiers.find(modifier_id)).execute(&mut self.connection)?;
+    fn delete(&self, modifier_id: &ModifierKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let deleted_count = diesel::delete(modifiers.find(modifier_id)).execute(&mut conn)?;
         Ok(deleted_count)
     }
 }

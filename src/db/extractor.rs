@@ -91,3 +91,9 @@ impl FromRef<AppState> for DatabasePool {
         DatabasePool(Arc::clone(&app.db_pool))
     }
 }
+
+impl FromRef<AppState> for AppPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.db_pool.clone()
+    }
+}

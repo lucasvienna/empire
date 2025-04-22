@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 use diesel::sql_types::Int4;
@@ -6,14 +7,15 @@ use diesel::QueryDsl;
 use tracing::{debug, instrument};
 
 use crate::db::resources::ResourcesRepository;
-use crate::db::{DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::player::resource::PlayerResource;
 use crate::domain::player::PlayerKey;
 use crate::schema::{player_accumulator as acc, player_resource as rsc};
 use crate::Result;
 
 pub struct ResourceService {
-    db_pool: DbPool,
+    pool: AppPool,
     res_repo: ResourcesRepository,
 }
 
@@ -29,11 +31,11 @@ define_sql_function! {
 }
 
 impl ResourceService {
-    pub fn new(db_pool: DbPool) -> Result<ResourceService> {
-        Ok(ResourceService {
-            res_repo: ResourcesRepository::try_from_pool(&db_pool)?,
-            db_pool,
-        })
+    pub fn new(pool: &AppPool) -> ResourceService {
+        ResourceService {
+            pool: Arc::clone(pool),
+            res_repo: ResourcesRepository::new(&pool),
+        }
     }
 
     /// Collects resources for a player by transferring the maximum possible amount from their
@@ -54,11 +56,11 @@ impl ResourceService {
     /// - The database query to calculate the collectible resource amounts fails.
     /// - The transaction to update both the accumulator and the resource storage fails.
     #[instrument(skip(self))]
-    pub fn collect_resources(&mut self, player_id: &PlayerKey) -> Result<PlayerResource> {
-        let mut connection = self.db_pool.get()?;
+    pub fn collect_resources(&self, player_id: &PlayerKey) -> Result<PlayerResource> {
+        let mut connection = self.pool.get()?;
         let (food, wood, stone, gold) = acc::table
             .inner_join(rsc::table.on(acc::player_id.eq(rsc::player_id)))
-            .filter(acc::player_id.eq(player_id))
+            .filter(acc::player_id.nullable().eq(player_id))
             .select((
                 least(acc::food, rsc::food_cap - rsc::food),
                 least(acc::wood, rsc::wood_cap - rsc::wood),

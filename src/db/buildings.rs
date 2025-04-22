@@ -1,8 +1,10 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::buildings::{Building, BuildingKey, NewBuilding, UpdateBuilding};
 use crate::domain::error::Result;
 use crate::schema::building::dsl::*;
@@ -10,12 +12,13 @@ use crate::schema::building::dsl::*;
 /// Repository for managing building entities in the database.
 ///
 /// This struct implements the [`Repository`] trait for [`Building`] entities
-/// and provides CRUD operations for building management.
+/// and provides CRUD operations for building management. It handles persistence
+/// and retrieval of building data.
 ///
 /// # Fields
-/// * `connection` - Database connection handle of type [`DbConn`]
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct BuildingRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for BuildingRepository {
@@ -25,38 +28,19 @@ impl fmt::Debug for BuildingRepository {
 }
 
 impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for BuildingRepository {
-    /// Creates a new repository instance from a connection pool.
-    ///
-    /// # Arguments
-    /// * `pool` - Reference to a [`DbPool`] connection pool
-    ///
-    /// # Returns
-    /// * `Result<Self>` - New repository instance wrapped in Result
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
-    }
-
-    /// Creates a new repository instance from an existing database connection.
-    ///
-    /// # Arguments
-    /// * `connection` - [`DbConn`] database connection
-    ///
-    /// # Returns
-    /// * `Self` - New repository instance
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
     /// Retrieves all buildings from the database.
     ///
     /// # Returns
     /// * `Result<Vec<Building>>` - Vector of all [`Building`] entities
-    fn get_all(&mut self) -> Result<Vec<Building>> {
-        let bld_list = building
-            .select(Building::as_select())
-            .load(&mut self.connection)?;
+    fn get_all(&self) -> Result<Vec<Building>> {
+        let mut conn = self.pool.get()?;
+        let bld_list = building.select(Building::as_select()).load(&mut conn)?;
         Ok(bld_list)
     }
 
@@ -67,8 +51,9 @@ impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for Buildin
     ///
     /// # Returns
     /// * `Result<Building>` - The requested [`Building`] entity
-    fn get_by_id(&mut self, bld_id: &BuildingKey) -> Result<Building> {
-        let bld = building.find(bld_id).first(&mut self.connection)?;
+    fn get_by_id(&self, bld_id: &BuildingKey) -> Result<Building> {
+        let mut conn = self.pool.get()?;
+        let bld = building.find(bld_id).first(&mut conn)?;
         Ok(bld)
     }
 
@@ -79,11 +64,12 @@ impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for Buildin
     ///
     /// # Returns
     /// * `Result<Building>` - The newly created [`Building`] entity
-    fn create(&mut self, entity: NewBuilding) -> Result<Building> {
+    fn create(&self, entity: NewBuilding) -> Result<Building> {
+        let mut conn = self.pool.get()?;
         let created_building = diesel::insert_into(building)
             .values(entity)
             .returning(Building::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(created_building)
     }
 
@@ -94,10 +80,11 @@ impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for Buildin
     ///
     /// # Returns
     /// * `Result<Building>` - The updated [`Building`] entity
-    fn update(&mut self, changeset: &UpdateBuilding) -> Result<Building> {
+    fn update(&self, changeset: &UpdateBuilding) -> Result<Building> {
+        let mut conn = self.pool.get()?;
         let updated_building = diesel::update(building)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(updated_building)
     }
 
@@ -108,8 +95,9 @@ impl Repository<Building, NewBuilding, &UpdateBuilding, BuildingKey> for Buildin
     ///
     /// # Returns
     /// * `Result<usize>` - Number of deleted records
-    fn delete(&mut self, bld_id: &BuildingKey) -> Result<usize> {
-        let deleted_count = diesel::delete(building.find(bld_id)).execute(&mut self.connection)?;
+    fn delete(&self, bld_id: &BuildingKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let deleted_count = diesel::delete(building.find(bld_id)).execute(&mut conn)?;
         Ok(deleted_count)
     }
 }

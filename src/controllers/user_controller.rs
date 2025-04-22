@@ -1,4 +1,4 @@
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
@@ -6,10 +6,9 @@ use axum::{debug_handler, Json, Router};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument};
 
-use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
-use crate::domain::app_state::AppState;
+use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{NewPlayer, Player, UpdatePlayer};
@@ -115,12 +114,10 @@ impl From<Player> for UserBody {
 
 // === CRUD HANDLERS === //
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
-async fn get_users(
-    DatabaseConnection(conn): DatabaseConnection,
-) -> Result<Json<UserListBody>, StatusCode> {
-    let mut repo = PlayerRepository::from_connection(conn);
+async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, StatusCode> {
+    let repo = PlayerRepository::new(&pool);
 
     let result = repo.get_all().map_err(|err| {
         error!("Failed to fetch users: {}", err);
@@ -133,13 +130,13 @@ async fn get_users(
     Ok(Json(response))
 }
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn get_user_by_id(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
 
     let user = repo.get_by_id(&player_id).map_err(|err| {
         error!("Failed to fetch player: {}", err);
@@ -150,13 +147,13 @@ async fn get_user_by_id(
     Ok(Json(user.into()))
 }
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn create_user(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     Json(payload): Json<NewUserPayload>,
 ) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
     let new_user = match NewPlayer::try_from(payload) {
         Ok(new_user) => new_user,
         Err(err) => {
@@ -177,14 +174,14 @@ async fn create_user(
     Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn update_user(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
 
     let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_id, payload)) {
         Ok(update) => update,
@@ -207,13 +204,13 @@ async fn update_user(
     Ok((StatusCode::ACCEPTED, Json(UserBody::from(updated_user))))
 }
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn delete_user(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
 
     let count = repo.delete(&player_id).map_err(|err| {
         error!("Failed to delete player: {}", err);

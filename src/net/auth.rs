@@ -1,4 +1,4 @@
-use axum::extract::Request;
+use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
@@ -9,9 +9,9 @@ use axum_extra::headers::{Authorization, HeaderMapExt};
 use serde::Serialize;
 use tracing::{error, instrument, trace, warn};
 
-use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::auth::decode_token;
 
 #[derive(Debug, Serialize)]
@@ -20,9 +20,9 @@ pub struct ErrorResponse {
     pub message: String,
 }
 
-#[instrument(skip(conn, cookie_jar, req, next))]
+#[instrument(skip(pool, cookie_jar, req, next))]
 pub async fn auth_middleware(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     cookie_jar: CookieJar,
     mut req: Request,
     next: Next,
@@ -62,7 +62,7 @@ pub async fn auth_middleware(
         .claims;
 
     let player_id = claims.sub;
-    let mut player_repo = PlayerRepository::from_connection(conn);
+    let player_repo = PlayerRepository::new(&pool);
     let user = player_repo.find_by_id(&player_id).map_err(|e| {
         error!("Error fetching player from database: {}", e);
         let json_error = ErrorResponse {

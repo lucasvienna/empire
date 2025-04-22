@@ -1,5 +1,6 @@
 use diesel::{AsChangeset, Identifiable};
 
+use crate::domain::app_state::AppPool;
 use crate::Result;
 
 pub mod active_modifiers;
@@ -16,42 +17,31 @@ pub mod resources;
 
 pub use connection::{DbConn, DbPool};
 
-pub trait Repository<Entity, NewEntity, UpdateEntity, PK = i32>
+pub trait Repository<Entity, NewEntity, UpdateEntity, EntityKey>
 where
     UpdateEntity: Identifiable + AsChangeset,
 {
     /// Creates a new repository instance from a connection pool.
     ///
     /// # Arguments
-    /// * `pool` - The database connection pool
+    /// * `pool` - Reference to a [`AppPool`] connection pool
     ///
     /// # Returns
-    /// A Result containing the new repository instance
-    fn try_from_pool(pool: &DbPool) -> Result<Self>
-    where
-        Self: Sized;
-
-    /// Creates a new repository instance from an existing database connection.
-    ///
-    /// # Arguments
-    /// * `connection` - The database connection
-    ///
-    /// # Returns
-    /// A Result containing the new repository instance
-    fn from_connection(connection: DbConn) -> Self;
+    /// * `Self` - New repository instance
+    fn new(pool: &AppPool) -> Self;
 
     /// get all entities
-    fn get_all(&mut self) -> Result<Vec<Entity>>;
+    fn get_all(&self) -> Result<Vec<Entity>>;
 
     /// get a single entity by id
-    fn get_by_id(&mut self, id: &PK) -> Result<Entity>;
+    fn get_by_id(&self, key: &EntityKey) -> Result<Entity>;
 
     /// add an entity to the database
-    fn create(&mut self, entity: NewEntity) -> Result<Entity>;
+    fn create(&self, entity: NewEntity) -> Result<Entity>;
 
     /// update an entity
-    fn update(&mut self, changeset: UpdateEntity) -> Result<Entity>;
+    fn update(&self, changeset: UpdateEntity) -> Result<Entity>;
 
     /// delete an entity by its id
-    fn delete(&mut self, id: &PK) -> Result<usize>;
+    fn delete(&self, key: &EntityKey) -> Result<usize>;
 }

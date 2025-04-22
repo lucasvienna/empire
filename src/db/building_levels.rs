@@ -1,9 +1,11 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 use tracing::debug;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::{DbConn, Repository};
+use crate::domain::app_state::AppPool;
 use crate::domain::building_levels::{
     BuildingLevel, BuildingLevelKey, NewBuildingLevel, UpdateBuildingLevel,
 };
@@ -18,9 +20,9 @@ use crate::schema::building_level as bl;
 /// including querying by player and handling modifier expirations.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct BuildingLevelRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for BuildingLevelRepository {
@@ -32,14 +34,10 @@ impl fmt::Debug for BuildingLevelRepository {
 impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingLevelKey>
     for BuildingLevelRepository
 {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
-    }
-
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
     /// Retrieves all building levels from the database.
@@ -47,10 +45,11 @@ impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingL
     /// # Returns
     /// A [`Result`] containing a vector of [`BuildingLevel`] entities if successful,
     /// or an error if the database operation fails.
-    fn get_all(&mut self) -> Result<Vec<BuildingLevel>> {
+    fn get_all(&self) -> Result<Vec<BuildingLevel>> {
+        let mut conn = self.pool.get()?;
         let buildings = bl::table
             .select(BuildingLevel::as_select())
-            .load(&mut self.connection)?;
+            .load(&mut conn)?;
         Ok(buildings)
     }
 
@@ -62,8 +61,9 @@ impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingL
     /// # Returns
     /// A [`Result`] containing the requested [`BuildingLevel`] if found,
     /// or an error if the level doesn't exist or the operation fails.
-    fn get_by_id(&mut self, lvl_id: &BuildingLevelKey) -> Result<BuildingLevel> {
-        let building = bl::table.find(lvl_id).first(&mut self.connection)?;
+    fn get_by_id(&self, lvl_id: &BuildingLevelKey) -> Result<BuildingLevel> {
+        let mut conn = self.pool.get()?;
+        let building = bl::table.find(lvl_id).first(&mut conn)?;
         Ok(building)
     }
 
@@ -75,12 +75,13 @@ impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingL
     /// # Returns
     /// A [`Result`] containing the newly created [`BuildingLevel`] if successful,
     /// or an error if the database operation fails.
-    fn create(&mut self, entity: NewBuildingLevel) -> Result<BuildingLevel> {
+    fn create(&self, entity: NewBuildingLevel) -> Result<BuildingLevel> {
         debug!("Creating building level {:?}", entity);
+        let mut conn = self.pool.get()?;
         let building = diesel::insert_into(bl::table)
             .values(entity)
             .returning(BuildingLevel::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         debug!("Created building level: {:?}", building);
         Ok(building)
     }
@@ -93,11 +94,12 @@ impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingL
     /// # Returns
     /// A [`Result`] containing the updated [`BuildingLevel`] if successful,
     /// or an error if the level doesn't exist or the operation fails.
-    fn update(&mut self, changeset: &UpdateBuildingLevel) -> Result<BuildingLevel> {
+    fn update(&self, changeset: &UpdateBuildingLevel) -> Result<BuildingLevel> {
         debug!("Updating building level {}", changeset.id);
+        let mut conn = self.pool.get()?;
         let bld_level = diesel::update(bl::table)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         debug!("Updated building level: {:?}", bld_level);
         Ok(bld_level)
     }
@@ -110,9 +112,10 @@ impl Repository<BuildingLevel, NewBuildingLevel, &UpdateBuildingLevel, BuildingL
     /// # Returns
     /// A [`Result`] containing the number of deleted records if successful,
     /// or an error if the operation fails.
-    fn delete(&mut self, lvl_id: &BuildingLevelKey) -> Result<usize> {
+    fn delete(&self, lvl_id: &BuildingLevelKey) -> Result<usize> {
         debug!("Deleting building level {}", lvl_id);
-        let deleted_count = diesel::delete(bl::table.find(lvl_id)).execute(&mut self.connection)?;
+        let mut conn = self.pool.get()?;
+        let deleted_count = diesel::delete(bl::table.find(lvl_id)).execute(&mut conn)?;
         debug!("Deleted {} building levels", deleted_count);
         Ok(deleted_count)
     }
@@ -126,25 +129,23 @@ impl BuildingLevelRepository {
     ///
     /// # Returns
     /// A Result containing a vector of ActiveModifier entities
-    pub fn get_by_building_id(&mut self, bld_id: &BuildingKey) -> Result<Vec<BuildingLevel>> {
+    pub fn get_by_building_id(
+        &self,
+        conn: &mut DbConn,
+        bld_id: &BuildingKey,
+    ) -> Result<Vec<BuildingLevel>> {
         debug!("Gggetting levels for building {}", bld_id);
         let bld_levels = bl::table
             .filter(bl::building_id.eq(bld_id))
             .order(bl::level.asc())
-            .load(&mut self.connection)?;
+            .load(conn)?;
         debug!("Levels: {:?}", bld_levels);
         Ok(bld_levels)
     }
 
-    /// Deletes expired modifiers for a specific player.
-    ///
-    /// # Arguments
-    /// * `player_id` - The unique identifier of the player
-    ///
-    /// # Returns
-    /// A Result containing the number of deleted modifiers
     pub fn get_next_upgrade(
-        &mut self,
+        &self,
+        conn: &mut DbConn,
         bld_id: &BuildingKey,
         bld_level: &i32,
     ) -> Result<BuildingLevel> {
@@ -156,7 +157,7 @@ impl BuildingLevelRepository {
         let building = bl::table
             .filter(bl::building_id.eq(bld_id))
             .filter(bl::level.eq(&next_level))
-            .first(&mut self.connection)?;
+            .first(conn)?;
         debug!("Next upgrade: {:?}", building);
         Ok(building)
     }

@@ -1,8 +1,10 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::{DbConn, Repository};
+use crate::domain::app_state::AppPool;
 use crate::domain::modifier::active_modifier::{
     ActiveModifier, ActiveModifierKey, NewActiveModifier, UpdateActiveModifier,
 };
@@ -16,9 +18,9 @@ use crate::Result;
 /// query capabilities specific to active modifiers.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct ActiveModifiersRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for ActiveModifiersRepository {
@@ -30,24 +32,21 @@ impl fmt::Debug for ActiveModifiersRepository {
 impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, ActiveModifierKey>
     for ActiveModifiersRepository
 {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
-    }
-
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
     /// Retrieves all active modifiers from the database.
     ///
     /// # Returns
     /// * `Result<Vec<ActiveModifier>>` - List of all active modifiers or an error
-    fn get_all(&mut self) -> Result<Vec<ActiveModifier>> {
+    fn get_all(&self) -> Result<Vec<ActiveModifier>> {
+        let mut conn = self.pool.get()?;
         let mod_list = active_modifiers
             .select(ActiveModifier::as_select())
-            .load(&mut self.connection)?;
+            .load(&mut conn)?;
         Ok(mod_list)
     }
 
@@ -58,8 +57,9 @@ impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, Active
     ///
     /// # Returns
     /// * `Result<ActiveModifier>` - The requested modifier or an error
-    fn get_by_id(&mut self, mod_id: &ActiveModifierKey) -> Result<ActiveModifier> {
-        let modifier = active_modifiers.find(mod_id).first(&mut self.connection)?;
+    fn get_by_id(&self, mod_id: &ActiveModifierKey) -> Result<ActiveModifier> {
+        let mut conn = self.pool.get()?;
+        let modifier = active_modifiers.find(mod_id).first(&mut conn)?;
         Ok(modifier)
     }
 
@@ -70,11 +70,12 @@ impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, Active
     ///
     /// # Returns
     /// * `Result<ActiveModifier>` - The created modifier or an error
-    fn create(&mut self, entity: NewActiveModifier) -> Result<ActiveModifier> {
+    fn create(&self, entity: NewActiveModifier) -> Result<ActiveModifier> {
+        let mut conn = self.pool.get()?;
         let modifier = diesel::insert_into(active_modifiers)
             .values(entity)
             .returning(ActiveModifier::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(modifier)
     }
 
@@ -85,10 +86,11 @@ impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, Active
     ///
     /// # Returns
     /// * `Result<ActiveModifier>` - The updated modifier or an error
-    fn update(&mut self, changeset: &UpdateActiveModifier) -> Result<ActiveModifier> {
+    fn update(&self, changeset: &UpdateActiveModifier) -> Result<ActiveModifier> {
+        let mut conn = self.pool.get()?;
         let modifier = diesel::update(active_modifiers)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(modifier)
     }
 
@@ -99,9 +101,9 @@ impl Repository<ActiveModifier, NewActiveModifier, &UpdateActiveModifier, Active
     ///
     /// # Returns
     /// * `Result<usize>` - The number of deleted rows or an error
-    fn delete(&mut self, mod_id: &ActiveModifierKey) -> Result<usize> {
-        let deleted_count =
-            diesel::delete(active_modifiers.find(mod_id)).execute(&mut self.connection)?;
+    fn delete(&self, mod_id: &ActiveModifierKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let deleted_count = diesel::delete(active_modifiers.find(mod_id)).execute(&mut conn)?;
         Ok(deleted_count)
     }
 }
@@ -114,10 +116,14 @@ impl ActiveModifiersRepository {
     ///
     /// # Returns
     /// * `Result<Vec<ActiveModifier>>` - List of active modifiers for the player or an error
-    pub fn get_by_player_id(&mut self, player_key: &PlayerKey) -> Result<Vec<ActiveModifier>> {
+    pub fn get_by_player_id(
+        &self,
+        conn: &mut DbConn,
+        player_key: &PlayerKey,
+    ) -> Result<Vec<ActiveModifier>> {
         let active_mods = active_modifiers
             .filter(player_id.eq(player_key))
-            .get_results(&mut self.connection)?;
+            .get_results(conn)?;
         Ok(active_mods)
     }
 }

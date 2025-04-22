@@ -7,7 +7,8 @@ use tracing::{debug, info};
 
 use crate::db::active_modifiers::ActiveModifiersRepository;
 use crate::db::modifiers::ModifiersRepository;
-use crate::db::{DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::{Modifier, ModifierTarget};
 use crate::domain::player;
@@ -17,27 +18,27 @@ use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::Error;
 
 pub struct ModifierService {
+    pool: AppPool,
     cache: Arc<ModifierCache>,
     scheduler: ModifierScheduler,
     mod_repo: ModifiersRepository,
     active_mod_repo: ActiveModifiersRepository,
-    db_pool: DbPool,
 }
 
 impl ModifierService {
     pub fn new(
+        pool: AppPool,
         cache: Arc<ModifierCache>,
         scheduler: ModifierScheduler,
         mod_repo: ModifiersRepository,
         active_mod_repo: ActiveModifiersRepository,
-        db_pool: DbPool,
     ) -> Self {
         Self {
+            pool,
             cache,
             scheduler,
             mod_repo,
             active_mod_repo,
-            db_pool,
         }
     }
 
@@ -87,15 +88,16 @@ impl ModifierService {
 
     /// Get all active modifiers for a player
     pub fn get_active_modifiers(
-        &mut self,
+        &self,
         player_id: &player::PlayerKey,
     ) -> Result<Vec<ActiveModifier>, Error> {
-        self.active_mod_repo.get_by_player_id(player_id)
+        let mut conn = self.pool.get()?;
+        self.active_mod_repo.get_by_player_id(&mut conn, player_id)
     }
 
     /// Get the total modifier multiplier for a specific target and resource
     pub async fn get_total_multiplier(
-        &mut self,
+        &self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
@@ -129,7 +131,7 @@ impl ModifierService {
 
     /// Calculate the total modifier multiplier from all active modifiers
     async fn calculate_total_multiplier(
-        &mut self,
+        &self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
@@ -169,7 +171,7 @@ impl ModifierService {
 
     /// Get the nearest expiration time for modifiers matching the criteria
     async fn get_nearest_expiration(
-        &mut self,
+        &self,
         player_id: player::PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,

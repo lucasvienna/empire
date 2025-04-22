@@ -2,11 +2,13 @@
 //! Provides CRUD operations and resource deduction functionality.
 
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 use tracing::debug;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::{DbConn, Repository};
+use crate::domain::app_state::AppPool;
 use crate::domain::error::Result;
 use crate::domain::player::resource::{
     NewPlayerResource, PlayerResource, PlayerResourceKey, UpdatePlayerResource,
@@ -17,9 +19,9 @@ use crate::schema::player_resource::dsl::*;
 /// Provides CRUD operations and resource deduction functionality.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct ResourcesRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for ResourcesRepository {
@@ -31,59 +33,57 @@ impl fmt::Debug for ResourcesRepository {
 impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, PlayerResourceKey>
     for ResourcesRepository
 {
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
-    }
-
-    fn get_all(&mut self) -> Result<Vec<PlayerResource>> {
+    fn get_all(&self) -> Result<Vec<PlayerResource>> {
         debug!("Getting all resources");
+        let mut conn = self.pool.get()?;
         let buildings = player_resource
             .select(PlayerResource::as_select())
-            .load(&mut self.connection)?;
+            .load(&mut conn)?;
         Ok(buildings)
     }
 
-    fn get_by_id(&mut self, player_key: &PlayerResourceKey) -> Result<PlayerResource> {
+    fn get_by_id(&self, player_key: &PlayerResourceKey) -> Result<PlayerResource> {
         debug!("Getting resource by ID: {}", player_key);
-        let resource = player_resource
-            .find(player_key)
-            .first(&mut self.connection)?;
+        let mut conn = self.pool.get()?;
+        let resource = player_resource.find(player_key).first(&mut conn)?;
         debug!("Got resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn create(&mut self, entity: NewPlayerResource) -> Result<PlayerResource> {
+    fn create(&self, entity: NewPlayerResource) -> Result<PlayerResource> {
         debug!("Creating resource: {:?}", entity);
+        let mut conn = self.pool.get()?;
         let resource = diesel::insert_into(player_resource)
             .values(entity)
             .returning(PlayerResource::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         debug!("Created resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn update(&mut self, changeset: &UpdatePlayerResource) -> Result<PlayerResource> {
+    fn update(&self, changeset: &UpdatePlayerResource) -> Result<PlayerResource> {
         debug!(
             "Updating resource '{}': {:?}",
             changeset.player_id, changeset
         );
+        let mut conn = self.pool.get()?;
         let resource = diesel::update(player_resource)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         debug!("Updated resource: {:?}", resource);
         Ok(resource)
     }
 
-    fn delete(&mut self, resource_key: &PlayerResourceKey) -> Result<usize> {
+    fn delete(&self, resource_key: &PlayerResourceKey) -> Result<usize> {
         debug!("Deleting resource: {}", resource_key);
-        let res =
-            diesel::delete(player_resource.find(resource_key)).execute(&mut self.connection)?;
+        let mut conn = self.pool.get()?;
+        let res = diesel::delete(player_resource.find(resource_key)).execute(&mut conn)?;
         debug!("Deleted resource: {}", res);
         Ok(res)
     }
@@ -107,7 +107,8 @@ impl ResourcesRepository {
     /// # Returns
     /// * `Result<PlayerResource>` - The updated player resources after deduction
     pub fn deduct(
-        &mut self,
+        &self,
+        conn: &mut DbConn,
         player_key: &PlayerResourceKey,
         amounts: &Deduction,
     ) -> Result<PlayerResource> {
@@ -115,9 +116,7 @@ impl ResourcesRepository {
             "Deducting resources {:?} from player {}",
             amounts, player_key
         );
-        let res: PlayerResource = player_resource
-            .find(player_key)
-            .first(&mut self.connection)?;
+        let res: PlayerResource = player_resource.find(player_key).first(conn)?;
         debug!("Current resources: {:?}", res);
         let updated_res = diesel::update(player_resource.find(player_key))
             .set((
@@ -126,7 +125,7 @@ impl ResourcesRepository {
                 stone.eq(stone - amounts.2),
                 gold.eq(gold - amounts.3),
             ))
-            .get_result(&mut self.connection)?;
+            .get_result(conn)?;
         debug!("Updated resources: {:?}", updated_res);
         Ok(updated_res)
     }

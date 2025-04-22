@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::body::Body;
 use axum::http::{header, Request, StatusCode};
 use axum_extra::headers;
@@ -8,7 +10,8 @@ use empire::controllers::{
     NewUserPayload, RegisterPayload, UpdateUserPayload, UserBody, UserListBody,
 };
 use empire::db::players::PlayerRepository;
-use empire::db::{DbConn, Repository};
+use empire::db::Repository;
+use empire::domain::app_state::AppPool;
 use empire::domain::auth::{encode_token, Claims};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::buildings::PlayerBuilding;
@@ -25,8 +28,8 @@ mod common;
 async fn get_all() {
     let server = common::init_server();
     let router = server.router;
-    let conn = server.db_pool.get().unwrap();
-    let user = create_test_user(conn, None);
+    let pool = Arc::new(server.db_pool);
+    let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
     let response = router
@@ -55,8 +58,8 @@ async fn get_all() {
 async fn create_and_get_by_id() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
-    let conn = app.db_pool.get().unwrap();
-    let user = create_test_user(conn, None);
+    let pool = Arc::new(app.db_pool);
+    let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
     let req = NewUserPayload {
@@ -97,7 +100,7 @@ async fn create_and_get_by_id() {
     assert_eq!(new_user.username, user.username);
     assert_eq!(new_user.faction, user.faction);
 
-    let del = delete_test_user(user.id, app.db_pool.get().unwrap());
+    let del = delete_test_user(&pool, user.id);
     assert_eq!(del, 1, "Failed to delete user");
 }
 
@@ -158,7 +161,8 @@ async fn update() {
 async fn delete() {
     let app = common::spawn_app();
     let client = reqwest::Client::new();
-    let user = create_test_user(app.db_pool.get().unwrap(), None);
+    let pool = Arc::new(app.db_pool);
+    let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
     let res = client
@@ -181,7 +185,7 @@ async fn delete() {
         "Shouldn't be able to authorize with deleted user"
     );
 
-    let user2 = create_test_user(app.db_pool.get().unwrap(), None);
+    let user2 = create_test_user(&pool, None);
     let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired player trying to reuse the token
     let response = client
         .get(format!("{}/users/{}", &app.address, user.id))
@@ -193,8 +197,8 @@ async fn delete() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(conn: DbConn, faction: Option<FactionCode>) -> Player {
-    let mut user_repo = PlayerRepository::from_connection(conn);
+fn create_test_user(pool: &AppPool, faction: Option<FactionCode>) -> Player {
+    let user_repo = PlayerRepository::new(pool);
     user_repo
         .create(NewPlayer {
             name: UserName::parse("test_user".to_string()).unwrap(),
@@ -206,8 +210,8 @@ fn create_test_user(conn: DbConn, faction: Option<FactionCode>) -> Player {
 }
 
 /// Delete a player. Uses internal DB functions.
-fn delete_test_user(player_id: PlayerKey, conn: DbConn) -> usize {
-    let mut user_repo = PlayerRepository::from_connection(conn);
+fn delete_test_user(pool: &AppPool, player_id: PlayerKey) -> usize {
+    let user_repo = PlayerRepository::new(pool);
     user_repo.delete(&player_id).unwrap()
 }
 

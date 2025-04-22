@@ -1,8 +1,10 @@
 use std::fmt;
+use std::sync::Arc;
 
 use diesel::prelude::*;
 
-use crate::db::{DbConn, DbPool, Repository};
+use crate::db::Repository;
+use crate::domain::app_state::AppPool;
 use crate::domain::error::Result;
 use crate::domain::factions::{Faction, FactionKey, NewFaction, UpdateFaction};
 use crate::schema::faction::dsl::*;
@@ -12,9 +14,9 @@ use crate::schema::faction::dsl::*;
 /// This struct provides CRUD operations for [`Faction`] entities using a database connection.
 ///
 /// # Fields
-/// * `connection` - Database connection pool
+/// * `pool` - Thread-safe connection pool of type [`AppPool`] for database access
 pub struct FactionRepository {
-    connection: DbConn,
+    pool: AppPool,
 }
 
 impl fmt::Debug for FactionRepository {
@@ -24,38 +26,19 @@ impl fmt::Debug for FactionRepository {
 }
 
 impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepository {
-    /// Creates a new [`FactionRepository`] instance from a database connection pool.
-    ///
-    /// # Arguments
-    /// * `pool` - The database connection pool to create the repository from
-    ///
-    /// # Returns
-    /// A Result containing the new repository instance
-    fn try_from_pool(pool: &DbPool) -> Result<Self> {
-        Ok(Self {
-            connection: pool.get()?,
-        })
-    }
-
-    /// Creates a new [`FactionRepository`] instance from an existing database connection.
-    ///
-    /// # Arguments
-    /// * `connection` - The database connection to create the repository from
-    ///
-    /// # Returns
-    /// The new repository instance
-    fn from_connection(connection: DbConn) -> Self {
-        Self { connection }
+    fn new(pool: &AppPool) -> Self {
+        Self {
+            pool: Arc::clone(pool),
+        }
     }
 
     /// Retrieves all [`Faction`] entities from the database.
     ///
     /// # Returns
     /// A Result containing a vector of all faction entities
-    fn get_all(&mut self) -> Result<Vec<Faction>> {
-        let fac_list = faction
-            .select(Faction::as_select())
-            .load(&mut self.connection)?;
+    fn get_all(&self) -> Result<Vec<Faction>> {
+        let mut conn = self.pool.get()?;
+        let fac_list = faction.select(Faction::as_select()).load(&mut conn)?;
         Ok(fac_list)
     }
 
@@ -66,8 +49,9 @@ impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepo
     ///
     /// # Returns
     /// A Result containing the requested faction
-    fn get_by_id(&mut self, faction_id: &FactionKey) -> Result<Faction> {
-        let fac = faction.find(faction_id).first(&mut self.connection)?;
+    fn get_by_id(&self, faction_id: &FactionKey) -> Result<Faction> {
+        let mut conn = self.pool.get()?;
+        let fac = faction.find(faction_id).first(&mut conn)?;
         Ok(fac)
     }
 
@@ -78,11 +62,12 @@ impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepo
     ///
     /// # Returns
     /// A Result containing the created faction
-    fn create(&mut self, entity: NewFaction) -> Result<Faction> {
+    fn create(&self, entity: NewFaction) -> Result<Faction> {
+        let mut conn = self.pool.get()?;
         let created_faction = diesel::insert_into(faction)
             .values(entity)
             .returning(Faction::as_returning())
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(created_faction)
     }
 
@@ -93,10 +78,11 @@ impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepo
     ///
     /// # Returns
     /// A Result containing the updated faction
-    fn update(&mut self, changeset: &UpdateFaction) -> Result<Faction> {
+    fn update(&self, changeset: &UpdateFaction) -> Result<Faction> {
+        let mut conn = self.pool.get()?;
         let updated_faction = diesel::update(faction)
             .set(changeset)
-            .get_result(&mut self.connection)?;
+            .get_result(&mut conn)?;
         Ok(updated_faction)
     }
 
@@ -107,9 +93,9 @@ impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepo
     ///
     /// # Returns
     /// A Result containing the number of rows deleted
-    fn delete(&mut self, faction_id: &FactionKey) -> Result<usize> {
-        let rows_deleted =
-            diesel::delete(faction.find(faction_id)).execute(&mut self.connection)?;
+    fn delete(&self, faction_id: &FactionKey) -> Result<usize> {
+        let mut conn = self.pool.get()?;
+        let rows_deleted = diesel::delete(faction.find(faction_id)).execute(&mut conn)?;
         Ok(rows_deleted)
     }
 }

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -12,10 +13,9 @@ use serde_json::json;
 use tracing::{error, info, instrument, warn};
 
 use crate::configuration::Settings;
-use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
-use crate::domain::app_state::AppState;
+use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::auth::{AuthBody, AuthError, Claims};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
@@ -75,13 +75,13 @@ impl Debug for LoginPayload {
     }
 }
 
-#[instrument(skip(conn))]
+#[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn register(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
     let new_user = NewPlayer::try_from(payload).map_err(|err| {
         error!("Failed to parse player: {}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
@@ -115,10 +115,10 @@ async fn register(
     Ok(StatusCode::CREATED)
 }
 
-#[instrument(skip(conn, jar, settings))]
+#[instrument(skip(pool, jar, settings))]
 #[debug_handler(state = AppState)]
 async fn login(
-    DatabaseConnection(conn): DatabaseConnection,
+    State(pool): State<AppPool>,
     jar: CookieJar,
     settings: Settings,
     Json(payload): Json<LoginPayload>,
@@ -127,7 +127,7 @@ async fn login(
         return Err(AuthError::MissingCredentials);
     }
 
-    let mut repo = PlayerRepository::from_connection(conn);
+    let repo = PlayerRepository::new(&pool);
     let user = repo.get_by_name(&payload.username).map_err(|err| {
         warn!("Invalid player: {}", err);
         AuthError::WrongCredentials
