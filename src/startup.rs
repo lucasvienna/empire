@@ -20,6 +20,7 @@ use tracing::{info, warn};
 
 use crate::configuration::Settings;
 use crate::domain::app_state::{App, AppPool, AppState};
+use crate::game::modifiers::modifier_processor::ModifierProcessor;
 use crate::game::res_gen_subroutine::init_res_gen;
 use crate::job_queue::worker_pool::WorkerPool;
 use crate::net::server;
@@ -46,26 +47,24 @@ use crate::Result;
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
     let token = CancellationToken::new();
-    let app = Arc::new(App::with_pool(pool.clone(), config.clone()));
-    let subroutines = start_subroutines(&pool, token.clone());
+    let app_state = AppState(Arc::new(App::with_pool(pool.clone(), config.clone())));
 
     let default_workers = available_parallelism()?.get();
-    let mut worker_pool = WorkerPool::new(Arc::clone(&app.job_queue), token.clone());
-    worker_pool
-        .initialise_workers(config.server.workers.unwrap_or(default_workers))
-        .await?;
-    let worker_monitor = worker_pool.run();
+    let mod_workers = ModifierProcessor::initialise_n(default_workers, &app_state);
+    let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
+    worker_pool.add_workers(mod_workers);
 
-    let app_state = AppState(app);
+    let subroutines = start_subroutines(&pool, token.clone());
+    let monitor = worker_pool.monitor();
+
     let (listener, router) = server::init(app_state).await?;
-
-    info!("Empire server started!");
     info!("Listening on {}", listener.local_addr()?);
 
     let server = axum::serve(listener, router.into_make_service())
         .with_graceful_shutdown(shutdown_signal(token));
+    info!("Empire server started!");
 
-    let (srv, _, _) = tokio::join!(server, subroutines, worker_monitor);
+    let (srv, _, _) = tokio::join!(server, subroutines, monitor);
     srv.map_err(|err| {
         warn!("Server error while shutting down: {:#?}", err);
         err.into()

@@ -35,7 +35,7 @@ impl WorkerPool {
         }
     }
 
-    /// Runs the worker pool until cancellation is requested.
+    /// Monitors the worker pool until cancellation is requested.
     ///
     /// This method blocks until the cancellation token is triggered, at which point
     /// it initiates a graceful shutdown of all workers. It ensures that all workers
@@ -44,7 +44,7 @@ impl WorkerPool {
     /// # Returns
     ///
     /// Returns `Ok(())` if shutdown completes successfully, or an [`Error`] if shutdown fails
-    pub async fn run(&mut self) -> Result<(), Error> {
+    pub async fn monitor(&mut self) -> Result<(), Error> {
         info!("Starting worker pool...");
         self.cancellation_token.cancelled().await;
         info!("Shutting down worker pool...");
@@ -56,34 +56,54 @@ impl WorkerPool {
         Ok(())
     }
 
-    /// Initialises the specified number of worker threads.
+    /// Adds a new worker thread to the pool.
+    ///
+    /// This method allows dynamically expanding the worker pool by adding new worker
+    /// threads at runtime. Each worker is tracked and managed as part of the pool's
+    /// lifecycle.
     ///
     /// # Arguments
     ///
-    /// * `worker_count` - The number of worker threads to spawn
+    /// * `worker` - A type implementing [`JobProcessor`] that will process jobs from the queue.
+    ///   Must be [`Send`] and have a static lifetime.
     ///
-    /// # Returns
+    /// # Type Parameters
     ///
-    /// Returns `Ok(())` if all workers are successfully spawned, or an [`Error`] if initialisation fails
-    pub async fn initialise_workers(&mut self, worker_count: usize) -> Result<(), Error> {
-        info!("Initialising worker pool with {} workers", worker_count);
-        for _ in 0..worker_count {
-            let queue = self.queue.clone();
-            let shutdown_rx = self.queue.subscribe_shutdown();
-            let pool = queue.pool.clone();
+    /// The worker type must implement:
+    /// - [`JobProcessor`] for job processing functionality
+    /// - [`Send`] for thread safety
+    /// - `'static` lifetime for thread spawning
+    pub fn add_worker(&mut self, mut worker: impl JobProcessor + Send + 'static) {
+        info!("Adding new worker to pool");
+        let queue = self.queue.clone();
+        let handle = tokio::spawn(async move {
+            if let Err(e) = worker.run(queue).await {
+                error!("Worker error: {}", e);
+            }
+        });
+        self.workers.push(handle);
+    }
 
-            let handle = tokio::spawn(async move {
-                let mut processor = JobProcessor::new(pool, shutdown_rx);
-                if let Err(e) = processor.run(queue).await {
-                    error!("Worker error: {}", e);
-                }
-            });
-
-            self.workers.push(handle);
+    /// Adds multiple worker threads to the pool at once.
+    ///
+    /// This method provides a convenient way to add multiple workers simultaneously.
+    /// Each worker will process jobs from the shared queue independently.
+    ///
+    /// # Arguments
+    ///
+    /// * `workers` - A vector of types implementing [`JobProcessor`] that will process jobs from the queue.
+    ///   Each worker must be [`Send`] and have a static lifetime.
+    ///
+    /// # Type Parameters
+    ///
+    /// The worker type must implement:
+    /// - [`JobProcessor`] for job processing functionality
+    /// - [`Send`] for thread safety
+    /// - `'static` lifetime for thread spawning
+    pub fn add_workers(&mut self, workers: Vec<impl JobProcessor + Send + 'static>) {
+        for worker in workers {
+            self.add_worker(worker);
         }
-        info!("Worker pool started");
-
-        Ok(())
     }
 
     /// Initiates a graceful shutdown of all worker threads.
@@ -99,7 +119,7 @@ impl WorkerPool {
         // Signal all workers to shut down
         self.queue.shutdown().await?;
 
-        // Take ownership of the workers vector
+        // Take ownership of the workers' vector
         let workers = std::mem::take(&mut self.workers);
 
         // Create a timeout future

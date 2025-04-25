@@ -26,6 +26,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   --env POSTGRESQL_LOG_MIN_DURATION_STATEMENT=0 \
   --publish "${APP_DATABASE__PORT}":5432 \
   --detach \
+  --restart=always \
   --name "${CONTAINER_NAME}" \
   postgres \
   -c log_statement=all \

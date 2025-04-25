@@ -34,11 +34,11 @@ impl FromRef<AppState> for ModifierService {
 }
 
 impl ModifierService {
-    pub fn new(pool: &AppPool, mod_routine: &ModifierSystem) -> Self {
+    pub fn new(pool: &AppPool, mod_system: &ModifierSystem) -> Self {
         Self {
             pool: Arc::clone(pool),
-            cache: Arc::clone(&mod_routine.cache),
-            scheduler: Arc::clone(&mod_routine.scheduler),
+            cache: Arc::clone(&mod_system.cache),
+            scheduler: Arc::clone(&mod_system.scheduler),
             mod_repo: ModifiersRepository::new(pool),
             active_mod_repo: ActiveModifiersRepository::new(pool),
         }

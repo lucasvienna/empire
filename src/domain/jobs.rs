@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use chrono::{DateTime, Utc};
+use derive_more::Display;
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
@@ -20,6 +21,7 @@ pub type JobKey = Uuid;
     Serialize,
     Deserialize,
     Debug,
+    Display,
     Clone,
     Copy,
     PartialEq,

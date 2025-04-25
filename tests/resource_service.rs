@@ -1,4 +1,3 @@
-use empire::game::service::ApiService;
 use std::sync::Arc;
 
 use diesel::prelude::*;
@@ -10,6 +9,7 @@ use empire::domain::factions::FactionCode;
 use empire::domain::player::accumulator::PlayerAccumulator;
 use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::game::resource_service::ResourceService;
+use empire::game::service::ApiService;
 use empire::schema::{player_accumulator as acc, player_resource as rsc};
 use empire::services::auth_service::hash_password;
 

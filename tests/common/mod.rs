@@ -18,6 +18,7 @@ use uuid::Uuid;
 
 #[allow(dead_code)]
 pub struct TestServer {
+    pub app: Arc<App>,
     pub router: Router,
     pub db_pool: DbPool,
 }
@@ -55,8 +56,9 @@ pub fn init_server() -> TestServer {
     let app = Arc::new(App::with_pool(db_pool, settings));
 
     TestServer {
-        router: router::init(AppState(app)),
+        app: app.clone(),
         db_pool: pool,
+        router: router::init(AppState(app)),
     }
 }
 
