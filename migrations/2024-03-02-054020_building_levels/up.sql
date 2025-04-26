@@ -4,10 +4,10 @@ CREATE TABLE building_level
     building_id  INTEGER     NOT NULL,
     level        INTEGER     NOT NULL,
     upgrade_time TEXT        NOT NULL, -- "%H:%M:%S"
-    req_food     INTEGER,
-    req_wood     INTEGER,
-    req_stone    INTEGER,
-    req_gold     INTEGER,
+    req_food     BIGINT,
+    req_wood     BIGINT,
+    req_stone    BIGINT,
+    req_gold     BIGINT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 

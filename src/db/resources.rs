@@ -91,11 +91,11 @@ impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, Player
 
 /// Represents resource amounts to be deducted from a player's resources.
 /// The tuple contains amounts in the following order:
-/// * food (i32)
-/// * wood (i32)
-/// * stone (i32)
-/// * gold (i32)
-pub type Deduction = (i32, i32, i32, i32);
+/// * food (i64)
+/// * wood (i64)
+/// * stone (i64)
+/// * gold (i64)
+pub type Deduction = (i64, i64, i64, i64);
 
 impl ResourcesRepository {
     /// Deducts specified amounts of resources from a player's resource pool.

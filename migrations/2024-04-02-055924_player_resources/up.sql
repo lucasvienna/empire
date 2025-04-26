@@ -2,18 +2,18 @@ CREATE TYPE resource_type AS ENUM ('population', 'food', 'wood', 'stone', 'gold'
 
 CREATE TABLE player_resource
 (
-    id         UUID        NOT NULL DEFAULT generate_ulid(),
-    player_id  UUID UNIQUE NOT NULL,
-    food       INTEGER     NOT NULL DEFAULT 100,
-    wood       INTEGER     NOT NULL DEFAULT 100,
-    stone      INTEGER     NOT NULL DEFAULT 100,
-    gold       INTEGER     NOT NULL DEFAULT 100,
-    food_cap   INTEGER     NOT NULL DEFAULT 0,
-    wood_cap   INTEGER     NOT NULL DEFAULT 0,
-    stone_cap  INTEGER     NOT NULL DEFAULT 0,
-    gold_cap   INTEGER     NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id           UUID        NOT NULL DEFAULT generate_ulid(),
+    player_id    UUID UNIQUE NOT NULL,
+    food         BIGINT      NOT NULL DEFAULT 100,
+    wood         BIGINT      NOT NULL DEFAULT 100,
+    stone        BIGINT      NOT NULL DEFAULT 100,
+    gold         BIGINT      NOT NULL DEFAULT 100,
+    food_cap     BIGINT      NOT NULL DEFAULT 0,
+    wood_cap     BIGINT      NOT NULL DEFAULT 0,
+    stone_cap    BIGINT      NOT NULL DEFAULT 0,
+    gold_cap     BIGINT      NOT NULL DEFAULT 0,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
     FOREIGN KEY (player_id) REFERENCES player (id) ON DELETE CASCADE

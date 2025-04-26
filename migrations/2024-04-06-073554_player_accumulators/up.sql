@@ -2,10 +2,10 @@ CREATE TABLE player_accumulator
 (
     id         UUID        NOT NULL DEFAULT generate_ulid(),
     player_id  UUID UNIQUE NOT NULL,
-    food       INTEGER     NOT NULL DEFAULT 0,
-    wood       INTEGER     NOT NULL DEFAULT 0,
-    stone      INTEGER     NOT NULL DEFAULT 0,
-    gold       INTEGER     NOT NULL DEFAULT 0,
+    food       BIGINT      NOT NULL DEFAULT 0,
+    wood       BIGINT      NOT NULL DEFAULT 0,
+    stone      BIGINT      NOT NULL DEFAULT 0,
+    gold       BIGINT      NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 

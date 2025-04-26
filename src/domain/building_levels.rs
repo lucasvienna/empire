@@ -20,10 +20,10 @@ pub struct BuildingLevel {
     #[diesel(column_name = level)]
     pub building_level: i32,
     pub upgrade_time: String,
-    pub req_food: Option<i32>,
-    pub req_wood: Option<i32>,
-    pub req_stone: Option<i32>,
-    pub req_gold: Option<i32>,
+    pub req_food: Option<i64>,
+    pub req_wood: Option<i64>,
+    pub req_stone: Option<i64>,
+    pub req_gold: Option<i64>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -36,10 +36,10 @@ pub struct NewBuildingLevel {
     #[diesel(column_name = level)]
     pub building_level: i32,
     pub upgrade_time: String,
-    pub req_food: Option<i32>,
-    pub req_wood: Option<i32>,
-    pub req_stone: Option<i32>,
-    pub req_gold: Option<i32>,
+    pub req_food: Option<i64>,
+    pub req_wood: Option<i64>,
+    pub req_stone: Option<i64>,
+    pub req_gold: Option<i64>,
 }
 
 /// Data structure for updating an existing building level
@@ -48,8 +48,8 @@ pub struct NewBuildingLevel {
 pub struct UpdateBuildingLevel {
     pub id: BuildingLevelKey,
     pub upgrade_time: Option<String>,
-    pub req_food: Option<i32>,
-    pub req_wood: Option<i32>,
-    pub req_stone: Option<i32>,
-    pub req_gold: Option<i32>,
+    pub req_food: Option<i64>,
+    pub req_wood: Option<i64>,
+    pub req_stone: Option<i64>,
+    pub req_gold: Option<i64>,
 }

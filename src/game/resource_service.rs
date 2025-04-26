@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use diesel::prelude::*;
-use diesel::sql_types::Int4;
+use diesel::sql_types::Int8;
 use diesel::QueryDsl;
 use tracing::{debug, instrument};
 
@@ -18,7 +18,7 @@ use crate::Result;
 
 define_sql_function! {
     #[sql_name = "LEAST"]
-    fn least(a: Int4, b: Int4) -> Int4
+    fn least(a: Int8, b: Int8) -> Int8
 }
 
 pub struct ResourceService {
@@ -77,7 +77,7 @@ impl ResourceService {
                 least(acc::stone, rsc::stone_cap - rsc::stone),
                 least(acc::gold, rsc::gold_cap - rsc::gold),
             ))
-            .first::<(i32, i32, i32, i32)>(&mut connection)?;
+            .first::<(i64, i64, i64, i64)>(&mut connection)?;
         debug!("Deltas: {:?}", (food, wood, stone, gold));
 
         let res: Result<PlayerResource> = connection.transaction(|conn| {
