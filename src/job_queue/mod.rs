@@ -27,6 +27,9 @@ pub struct JobQueue {
     shutdown_tx: broadcast::Sender<()>,
 }
 
+/// A job request is a tuple of the job type, payload, priority, and run time.
+pub type JobRequest = (JobType, serde_json::Value, JobPriority, DateTime<Utc>);
+
 impl JobQueue {
     pub fn new(pool: AppPool) -> Self {
         let (shutdown_tx, _) = broadcast::channel(1);
@@ -61,6 +64,33 @@ impl JobQueue {
             .get_result(&mut conn)?;
 
         Ok(job_id)
+    }
+
+    /// Enqueues a batch of jobs with the specified parameters
+    pub async fn enqueue_batch(&self, jobs: Vec<JobRequest>) -> Result<Vec<JobKey>> {
+        let values: Vec<NewJob> = jobs
+            .into_iter()
+            .map(
+                |(new_job_type, job_payload, job_priority, job_run_at)| NewJob {
+                    job_type: new_job_type,
+                    status: JobStatus::Pending,
+                    payload: job_payload,
+                    run_at: job_run_at,
+                    last_error: None,
+                    max_retries: 3,
+                    priority: job_priority as i32,
+                    timeout_seconds: 300,
+                },
+            )
+            .collect();
+        let mut conn = self.pool.get()?;
+
+        let job_ids: Vec<JobKey> = diesel::insert_into(job)
+            .values(&values)
+            .returning(id)
+            .get_results(&mut conn)?;
+
+        Ok(job_ids)
     }
 
     /// Gets the next available job for processing

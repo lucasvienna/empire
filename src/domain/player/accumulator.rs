@@ -20,3 +20,13 @@ pub struct PlayerAccumulator {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Identifiable, AsChangeset, Debug, PartialEq)]
+#[diesel(table_name = player_accumulator, check_for_backend(diesel::pg::Pg))]
+pub struct UpdatePlayerAccumulator {
+    pub id: AccumulatorKey,
+    pub food: Option<i64>,
+    pub wood: Option<i64>,
+    pub stone: Option<i64>,
+    pub gold: Option<i64>,
+}

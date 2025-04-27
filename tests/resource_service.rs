@@ -1,25 +1,26 @@
-use std::sync::Arc;
-
+use axum::extract::FromRef;
 use diesel::prelude::*;
 use diesel::update;
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
-use empire::domain::app_state::AppPool;
+use empire::domain::app_state::{AppPool, AppState};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::accumulator::PlayerAccumulator;
 use empire::domain::player::{NewPlayer, Player, UserName};
-use empire::game::resource_service::ResourceService;
-use empire::game::service::ApiService;
+use empire::game::resources::resource_service::ResourceService;
 use empire::schema::{player_accumulator as acc, player_resource as rsc};
 use empire::services::auth_service::hash_password;
+
+use crate::common::TestServer;
 
 mod common;
 
 #[tokio::test]
 async fn test_collect_resource() {
-    let db_pool = Arc::new(common::init_server().db_pool);
+    let TestServer { app, db_pool, .. } = common::init_server();
+    let state = AppState(app);
     let mut conn = db_pool.get().unwrap();
-    let user = create_test_user(&db_pool);
+    let user = create_test_user(&state.db_pool);
     update(acc::table.filter(acc::player_id.eq(&user.id)))
         .set((
             acc::food.eq(1000),
@@ -40,7 +41,7 @@ async fn test_collect_resource() {
         .execute(&mut conn)
         .expect("Failed to update resources");
 
-    let srv = ResourceService::new(&db_pool);
+    let srv = ResourceService::from_ref(&state);
     let res = srv
         .collect_resources(&user.id)
         .expect("Failed to collect resources");

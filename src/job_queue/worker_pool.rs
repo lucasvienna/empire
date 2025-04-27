@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tokio::time::Duration;
 use tokio_util::sync::CancellationToken;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::job_queue::job_processor::JobProcessor;
 use crate::job_queue::JobQueue;
@@ -45,7 +45,7 @@ impl WorkerPool {
     ///
     /// Returns `Ok(())` if shutdown completes successfully, or an [`Error`] if shutdown fails
     pub async fn monitor(&mut self) -> Result<(), Error> {
-        info!("Starting worker pool...");
+        debug!("Starting worker pool monitor");
         self.cancellation_token.cancelled().await;
         info!("Shutting down worker pool...");
         if let Err(e) = self.shutdown().await {

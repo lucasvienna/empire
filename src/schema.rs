@@ -234,6 +234,8 @@ diesel::table! {
         wood_cap -> Int8,
         stone_cap -> Int8,
         gold_cap -> Int8,
+        produced_at -> Timestamptz,
+        collected_at -> Timestamptz,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

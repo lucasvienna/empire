@@ -21,7 +21,7 @@ pub struct CacheEntry {
     pub expires_at: Option<DateTime<Utc>>,
     /// Version for optimistic locking
     pub version: u64,
-    /// Timestamp of last update
+    /// Timestamp of the last update
     pub last_updated: DateTime<Utc>,
 }
 

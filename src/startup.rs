@@ -21,7 +21,7 @@ use tracing::{info, warn};
 use crate::configuration::Settings;
 use crate::domain::app_state::{App, AppPool, AppState};
 use crate::game::modifiers::modifier_processor::ModifierProcessor;
-use crate::game::res_gen_subroutine::init_res_gen;
+use crate::game::resources::resource_processor::ResourceProcessor;
 use crate::job_queue::worker_pool::WorkerPool;
 use crate::net::server;
 use crate::Result;
@@ -49,13 +49,9 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
     let token = CancellationToken::new();
     let app_state = AppState(Arc::new(App::with_pool(pool.clone(), config.clone())));
 
-    let default_workers = available_parallelism()?.get();
-    let mod_workers = ModifierProcessor::initialise_n(default_workers, &app_state);
-    let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
-    worker_pool.add_workers(mod_workers);
-
-    let subroutines = start_subroutines(&pool, token.clone());
-    let monitor = worker_pool.monitor();
+    let mut subroutines = start_subroutines(&app_state, token.clone())?;
+    let monitor = subroutines.monitor();
+    info!("Subroutines monitor started!");
 
     let (listener, router) = server::init(app_state).await?;
     info!("Listening on {}", listener.local_addr()?);
@@ -64,44 +60,47 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
         .with_graceful_shutdown(shutdown_signal(token));
     info!("Empire server started!");
 
-    let (srv, _, _) = tokio::join!(server, subroutines, monitor);
+    let (srv, _) = tokio::join!(server, monitor);
     srv.map_err(|err| {
         warn!("Server error while shutting down: {:#?}", err);
         err.into()
     })
 }
 
-/// Starts background subroutines required for the Empire server to function.
+/// Initializes and starts worker pools for background processing.
 ///
-/// The function initialises and runs various subroutines (e.g. resource generation)
-/// using the provided database connection and listens for shutdown signals
-/// through the `CancellationToken`.
-///
-/// When a cancellation signal is received through the `token`,
-/// all running subroutines will terminate.
+/// This function sets up worker pools for processing game modifiers and resources. It creates
+/// a new WorkerPool instance and initializes workers for different processing tasks.
 ///
 /// # Arguments
 ///
-/// * `connection` - A `DbConn` providing access to the database for the subroutines.
-/// * `token` - A `CancellationToken` used to detect shutdown signals and terminate subroutines.
+/// * `app_state` - A reference to `AppState` providing access to global state and shared resources
+/// * `token` - A `CancellationToken` used to coordinate graceful shutdown of workers
 ///
-/// # Behaviour
+/// # Returns
 ///
-/// This function uses `tokio::select!` to concurrently monitor the cancellation token and
-/// any ongoing subroutine (e.g. `res_gen`). When either the token is cancelled or the
-/// subroutine completes, the function exits. Ensure that any subroutines are endless.
+/// Returns a `Result<WorkerPool>` containing the initialized worker pool if successful
 ///
-/// Additional subroutines can be added inside the `tokio::select!` block by adding new arms.
-async fn start_subroutines(db_pool: &AppPool, token: CancellationToken) {
-    let conn = db_pool.get().expect("Failed to get database connection.");
-    let res_gen = init_res_gen(conn);
+/// # Details
+///
+/// The function performs the following:
+/// - Creates a new WorkerPool with the provided job queue and cancellation token
+/// - Calculates the number of workers based on available CPU cores (half of available cores)
+/// - Initializes ModifierProcessor workers for handling game modifiers
+/// - Initializes ResourceProcessor workers for handling resource calculations
+/// - Adds the modifier workers to the pool
+///
+/// The worker count is automatically adjusted based on the system's available parallelism
+/// to ensure optimal resource utilization.
+fn start_subroutines(app_state: &AppState, token: CancellationToken) -> Result<WorkerPool> {
+    let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
 
-    tokio::select! {
-        _ = token.cancelled() => {},
-        _ = res_gen => {},
-        // we can add more subroutines here as desired :)
-        // _ = time::sleep(Duration::from_secs(10)) => {},
-    }
+    let default_workers = available_parallelism()?.get() / 2;
+    let mod_workers = ModifierProcessor::initialise_n(default_workers, app_state);
+    let res_workers = ResourceProcessor::initialise_n(default_workers, app_state);
+    worker_pool.add_workers(mod_workers);
+
+    Ok(worker_pool)
 }
 
 /// Waits for a shutdown signal in the application.

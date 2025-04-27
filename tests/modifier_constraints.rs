@@ -16,7 +16,7 @@ async fn test_valid_modifier_constraints() {
     // Test resource modifier with valid resource type
     let wood_modifier = NewModifier {
         name: "wood_boost".to_string(),
-        description: "Increases wood production".to_string(),
+        description: "Increases wood resources".to_string(),
         modifier_type: ModifierType::Percentage,
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,

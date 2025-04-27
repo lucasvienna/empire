@@ -38,7 +38,7 @@ pub enum JobType {
     Modifier,
     /// Jobs related to building construction, upgrade or maintenance
     Building,
-    /// Jobs for resource collection, production or distribution
+    /// Jobs for resource collection, resources or distribution
     Resource,
 }
 

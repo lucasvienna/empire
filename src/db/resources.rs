@@ -13,6 +13,7 @@ use crate::domain::error::Result;
 use crate::domain::player::resource::{
     NewPlayerResource, PlayerResource, PlayerResourceKey, UpdatePlayerResource,
 };
+use crate::domain::player::PlayerKey;
 use crate::schema::player_resource::dsl::*;
 
 /// Repository for managing player resources in the database.
@@ -98,6 +99,22 @@ impl Repository<PlayerResource, NewPlayerResource, &UpdatePlayerResource, Player
 pub type Deduction = (i64, i64, i64, i64);
 
 impl ResourcesRepository {
+    /// Retrieves resource information for a specific player by their player ID.
+    ///
+    /// # Arguments
+    /// * `player_key` - The unique identifier of the player
+    ///
+    /// # Returns
+    /// * `Result<PlayerResource>` - The player's resource information if found
+    pub fn get_by_player_id(&self, player_key: &PlayerKey) -> Result<PlayerResource> {
+        let mut conn = self.pool.get()?;
+        let res = player_resource
+            .select(PlayerResource::as_select())
+            .filter(player_id.eq(player_key))
+            .first(&mut conn)?;
+        Ok(res)
+    }
+
     /// Deducts specified amounts of resources from a player's resource pool.
     ///
     /// # Arguments

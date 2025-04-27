@@ -12,8 +12,8 @@ use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::{Modifier, ModifierTarget};
-use crate::domain::player;
 use crate::domain::player::resource::ResourceType;
+use crate::domain::player::PlayerKey;
 use crate::game::modifiers::modifier_cache::{CacheKey, ModifierCache};
 use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::game::modifiers::modifier_system::ModifierSystem;
@@ -52,7 +52,7 @@ impl ModifierService {
         // Calculate new aggregate values for affected resources/targets
         let modifier = self.mod_repo.get_by_id(&active_mod.modifier_id)?;
         let cache_key = self.create_cache_key(
-            active_mod.player_id,
+            &active_mod.player_id,
             modifier.target_type,
             modifier.target_resource,
         );
@@ -63,7 +63,7 @@ impl ModifierService {
         // Calculate and cache new values
         let total_multiplier = self
             .calculate_total_multiplier(
-                active_mod.player_id,
+                &active_mod.player_id,
                 modifier.target_type,
                 modifier.target_resource,
             )
@@ -91,7 +91,7 @@ impl ModifierService {
     /// Get all active modifiers for a player
     pub fn get_active_modifiers(
         &self,
-        player_id: &player::PlayerKey,
+        player_id: &PlayerKey,
     ) -> Result<Vec<ActiveModifier>, Error> {
         let mut conn = self.pool.get()?;
         self.active_mod_repo.get_by_player_id(&mut conn, player_id)
@@ -100,7 +100,7 @@ impl ModifierService {
     /// Get the total modifier multiplier for a specific target and resource
     pub async fn get_total_multiplier(
         &self,
-        player_id: player::PlayerKey,
+        player_id: &PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
@@ -134,11 +134,11 @@ impl ModifierService {
     /// Calculate the total modifier multiplier from all active modifiers
     async fn calculate_total_multiplier(
         &self,
-        player_id: player::PlayerKey,
+        player_id: &PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<BigDecimal, Error> {
-        let active_modifiers = self.get_active_modifiers(&player_id)?;
+        let active_modifiers = self.get_active_modifiers(player_id)?;
 
         // Group modifiers by stacking group
         let mut stacking_groups: HashMap<Option<String>, Vec<Modifier>> = HashMap::new();
@@ -174,11 +174,11 @@ impl ModifierService {
     /// Get the nearest expiration time for modifiers matching the criteria
     async fn get_nearest_expiration(
         &self,
-        player_id: player::PlayerKey,
+        player_id: &PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> Result<Option<DateTime<Utc>>, Error> {
-        let active_modifiers = self.get_active_modifiers(&player_id)?;
+        let active_modifiers = self.get_active_modifiers(player_id)?;
 
         Ok(active_modifiers
             .into_iter()
@@ -198,12 +198,12 @@ impl ModifierService {
     /// Create a cache key for the given parameters
     fn create_cache_key(
         &self,
-        player_id: player::PlayerKey,
+        player_id: &PlayerKey,
         target_type: ModifierTarget,
         target_resource: Option<ResourceType>,
     ) -> CacheKey {
         CacheKey {
-            player_id,
+            player_id: *player_id,
             target_type,
             target_resource,
         }

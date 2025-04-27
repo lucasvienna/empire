@@ -12,6 +12,8 @@ CREATE TABLE player_resource
     wood_cap     BIGINT      NOT NULL DEFAULT 0,
     stone_cap    BIGINT      NOT NULL DEFAULT 0,
     gold_cap     BIGINT      NOT NULL DEFAULT 0,
+    produced_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    collected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
 

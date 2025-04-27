@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 use crate::domain::jobs::JobType;
 use crate::domain::player::resource::ResourceType;
-use crate::domain::{jobs, modifier, player};
+use crate::domain::player::PlayerKey;
+use crate::domain::{jobs, modifier};
 use crate::job_queue::{JobPriority, JobQueue};
 use crate::Error;
 
@@ -14,14 +15,14 @@ use crate::Error;
 pub enum ModifierJobPayload {
     ExpireModifier {
         modifier_id: Uuid,
-        player_id: Uuid,
+        player_id: PlayerKey,
     },
     RecalculateResources {
-        player_id: Uuid,
+        player_id: PlayerKey,
         resource_types: Vec<ResourceType>,
     },
     UpdateModifierCache {
-        player_id: Uuid,
+        player_id: PlayerKey,
     },
 }
 
@@ -40,7 +41,7 @@ impl ModifierScheduler {
     pub async fn schedule_expiration(
         &self,
         modifier_id: modifier::ModifierKey,
-        player_id: player::PlayerKey,
+        player_id: PlayerKey,
         expires_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::ExpireModifier {
@@ -56,7 +57,7 @@ impl ModifierScheduler {
     /// Schedule an immediate recalculation of resources for a player
     pub async fn schedule_resource_recalculation(
         &self,
-        player_id: player::PlayerKey,
+        player_id: PlayerKey,
         resource_types: Vec<ResourceType>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::RecalculateResources {
@@ -77,7 +78,7 @@ impl ModifierScheduler {
     /// Schedule a cache update for a player's modifiers
     pub async fn schedule_cache_update(
         &self,
-        player_id: player::PlayerKey,
+        player_id: PlayerKey,
         run_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::UpdateModifierCache { player_id };
@@ -95,7 +96,7 @@ impl ModifierScheduler {
     /// Schedule multiple cache updates for a batch of players
     pub async fn schedule_batch_cache_update(
         &self,
-        player_ids: Vec<player::PlayerKey>,
+        player_ids: Vec<PlayerKey>,
         run_at: DateTime<Utc>,
     ) -> Result<Vec<jobs::JobKey>, Error> {
         let mut job_ids = Vec::with_capacity(player_ids.len());
