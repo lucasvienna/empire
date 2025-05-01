@@ -137,8 +137,9 @@ impl JobProcessor for ResourceProcessor {
                         debug!("Produced resources for player {}", players_id);
                     }
                     Err(e) => {
-                        error!("Error producing resources: {}", e);
-                        trace!("Error: {:?}", e);
+                        warn!("Error producing resources: {}", e);
+                        debug!("Error: {:?}", e);
+                        return Err(e);
                     }
                 }
             }
@@ -148,8 +149,9 @@ impl JobProcessor for ResourceProcessor {
                         debug!("Collected resources for player {}", players_id);
                     }
                     Err(e) => {
-                        error!("Error collecting resources: {}", e);
-                        trace!("Error: {:?}", e);
+                        warn!("Error collecting resources: {}", e);
+                        debug!("Error: {:?}", e);
+                        return Err(e);
                     }
                 }
             }
