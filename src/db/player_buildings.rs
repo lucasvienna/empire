@@ -86,6 +86,31 @@ impl Repository<PlayerBuilding, NewPlayerBuilding, &UpdatePlayerBuilding, Player
 type UpgradeTuple = (PlayerBuilding, Option<i32>);
 
 impl PlayerBuildingRepository {
+    /// Retrieves all buildings owned by a specific player.
+    ///
+    /// # Arguments
+    /// * `player_key` - The unique identifier of the player
+    ///
+    /// # Returns
+    /// A vector containing all PlayerBuilding instances owned by the specified player
+    pub fn get_player_buildings(&self, player_key: &PlayerKey) -> Result<Vec<PlayerBuilding>> {
+        use crate::schema::player_building::player_id;
+        let mut conn = self.pool.get()?;
+
+        let player_blds: Vec<PlayerBuilding> = player_building::table
+            .filter(player_id.eq(player_key))
+            .get_results(&mut conn)?;
+        Ok(player_blds)
+    }
+
+    /// Constructs a new building for a player in the database.
+    ///
+    /// # Arguments
+    /// * `conn` - Database connection
+    /// * `new_building` - The new building data to be inserted
+    ///
+    /// # Returns
+    /// The newly created PlayerBuilding instance
     pub fn construct(
         &self,
         conn: &mut DbConn,
