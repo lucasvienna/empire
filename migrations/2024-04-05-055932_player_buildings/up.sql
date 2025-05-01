@@ -38,7 +38,7 @@ END;
 $$;
 
 CREATE TRIGGER new_player_building_trigger
-    AFTER INSERT OR UPDATE
+    AFTER INSERT
     ON player
     FOR EACH ROW
 EXECUTE FUNCTION new_player_building_fn();
