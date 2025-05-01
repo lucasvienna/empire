@@ -9,9 +9,9 @@ use crate::domain::player;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ResourceGeneration {
     pub player_id: player::PlayerKey,
-    pub population: i32,
-    pub food: i32,
-    pub wood: i32,
-    pub stone: i32,
-    pub gold: i32,
+    pub population: i64,
+    pub food: i64,
+    pub wood: i64,
+    pub stone: i64,
+    pub gold: i64,
 }

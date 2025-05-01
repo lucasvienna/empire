@@ -2,14 +2,14 @@
 diesel::table! {
     resource_generation (player_id) {
         player_id -> Uuid,
-        population -> Int4,
-        food -> Int4,
-        wood -> Int4,
-        stone -> Int4,
-        gold -> Int4,
-        food_acc_cap -> Int4,
-        wood_acc_cap -> Int4,
-        stone_acc_cap -> Int4,
-        gold_acc_cap -> Int4,
+        population -> BigInt,
+        food -> BigInt,
+        wood -> BigInt,
+        stone -> BigInt,
+        gold -> BigInt,
+        food_acc_cap -> BigInt,
+        wood_acc_cap -> BigInt,
+        stone_acc_cap -> BigInt,
+        gold_acc_cap -> BigInt,
     }
 }
