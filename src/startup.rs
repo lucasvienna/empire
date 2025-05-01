@@ -18,7 +18,7 @@ use tokio::signal;
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
-use crate::configuration::Settings;
+use crate::configuration::{ServerSettings, Settings};
 use crate::domain::app_state::{App, AppPool, AppState};
 use crate::game::modifiers::modifier_processor::ModifierProcessor;
 use crate::game::resources::resource_processor::ResourceProcessor;
@@ -49,9 +49,9 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
     let token = CancellationToken::new();
     let app_state = AppState(Arc::new(App::with_pool(pool.clone(), config.clone())));
 
-    let mut subroutines = start_subroutines(&app_state, token.clone())?;
+    let mut subroutines = start_subroutines(&app_state, &config.server, token.clone())?;
     let monitor = subroutines.monitor();
-    info!("Subroutines monitor started!");
+    info!("Subroutines monitor started");
 
     let (listener, router) = server::init(app_state).await?;
     info!("Listening on {}", listener.local_addr()?);
@@ -92,13 +92,18 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
 ///
 /// The worker count is automatically adjusted based on the system's available parallelism
 /// to ensure optimal resource utilization.
-fn start_subroutines(app_state: &AppState, token: CancellationToken) -> Result<WorkerPool> {
+fn start_subroutines(
+    app_state: &AppState,
+    settings: &ServerSettings,
+    token: CancellationToken,
+) -> Result<WorkerPool> {
     let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
 
-    let default_workers = available_parallelism()?.get() / 2;
+    let default_workers = settings.workers.unwrap_or(available_parallelism()?.get()) / 2;
     let mod_workers = ModifierProcessor::initialise_n(default_workers, app_state);
     let res_workers = ResourceProcessor::initialise_n(default_workers, app_state);
     worker_pool.add_workers(mod_workers);
+    worker_pool.add_workers(res_workers);
 
     Ok(worker_pool)
 }

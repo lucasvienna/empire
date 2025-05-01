@@ -1,5 +1,6 @@
 server:
   axum_host: 127.0.0.1
+  workers: 4
 database:
   pool_size: 5
 cache:
