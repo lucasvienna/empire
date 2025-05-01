@@ -224,21 +224,22 @@ The system automatically manages faction-specific modifiers through database tri
 
 ## Modifier Stacking Rules
 
-### Stacking Categories
+### Stacking Behaviour
 
 1. **Additive Stacking**
-    - Modifiers in the same stacking group sum their effects
+    - Modifiers with this behaviour sum their effects
     - Primarily used for percentage-based modifiers from similar sources
     - Example: Multiple "training_speed" bonuses are added together before being applied
 
 2. **Multiplicative Stacking**
-    - Modifiers from different stacking groups multiply with each other
+    - Modifiers with this behaviour multiply with each other
     - Used to combine effects from different source types
     - Example: Faction bonus multiplied by temporary event bonus
 
 3. **Highest-Only Stacking**
-    - Only the highest magnitude modifier in the group takes effect
+    - Only the highest magnitude modifier in the stacking group takes effect
     - Used for mutually exclusive effects
+    - Are then applied multiplicatively
     - Example: Multiple "combat_effectiveness" buffs from different equipment pieces
 
 ### Stacking Group Guidelines
@@ -251,9 +252,9 @@ The system automatically manages faction-specific modifiers through database tri
 
 ### Calculation Order
 
-1. Sum all additive modifiers within their stacking groups
+1. Sum all additive modifiers
 2. Apply highest-only selection within relevant groups
-3. Multiply results from different stacking groups
+3. Multiply results from different stacking groups, including multiplicative modifiers
 4. Apply final caps and floors
 
 ### Magnitude Limits

@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use chrono::{DateTime, Utc};
+use derive_more::Display;
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
@@ -21,6 +22,7 @@ pub type ActiveModifierKey = Uuid;
     FromSqlRow,
     Serialize,
     Deserialize,
+    Display,
     Debug,
     Clone,
     Copy,
@@ -32,6 +34,7 @@ pub type ActiveModifierKey = Uuid;
 )]
 #[diesel(sql_type = crate::schema::sql_types::ModifierSourceType)]
 #[serde(rename_all = "lowercase")]
+#[display("{_variant}")]
 pub enum ModifierSourceType {
     Faction,
     Item,

@@ -38,9 +38,9 @@ async fn test_faction_modifier_on_create() {
     );
 
     // Expected values
-    let wood_prod = BigDecimal::from_str("1.1500").unwrap();
-    let cavalry_training = BigDecimal::from_str("1.1500").unwrap();
-    let cavalry_combat = BigDecimal::from_str("1.1500").unwrap();
+    let wood_prod = BigDecimal::from_str("0.1500").unwrap();
+    let cavalry_training = BigDecimal::from_str("0.1500").unwrap();
+    let cavalry_combat = BigDecimal::from_str("0.1500").unwrap();
 
     // Check each modifier
     let has_wood_bonus = active_modifiers
@@ -110,9 +110,9 @@ async fn test_faction_change() {
     assert_eq!(active_modifiers.len(), 3, "Should have 3 Orc modifiers");
 
     // Expected values
-    let stone_prod = BigDecimal::from_str("1.1500").unwrap();
-    let infantry_training = BigDecimal::from_str("1.1500").unwrap();
-    let infantry_combat = BigDecimal::from_str("1.1500").unwrap();
+    let stone_prod = BigDecimal::from_str("0.1500").unwrap();
+    let infantry_training = BigDecimal::from_str("0.1500").unwrap();
+    let infantry_combat = BigDecimal::from_str("0.1500").unwrap();
 
     // Check each modifier
     let has_stone_bonus = active_modifiers

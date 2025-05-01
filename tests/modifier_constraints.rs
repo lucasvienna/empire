@@ -21,6 +21,7 @@ async fn test_valid_modifier_constraints() {
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
+        stacking_behaviour: None,
         stacking_group: None,
     };
 
@@ -37,6 +38,7 @@ async fn test_valid_modifier_constraints() {
         magnitude: BigDecimal::from_str("1.5").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: None,
+        stacking_behaviour: None,
         stacking_group: None,
     };
 
@@ -59,6 +61,7 @@ async fn test_invalid_modifier_constraints() {
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: None,
+        stacking_behaviour: None,
         stacking_group: None,
     };
 
@@ -78,6 +81,7 @@ async fn test_invalid_modifier_constraints() {
         magnitude: BigDecimal::from_str("1.25").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: Some(ResourceType::Wood),
+        stacking_behaviour: None,
         stacking_group: None,
     };
 
@@ -102,6 +106,7 @@ async fn test_unique_name_constraint() {
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Food),
+        stacking_behaviour: None,
         stacking_group: None,
     };
 
@@ -119,6 +124,7 @@ async fn test_unique_name_constraint() {
         magnitude: BigDecimal::from_str("50").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
+        stacking_behaviour: None,
         stacking_group: None,
     };
 

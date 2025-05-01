@@ -2,6 +2,7 @@ use std::io::Write;
 
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
+use derive_more::Display;
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
@@ -16,6 +17,7 @@ use crate::domain::player::resource::ResourceType;
 use crate::schema::modifiers;
 
 pub mod active_modifier;
+pub mod full_modifier;
 pub mod modifier_history;
 pub mod modifier_state;
 
@@ -73,6 +75,7 @@ impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
     FromSqlRow,
     Serialize,
     Deserialize,
+    Display,
     Debug,
     Clone,
     Copy,
@@ -84,6 +87,7 @@ impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
 )]
 #[diesel(sql_type = crate::schema::sql_types::ModifierTarget)]
 #[serde(rename_all = "lowercase")]
+#[display("{_variant}")]
 pub enum ModifierTarget {
     Resource,
     Combat,
@@ -118,6 +122,53 @@ impl FromSql<crate::schema::sql_types::ModifierTarget, Pg> for ModifierTarget {
     }
 }
 
+#[derive(
+    AsExpression,
+    FromSqlRow,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+)]
+#[diesel(sql_type = crate::schema::sql_types::StackingBehaviour)]
+#[serde(rename_all = "lowercase")]
+pub enum StackingBehaviour {
+    Additive,
+    Multiplicative,
+    HighestOnly,
+}
+
+impl ToSql<crate::schema::sql_types::StackingBehaviour, Pg> for StackingBehaviour {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            StackingBehaviour::Additive => out.write_all(b"additive")?,
+            StackingBehaviour::Multiplicative => out.write_all(b"multiplicative")?,
+            StackingBehaviour::HighestOnly => out.write_all(b"highest")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::StackingBehaviour, Pg> for StackingBehaviour {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"additive" => Ok(StackingBehaviour::Additive),
+            b"multiplicative" => Ok(StackingBehaviour::Multiplicative),
+            b"highest" => Ok(StackingBehaviour::HighestOnly),
+            _ => {
+                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
+                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+            }
+        }
+    }
+}
+
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = modifiers, check_for_backend(diesel::pg::Pg))]
 pub struct Modifier {
@@ -128,6 +179,7 @@ pub struct Modifier {
     pub magnitude: BigDecimal,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
+    pub stacking_behaviour: StackingBehaviour,
     pub stacking_group: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -142,6 +194,7 @@ pub struct NewModifier {
     pub magnitude: BigDecimal,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
+    pub stacking_behaviour: Option<StackingBehaviour>,
     pub stacking_group: Option<String>,
 }
 
@@ -155,5 +208,6 @@ pub struct UpdateModifier {
     pub magnitude: Option<BigDecimal>,
     pub target_type: Option<ModifierTarget>,
     pub target_resource: Option<ResourceType>,
+    pub stacking_behaviour: Option<StackingBehaviour>,
     pub stacking_group: Option<String>,
 }

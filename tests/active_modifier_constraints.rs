@@ -175,6 +175,7 @@ fn create_test_modifier(conn: &mut PgConnection) -> Uuid {
         magnitude: BigDecimal::from_str("0.15").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
+        stacking_behaviour: None,
         stacking_group: None,
     };
 

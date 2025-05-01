@@ -2,28 +2,28 @@
 INSERT INTO modifiers (name, description, modifier_type, magnitude, target_type, target_resource, stacking_group)
 VALUES
     -- Human faction modifiers
-    ('human_wood_production',        'Human wood resources bonus',         'percentage', 1.15, 'resource', 'wood',       'faction_wood'      ),
-    ('human_cavalry_training',       'Human cavalry training speed bonus',  'percentage', 1.15, 'training', NULL,         'faction_training'  ),
-    ('human_cavalry_combat',         'Human cavalry combat effectiveness',  'percentage', 1.15, 'combat',   NULL,         'faction_combat'    ),
+    ('human_wood_production',        'Human wood resources bonus',         'percentage', 0.15, 'resource', 'wood',       'faction_wood'      ),
+    ('human_cavalry_training',       'Human cavalry training speed bonus',  'percentage', 0.15, 'training', NULL,         'faction_training'  ),
+    ('human_cavalry_combat',         'Human cavalry combat effectiveness',  'percentage', 0.15, 'combat',   NULL,         'faction_combat'    ),
 
     -- Orc faction modifiers
-    ('orc_stone_production',         'Orc stone resources bonus',          'percentage', 1.15, 'resource', 'stone',      'faction_stone'     ),
-    ('orc_infantry_training',        'Orc infantry training speed bonus',   'percentage', 1.15, 'training', NULL,         'faction_training'  ),
-    ('orc_infantry_combat',          'Orc infantry combat effectiveness',   'percentage', 1.15, 'combat',   NULL,         'faction_combat'    ),
+    ('orc_stone_production',         'Orc stone resources bonus',          'percentage', 0.15, 'resource', 'stone',      'faction_stone'     ),
+    ('orc_infantry_training',        'Orc infantry training speed bonus',   'percentage', 0.15, 'training', NULL,         'faction_training'  ),
+    ('orc_infantry_combat',          'Orc infantry combat effectiveness',   'percentage', 0.15, 'combat',   NULL,         'faction_combat'    ),
 
     -- Elf faction modifiers
-    ('elf_food_production',          'Elf food resources bonus',           'percentage', 1.15, 'resource', 'food',       'faction_food'      ),
-    ('elf_ranged_training',          'Elf ranged training speed bonus',     'percentage', 1.15, 'training', NULL,         'faction_training'  ),
-    ('elf_ranged_combat',            'Elf ranged combat effectiveness',     'percentage', 1.15, 'combat',   NULL,         'faction_combat'    ),
+    ('elf_food_production',          'Elf food resources bonus',           'percentage', 0.15, 'resource', 'food',       'faction_food'      ),
+    ('elf_ranged_training',          'Elf ranged training speed bonus',     'percentage', 0.15, 'training', NULL,         'faction_training'  ),
+    ('elf_ranged_combat',            'Elf ranged combat effectiveness',     'percentage', 0.15, 'combat',   NULL,         'faction_combat'    ),
 
     -- Dwarf faction modifiers
-    ('dwarf_gold_production',        'Dwarf gold resources bonus',         'percentage', 1.15, 'resource', 'gold',       'faction_gold'      ),
-    ('dwarf_siege_training',         'Dwarf siege training speed bonus',    'percentage', 1.15, 'training', NULL,         'faction_training'  ),
-    ('dwarf_siege_combat',           'Dwarf siege combat effectiveness',    'percentage', 1.15, 'combat',   NULL,         'faction_combat'    ),
+    ('dwarf_gold_production',        'Dwarf gold resources bonus',         'percentage', 0.15, 'resource', 'gold',       'faction_gold'      ),
+    ('dwarf_siege_training',         'Dwarf siege training speed bonus',    'percentage', 0.15, 'training', NULL,         'faction_training'  ),
+    ('dwarf_siege_combat',           'Dwarf siege combat effectiveness',    'percentage', 0.15, 'combat',   NULL,         'faction_combat'    ),
 
     -- Goblin faction modifiers
-    ('goblin_population_production', 'Goblin population resources bonus',  'percentage', 1.20, 'resource', 'population', 'faction_population'),
-    ('goblin_general_training',      'Goblin general training speed bonus', 'percentage', 1.20, 'training', NULL,         'faction_training'  );
+    ('goblin_population_production', 'Goblin population resources bonus',  'percentage', 0.20, 'resource', 'population', 'faction_population'),
+    ('goblin_general_training',      'Goblin general training speed bonus', 'percentage', 0.20, 'training', NULL,         'faction_training'  );
 
 -- Update the manage_faction_modifiers function with correct magnitudes
 CREATE OR REPLACE FUNCTION manage_faction_modifiers()

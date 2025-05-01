@@ -32,6 +32,10 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "resource_type"))]
     pub struct ResourceType;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "stacking_behaviour"))]
+    pub struct StackingBehaviour;
 }
 
 diesel::table! {
@@ -166,6 +170,7 @@ diesel::table! {
     use super::sql_types::ModifierType;
     use super::sql_types::ModifierTarget;
     use super::sql_types::ResourceType;
+    use super::sql_types::StackingBehaviour;
 
     modifiers (id) {
         id -> Uuid,
@@ -175,6 +180,7 @@ diesel::table! {
         magnitude -> Numeric,
         target_type -> ModifierTarget,
         target_resource -> Nullable<ResourceType>,
+        stacking_behaviour -> StackingBehaviour,
         stacking_group -> Nullable<Text>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,

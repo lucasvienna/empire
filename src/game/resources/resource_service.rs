@@ -69,7 +69,7 @@ impl ResourceService {
         );
         // multiply resources rate proportionally to delta
         let current_rates = self.cur_prod_rates(player_key).await?;
-        trace!("Current Rates: {:?}", current_rates);
+        trace!("Current Rates: {:#?}", current_rates);
         let prod_amounts: HashMap<ResourceType, i64> = current_rates
             .into_iter()
             .map(|(res_type, prod_rate)| {
