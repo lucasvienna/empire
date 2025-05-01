@@ -93,34 +93,6 @@ impl JobQueue {
         Ok(job_ids)
     }
 
-    /// Gets the next available job for processing
-    pub async fn get_next_job(&self, worker_id: &str) -> Result<Option<Job>> {
-        let mut conn = self.pool.get()?;
-
-        let next: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>> {
-            let now = Utc::now();
-            // First, select the job we want to process
-            let next_job: Option<Job> = job
-                .filter(status.eq(&JobStatus::Pending))
-                .filter(run_at.le(now + Duration::seconds(1))) // avoid skipping jobs queued for this whole second + some random millis
-                .filter(locked_at.is_null())
-                .order_by(priority.asc())
-                .limit(1)
-                .for_update() // This locks the row
-                .get_result(conn)
-                .optional()?;
-
-            if let Some(next) = &next_job {
-                // Then lock this specific job
-                self.lock_job(conn, &next.id, worker_id, now)?;
-            }
-
-            Ok(next_job)
-        })?;
-
-        Ok(next)
-    }
-
     /// Gets the next available job of a specific type for processing
     pub async fn get_next_job_of_type(
         &self,
@@ -131,13 +103,33 @@ impl JobQueue {
 
         let next: Option<Job> = conn.transaction(|conn| -> Result<Option<Job>> {
             let now = Utc::now();
-            // First, select the job we want to process
+
+            // First, clean up stuck jobs (those locked for too long)
+            diesel::update(job)
+                .filter(status.eq(JobStatus::InProgress))
+                .filter(locked_at.lt(now - Duration::seconds(5))) // TODO: make job timeout configurable
+                .set((
+                    status.eq(JobStatus::Failed),
+                    last_error.eq(Some("Job timed out after 5min")),
+                    locked_at.eq(None::<DateTime<Utc>>),
+                    locked_by.eq(None::<String>),
+                ))
+                .execute(conn)?;
+
+            // Then select the next job to process
             let next_job: Option<Job> = job
-                .filter(status.eq(&JobStatus::Pending))
-                .filter(run_at.le(now + Duration::seconds(1))) // avoid skipping jobs queued for this whole second + some random millis
+                .filter(
+                    status
+                        .eq(JobStatus::Pending)
+                        .or(status.eq(JobStatus::Failed).and(retries.le(max_retries))),
+                )
+                .filter(run_at.le(now))
                 .filter(locked_at.is_null())
                 .filter(job_type.eq(requested_type))
-                .order_by(priority.asc())
+                .order_by((
+                    priority.asc(), // Higher priority (lower number) first
+                    run_at.asc(),   // Older jobs first
+                ))
                 .limit(1)
                 .for_update() // This locks the row
                 .get_result(conn)
@@ -186,15 +178,40 @@ impl JobQueue {
     pub async fn fail_job(&self, job_id: &JobKey, error: impl AsRef<str>) -> Result<(), Error> {
         let mut conn = self.pool.get()?;
 
-        diesel::update(job)
-            .filter(id.eq(job_id))
-            .set((
-                status.eq(JobStatus::Failed),
-                last_error.eq(Some(error.as_ref())),
-                locked_at.eq(None::<DateTime<Utc>>),
-                locked_by.eq(None::<String>),
-            ))
-            .execute(&mut conn)?;
+        conn.transaction(|conn| {
+            // Get current job state with FOR UPDATE lock
+            let cur_job: Job = job.filter(id.eq(job_id)).for_update().get_result(conn)?;
+
+            // Only increment retries if the job failed before
+            let new_retries = if let Some(err) = cur_job.last_error {
+                cur_job.retries + 1
+            } else {
+                cur_job.retries
+            };
+
+            // Calculate next run time with exponential backoff
+            let backoff_seconds = if new_retries > 0 {
+                std::cmp::min(
+                    300, // Max 5 minute delay
+                    30 * (2_i64.pow((new_retries - 1) as u32)),
+                )
+            } else {
+                0
+            };
+            let next_run_at = Utc::now() + Duration::seconds(backoff_seconds);
+
+            diesel::update(job)
+                .filter(id.eq(job_id))
+                .set((
+                    status.eq(JobStatus::Failed),
+                    retries.eq(new_retries),
+                    run_at.eq(next_run_at),
+                    last_error.eq(Some(error.as_ref())),
+                    locked_at.eq(None::<DateTime<Utc>>),
+                    locked_by.eq(None::<String>),
+                ))
+                .execute(conn)
+        })?;
 
         Ok(())
     }
