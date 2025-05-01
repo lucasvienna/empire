@@ -6,7 +6,7 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::Int8;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::Repository;
@@ -56,13 +56,20 @@ impl ResourceService {
     ///
     /// # Arguments
     /// * `player_key` - The unique identifier of the player to produce resources for
+    #[instrument(skip(self))]
     pub async fn produce_for_player(&self, player_key: &PlayerKey) -> Result<()> {
         // calculate delta between last resources and now
         let last_prod = self.last_player_prod(player_key).unwrap_or_default();
-        let delta_hours =
-            BigDecimal::from((Utc::now() - last_prod).num_seconds()) / BigDecimal::from(3600);
+        let delta_secs = BigDecimal::from((Utc::now() - last_prod).num_seconds());
+        let seconds_per_hours = BigDecimal::from(3600);
+        let delta_hours = (delta_secs / seconds_per_hours).round(5);
+        debug!(
+            "Production Delta: {}h, last produced: {}",
+            delta_hours, last_prod
+        );
         // multiply resources rate proportionally to delta
         let current_rates = self.cur_prod_rates(player_key).await?;
+        trace!("Current Rates: {:?}", current_rates);
         let prod_amounts: HashMap<ResourceType, i64> = current_rates
             .into_iter()
             .map(|(res_type, prod_rate)| {
@@ -82,6 +89,8 @@ impl ResourceService {
             use crate::schema::player_accumulator::dsl::{
                 food, gold, id, player_accumulator, stone, wood,
             };
+
+            trace!("Entering accumulator transaction");
             let acc_key: AccumulatorKey = {
                 use crate::schema::player_accumulator::dsl::{id, player_accumulator, player_id};
                 player_accumulator
@@ -90,6 +99,7 @@ impl ResourceService {
                     .for_update()
                     .first(conn)?
             };
+            trace!("Found player accumulator: {:?}", acc_key);
 
             let produced_food = prod_amounts.get(&ResourceType::Food).unwrap_or(&0);
             let produced_wood = prod_amounts.get(&ResourceType::Wood).unwrap_or(&0);
@@ -217,6 +227,7 @@ impl ResourceService {
     ///
     /// # Returns
     /// HashMap containing resource types mapped to their current hourly resources rates
+    #[instrument(skip(self))]
     async fn cur_prod_rates(
         &self,
         player_key: &PlayerKey,

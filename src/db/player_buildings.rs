@@ -1,7 +1,6 @@
 use std::fmt;
 use std::sync::Arc;
 
-use bigdecimal::BigDecimal;
 use diesel::prelude::*;
 use tracing::info;
 use uuid::Uuid;

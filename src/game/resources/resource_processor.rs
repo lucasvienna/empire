@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::FromRef;
-use tokio::sync::broadcast;
 use tokio::sync::broadcast::Receiver;
 use tokio::time::sleep;
 use tracing::{debug, error, info, instrument, trace, warn};
@@ -30,7 +29,7 @@ pub struct ResourceProcessor {
     /// A reference to the application's database connection pool
     db_pool: AppPool,
     /// A broadcast channel receiver for handling graceful shutdowns
-    shutdown_rx: broadcast::Receiver<()>,
+    shutdown_rx: Receiver<()>,
     /// Modifier service instance
     srv: ResourceService,
 }
@@ -79,6 +78,8 @@ impl JobProcessor for ResourceProcessor {
     #[instrument(skip(self, queue))]
     async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
+        trace!("Worker {} running", self.id);
+
         loop {
             tokio::select! {
                 _ = self.shutdown_rx.recv() => {

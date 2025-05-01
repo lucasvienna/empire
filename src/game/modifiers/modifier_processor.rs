@@ -106,6 +106,7 @@ impl JobProcessor for ModifierProcessor {
     #[instrument(skip(self, queue))]
     async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
+        trace!("Worker {} running", self.id);
 
         loop {
             tokio::select! {
