@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{debug_handler, Json, Router};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument};
 
@@ -12,6 +13,7 @@ use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{NewPlayer, Player, UpdatePlayer};
+use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::services::auth_service::hash_password;
 use crate::{Error, ErrorKind, Result};
 
@@ -147,10 +149,11 @@ async fn get_user_by_id(
     Ok(Json(user.into()))
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool, prod_scheduler))]
 #[debug_handler(state = AppState)]
 async fn create_user(
     State(pool): State<AppPool>,
+    State(prod_scheduler): State<ProductionScheduler>,
     Json(payload): Json<NewUserPayload>,
 ) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
     let repo = PlayerRepository::new(&pool);
@@ -171,19 +174,30 @@ async fn create_user(
         "Created player successfully"
     );
 
+    if created_user.faction != FactionCode::Neutral {
+        prod_scheduler
+            .schedule_production(&created_user.id, Utc::now())
+            .await
+            .map_err(|err| {
+                error!("Failed to schedule production: {}", err);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+    }
+
     Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool, prod_scheduler))]
 #[debug_handler(state = AppState)]
 async fn update_user(
     State(pool): State<AppPool>,
-    Path(player_id): Path<player::PlayerKey>,
+    State(prod_scheduler): State<ProductionScheduler>,
+    Path(player_key): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let repo = PlayerRepository::new(&pool);
 
-    let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_id, payload)) {
+    let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_key, payload)) {
         Ok(update) => update,
         Err(err) => {
             error!("Failed to parse player: {}", err);
@@ -192,7 +206,7 @@ async fn update_user(
     };
 
     let user = repo
-        .get_by_id(&player_id)
+        .get_by_id(&player_key)
         .map_err(|err| StatusCode::NOT_FOUND)?;
 
     let updated_user = repo.update(&changeset).map_err(|err| {
@@ -200,6 +214,16 @@ async fn update_user(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
     info!(?updated_user, "Updated player successfully");
+
+    if user.faction != updated_user.faction && user.faction == FactionCode::Neutral {
+        prod_scheduler
+            .schedule_production(&player_key, Utc::now())
+            .await
+            .map_err(|err| {
+                error!("Failed to schedule production: {}", err);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+    }
 
     Ok((StatusCode::ACCEPTED, Json(UserBody::from(updated_user))))
 }

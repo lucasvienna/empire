@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
+use axum::extract::FromRef;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, warn};
 
+use crate::domain::app_state::AppState;
 use crate::domain::jobs::{JobKey, JobType};
 use crate::domain::player::PlayerKey;
 use crate::job_queue::{JobPriority, JobQueue, JobRequest};
@@ -14,6 +16,12 @@ use crate::Result;
 pub enum ProductionJobPayload {
     ProduceResources { players_id: PlayerKey },
     CollectResources { players_id: PlayerKey },
+}
+
+impl FromRef<AppState> for ProductionScheduler {
+    fn from_ref(state: &AppState) -> Self {
+        Self::new(&state.job_queue)
+    }
 }
 
 pub struct ProductionScheduler {
