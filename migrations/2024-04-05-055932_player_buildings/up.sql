@@ -13,7 +13,7 @@ CREATE TABLE player_building
     FOREIGN KEY (building_id) REFERENCES building (id)
 );
 
-CREATE INDEX player_building_tupple_idx ON player_building (player_id, building_id);
+CREATE INDEX player_building_tuple_idx ON player_building (player_id, building_id);
 
 CREATE TRIGGER set_player_building_updated_at
     BEFORE UPDATE
