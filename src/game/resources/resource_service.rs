@@ -3,10 +3,10 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use bigdecimal::{BigDecimal, ToPrimitive};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::Int8;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, instrument, trace, warn};
 
 use crate::db::resources::ResourcesRepository;
 use crate::db::Repository;
@@ -18,6 +18,8 @@ use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::modifiers::modifier_service::ModifierService;
 use crate::game::modifiers::modifier_system::ModifierSystem;
+use crate::game::resources::resource_scheduler::ProductionScheduler;
+use crate::job_queue::JobQueue;
 use crate::Result;
 
 define_sql_function! {
@@ -32,21 +34,23 @@ pub struct ResourceService {
     db_pool: AppPool,
     modifiers: ModifierSystem,
     modifier_service: ModifierService,
+    resource_scheduler: ProductionScheduler,
     resources_repo: ResourcesRepository,
 }
 
 impl FromRef<AppState> for ResourceService {
     fn from_ref(state: &AppState) -> Self {
-        Self::new(&state.db_pool, &state.modifier_system)
+        Self::new(&state.db_pool, &state.job_queue, &state.modifier_system)
     }
 }
 
 impl ResourceService {
-    pub fn new(pool: &AppPool, mod_system: &ModifierSystem) -> Self {
+    pub fn new(pool: &AppPool, queue: &Arc<JobQueue>, mod_system: &ModifierSystem) -> Self {
         Self {
             db_pool: Arc::clone(pool),
             modifiers: mod_system.clone(), // essentially cloning two pointers, very inexpensive
             modifier_service: ModifierService::new(pool, mod_system),
+            resource_scheduler: ProductionScheduler::new(queue),
             resources_repo: ResourcesRepository::new(pool),
         }
     }
@@ -120,7 +124,17 @@ impl ResourceService {
 
             Ok(res)
         })?;
+
         // enqueue next resources job
+        let next_production_time = Utc::now() + Duration::seconds(30);
+        let _ = self
+            .resource_scheduler
+            .schedule_production(player_key, next_production_time)
+            .map_err(|err| {
+                warn!("Failed to schedule next production: {:#?}", err);
+                err
+            });
+
         Ok(())
     }
 
