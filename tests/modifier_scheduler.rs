@@ -23,7 +23,6 @@ async fn test_schedule_expiration() {
 
     let job_id = scheduler
         .schedule_expiration(modifier_id, player_id, expires_at)
-        .await
         .unwrap();
 
     // Verify the job was created with correct parameters

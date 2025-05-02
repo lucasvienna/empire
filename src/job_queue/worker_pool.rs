@@ -117,7 +117,7 @@ impl WorkerPool {
     /// Returns `Ok(())` if shutdown completes successfully, or an [`Error`] if shutdown fails
     pub async fn shutdown(&mut self) -> Result<(), Error> {
         // Signal all workers to shut down
-        self.queue.shutdown().await?;
+        self.queue.shutdown()?;
 
         // Take ownership of the workers' vector
         let workers = std::mem::take(&mut self.workers);

@@ -38,7 +38,7 @@ impl ModifierScheduler {
     }
 
     /// Schedule a job to expire a modifier at the specified time
-    pub async fn schedule_expiration(
+    pub fn schedule_expiration(
         &self,
         modifier_id: modifier::ModifierKey,
         player_id: PlayerKey,
@@ -51,11 +51,10 @@ impl ModifierScheduler {
 
         self.job_queue
             .enqueue(JobType::Modifier, payload, JobPriority::Normal, expires_at)
-            .await
     }
 
     /// Schedule an immediate recalculation of resources for a player
-    pub async fn schedule_resource_recalculation(
+    pub fn schedule_resource_recalculation(
         &self,
         player_id: PlayerKey,
         resource_types: Vec<ResourceType>,
@@ -65,36 +64,32 @@ impl ModifierScheduler {
             resource_types,
         };
 
-        self.job_queue
-            .enqueue(
-                JobType::Modifier,
-                payload,
-                JobPriority::High, // Higher priority since it affects player's resources
-                Utc::now(),
-            )
-            .await
+        self.job_queue.enqueue(
+            JobType::Modifier,
+            payload,
+            JobPriority::High, // Higher priority since it affects player's resources
+            Utc::now(),
+        )
     }
 
     /// Schedule a cache update for a player's modifiers
-    pub async fn schedule_cache_update(
+    pub fn schedule_cache_update(
         &self,
         player_id: PlayerKey,
         run_at: DateTime<Utc>,
     ) -> Result<jobs::JobKey, Error> {
         let payload = ModifierJobPayload::UpdateModifierCache { player_id };
 
-        self.job_queue
-            .enqueue(
-                JobType::Modifier,
-                payload,
-                JobPriority::Low, // Lower priority since it's just a cache update
-                run_at,
-            )
-            .await
+        self.job_queue.enqueue(
+            JobType::Modifier,
+            payload,
+            JobPriority::Low, // Lower priority since it's just a cache update
+            run_at,
+        )
     }
 
     /// Schedule multiple cache updates for a batch of players
-    pub async fn schedule_batch_cache_update(
+    pub fn schedule_batch_cache_update(
         &self,
         player_ids: Vec<PlayerKey>,
         run_at: DateTime<Utc>,
@@ -102,7 +97,7 @@ impl ModifierScheduler {
         let mut job_ids = Vec::with_capacity(player_ids.len());
 
         for player_id in player_ids {
-            let job_id = self.schedule_cache_update(player_id, run_at).await?;
+            let job_id = self.schedule_cache_update(player_id, run_at)?;
             job_ids.push(job_id);
         }
 

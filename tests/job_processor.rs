@@ -43,7 +43,6 @@ async fn test_worker_pool_lifecycle() {
             JobPriority::Normal,
             Utc::now(),
         )
-        .await
         .unwrap();
 
     // Give some time for processing

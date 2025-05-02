@@ -177,7 +177,6 @@ async fn create_user(
     if created_user.faction != FactionCode::Neutral {
         prod_scheduler
             .schedule_production(&created_user.id, Utc::now())
-            .await
             .map_err(|err| {
                 error!("Failed to schedule production: {}", err);
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -218,7 +217,6 @@ async fn update_user(
     if user.faction != updated_user.faction && user.faction == FactionCode::Neutral {
         prod_scheduler
             .schedule_production(&player_key, Utc::now())
-            .await
             .map_err(|err| {
                 error!("Failed to schedule production: {}", err);
                 StatusCode::INTERNAL_SERVER_ERROR

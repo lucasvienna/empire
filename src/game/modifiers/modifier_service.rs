@@ -78,8 +78,7 @@ impl ModifierService {
         // Schedule expiration job if needed
         if let Some(expires_at) = active_mod.expires_at {
             self.scheduler
-                .schedule_expiration(active_mod.id, active_mod.player_id, expires_at)
-                .await?;
+                .schedule_expiration(active_mod.id, active_mod.player_id, expires_at)?;
         }
 
         info!(

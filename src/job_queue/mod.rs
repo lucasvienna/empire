@@ -37,7 +37,7 @@ impl JobQueue {
     }
 
     /// Enqueues a new job with the specified parameters
-    pub async fn enqueue(
+    pub fn enqueue(
         &self,
         new_job_type: JobType,
         job_payload: impl Serialize,
@@ -67,7 +67,7 @@ impl JobQueue {
     }
 
     /// Enqueues a batch of jobs with the specified parameters
-    pub async fn enqueue_batch(&self, jobs: Vec<JobRequest>) -> Result<Vec<JobKey>> {
+    pub fn enqueue_batch(&self, jobs: Vec<JobRequest>) -> Result<Vec<JobKey>> {
         let values: Vec<NewJob> = jobs
             .into_iter()
             .map(
@@ -94,7 +94,7 @@ impl JobQueue {
     }
 
     /// Gets the next available job of a specific type for processing
-    pub async fn get_next_job_of_type(
+    pub fn get_next_job_of_type(
         &self,
         worker_id: &str,
         requested_type: &JobType,
@@ -147,7 +147,7 @@ impl JobQueue {
     }
 
     /// Marks a job as completed
-    pub async fn complete_job(&self, job_id: &JobKey) -> Result<(), Error> {
+    pub fn complete_job(&self, job_id: &JobKey) -> Result<(), Error> {
         let mut conn = self.pool.get()?;
 
         diesel::update(job.filter(id.eq(job_id)))
@@ -175,7 +175,7 @@ impl JobQueue {
     /// # Returns
     /// * `Ok(())` if the job was successfully marked as failed
     /// * `Err(Error)` if there was a database error, or the job couldn't be updated
-    pub async fn fail_job(&self, job_id: &JobKey, error: impl AsRef<str>) -> Result<(), Error> {
+    pub fn fail_job(&self, job_id: &JobKey, error: impl AsRef<str>) -> Result<(), Error> {
         let mut conn = self.pool.get()?;
 
         conn.transaction(|conn| {
@@ -237,7 +237,7 @@ impl JobQueue {
     /// # Returns
     /// - `Ok(usize)`: The number of receivers that got the shutdown signal
     /// - `Err`: If broadcasting the shutdown signal fails
-    pub async fn shutdown(&self) -> Result<usize> {
+    pub fn shutdown(&self) -> Result<usize> {
         let send_result = self.shutdown_tx.send(()).map_err(|err| {
             trace!("Errored while sending shutdown signal: {:?}", err);
             (ErrorKind::InternalError, "Failed to close job queue")

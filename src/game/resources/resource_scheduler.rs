@@ -59,7 +59,7 @@ impl ProductionScheduler {
             })
             .filter(|(_, payload, _, _)| Value::Null.ne(payload))
             .collect();
-        self.job_queue.enqueue_batch(new_jobs).await
+        self.job_queue.enqueue_batch(new_jobs)
     }
 
     /// Schedules a resource production job for a specific player.
@@ -70,7 +70,7 @@ impl ProductionScheduler {
     ///
     /// # Returns
     /// A `Result` containing the `JobKey` if successful, or an error if scheduling fails
-    pub async fn schedule_production(
+    pub fn schedule_production(
         &self,
         player_id: &PlayerKey,
         produce_at: DateTime<Utc>,
@@ -79,10 +79,9 @@ impl ProductionScheduler {
             players_id: *player_id,
         };
 
-        let job_key = self
-            .job_queue
-            .enqueue(JobType::Resource, payload, JobPriority::Normal, produce_at)
-            .await;
+        let job_key =
+            self.job_queue
+                .enqueue(JobType::Resource, payload, JobPriority::Normal, produce_at);
 
         match job_key {
             Ok(key) => {
