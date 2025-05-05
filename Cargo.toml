@@ -23,7 +23,7 @@ name = "empire"
 [dependencies]
 anyhow = { workspace = true }
 argon2 = "0.5.3"
-axum = { version = "0.8.3", features = ["query", "macros", "tokio", "http2"] }
+axum = { version = "0.8.4", features = ["query", "macros", "tokio", "http2"] }
 axum-extra = { version = "0.10.1", features = ["cookie", "tracing", "typed-header"] }
 axum-test = { version = "17.3.0", features = ["all"] }
 bigdecimal = { version = "0.4.8", features = ["std", "serde", "serde_json"] }
