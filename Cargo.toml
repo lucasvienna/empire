@@ -27,7 +27,7 @@ axum = { version = "0.8.3", features = ["query", "macros", "tokio", "http2"] }
 axum-extra = { version = "0.10.1", features = ["cookie", "tracing", "typed-header"] }
 axum-test = { version = "17.3.0", features = ["all"] }
 bigdecimal = { version = "0.4.8", features = ["std", "serde", "serde_json"] }
-chrono = { version = "0.4.40", features = ["serde"] }
+chrono = { version = "0.4.41", features = ["serde"] }
 config = "0.15.11"
 cookie = { version = "0.18.1", features = ["secure"] }
 derive_more = { version = "2.0.1", features = ["full"] }
