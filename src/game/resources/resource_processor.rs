@@ -99,7 +99,7 @@ impl JobProcessor for ResourceProcessor {
                                 Err(e) => {
                                     warn!("Worker {} failed job {:?}", self.id, job);
                                     trace!("Error: {}", e);
-                                    queue.fail_job(&job.id, &e.to_string())?;
+                                    queue.fail_job(&job.id, e.to_string())?;
                                 }
                             }
                         }
