@@ -8,6 +8,7 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::{Authorization, HeaderMapExt};
 use chrono::Utc;
 use cookie::{time, Cookie, SameSite};
+use derive_more::Deref;
 use serde::Serialize;
 use tracing::{debug, error, instrument, trace, warn};
 
@@ -19,6 +20,10 @@ use crate::domain::auth::decode_token;
 
 pub const TOKEN_COOKIE_NAME: &str = "token";
 pub const SESSION_COOKIE_NAME: &str = "rsession";
+
+/// A session token.
+#[derive(Debug, Clone, Serialize, Deref)]
+pub struct SessionToken(String);
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {
@@ -61,6 +66,7 @@ pub async fn auth_middleware(
             .same_site(SameSite::Lax)
             .secure(true)
             .http_only(true);
+        let session_token = SessionToken(token.clone());
         let (session, player) = srv.validate_session_token(token).map_err(|err| {
             error!("Invalid session token!");
             debug!("{:#?}", err);
@@ -72,11 +78,14 @@ pub async fn auth_middleware(
         })?;
 
         let duration = session.expires_at - Utc::now();
-        let cookie = cookie.max_age(time::Duration::seconds(duration.num_seconds()));
+        let cookie = cookie
+            .max_age(time::Duration::seconds(duration.num_seconds()))
+            .build();
 
         jar = jar.add(cookie);
         req.extensions_mut().insert(player);
         req.extensions_mut().insert(session);
+        req.extensions_mut().insert(session_token);
     } else if let Some(token) = jwt_token {
         // fallback to jwt token
         let claims = decode_token(token.as_str())

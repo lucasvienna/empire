@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use chrono::{DateTime, Utc};
+use derive_more::Display;
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
@@ -18,6 +19,7 @@ pub type FactionKey = FactionCode;
     FromSqlRow,
     Serialize,
     Deserialize,
+    Display,
     Debug,
     Clone,
     Copy,

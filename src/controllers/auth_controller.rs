@@ -7,7 +7,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{debug_handler, Extension, Json, Router};
 use axum_extra::extract::CookieJar;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use cookie::{time, Cookie, SameSite};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -23,8 +23,8 @@ use crate::domain::auth::AuthError;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::session::PlayerSession;
-use crate::domain::player::NewPlayer;
-use crate::net::{SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
+use crate::domain::player::{NewPlayer, Player, PlayerKey};
+use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
 use crate::ErrorKind;
 
 #[derive(Serialize, Deserialize)]
@@ -152,6 +152,10 @@ async fn login(
     let session = session_service
         .create_session(session_token.clone(), &user.id)
         .map_err(|_| AuthError::TokenCreation)?;
+    info!(
+        "Player {} logged in. Session valid until {}",
+        &user.id, session.expires_at
+    );
 
     let max_age = session.expires_at - Utc::now();
     let cookie = Cookie::build((SESSION_COOKIE_NAME, session_token))
@@ -181,6 +185,49 @@ async fn logout(
     Ok((jar, Json(body)))
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PlayerDtoResponse {
+    player: PlayerDto,
+    session: SessionDto,
+}
+
+#[derive(Serialize, Deserialize)]
+struct PlayerDto {
+    id: PlayerKey,
+    name: String,
+    email: Option<String>,
+    faction: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SessionDto {
+    token: String,
+    expires_at: DateTime<Utc>,
+}
+
+#[instrument(skip(jar))]
+#[debug_handler(state = AppState)]
+async fn session(
+    State(srv): State<SessionService>,
+    player: Extension<Player>,
+    session: Extension<PlayerSession>,
+    token: Extension<SessionToken>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AuthError> {
+    let session = SessionDto {
+        token: token.to_string(),
+        expires_at: session.expires_at,
+    };
+    let player = PlayerDto {
+        id: player.id,
+        name: player.name.clone(),
+        email: player.email.clone(),
+        faction: player.faction.to_string(),
+    };
+
+    Ok((jar, Json(PlayerDtoResponse { session, player })))
+}
+
 pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route("/login", post(login))
@@ -188,5 +235,7 @@ pub fn auth_routes() -> Router<AppState> {
 }
 
 pub fn protected_auth_routes() -> Router<AppState> {
-    Router::new().route("/logout", get(logout))
+    Router::new()
+        .route("/logout", get(logout))
+        .route("/session", get(session))
 }
