@@ -5,22 +5,26 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{debug_handler, Json, Router};
+use axum::{debug_handler, Extension, Json, Router};
 use axum_extra::extract::CookieJar;
-use cookie::{Cookie, SameSite};
+use chrono::Utc;
+use cookie::{time, Cookie, SameSite};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{error, info, instrument, warn};
 
+use crate::auth::session_service::SessionService;
+use crate::auth::utils::hash_password;
 use crate::configuration::Settings;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::auth::{AuthBody, AuthError, Claims};
+use crate::domain::auth::AuthError;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
+use crate::domain::player::session::PlayerSession;
 use crate::domain::player::NewPlayer;
-use crate::services::auth_service::{create_token_for_user, hash_password};
+use crate::net::{SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
 use crate::ErrorKind;
 
 #[derive(Serialize, Deserialize)]
@@ -119,6 +123,7 @@ async fn register(
 #[debug_handler(state = AppState)]
 async fn login(
     State(pool): State<AppPool>,
+    State(session_service): State<SessionService>,
     jar: CookieJar,
     settings: Settings,
     Json(payload): Json<LoginPayload>,
@@ -143,28 +148,36 @@ async fn login(
         return Err(AuthError::WrongCredentials);
     }
 
-    let token = create_token_for_user(user, &settings.jwt)?;
-    let max_age = cookie::time::Duration::seconds(settings.jwt.expires_in as i64);
-    let cookie = Cookie::build(("token", token.clone()))
+    let session_token = session_service.generate_session_token();
+    let session = session_service
+        .create_session(session_token.clone(), &user.id)
+        .map_err(|_| AuthError::TokenCreation)?;
+
+    let max_age = session.expires_at - Utc::now();
+    let cookie = Cookie::build((SESSION_COOKIE_NAME, session_token))
         .secure(true)
         .http_only(true)
         .same_site(SameSite::Strict)
         .path("/")
-        .max_age(max_age)
+        .max_age(time::Duration::seconds(max_age.num_seconds()))
         .build();
 
-    let body = AuthBody::new(token);
-    let jar = jar.add(cookie);
-
-    Ok((jar, Json(body)))
+    Ok(jar.add(cookie))
 }
 
 #[instrument(skip(jar))]
 #[debug_handler(state = AppState)]
-async fn logout(claims: Claims, jar: CookieJar) -> Result<impl IntoResponse, AuthError> {
-    let jar = jar.remove(Cookie::from("token"));
-    let body = json!({ "status": "ok" });
+async fn logout(
+    State(srv): State<SessionService>,
+    session: Extension<PlayerSession>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AuthError> {
+    let jar = jar
+        .remove(Cookie::from(SESSION_COOKIE_NAME))
+        .remove(Cookie::from(TOKEN_COOKIE_NAME));
+    srv.invalidate_session(&session.id);
 
+    let body = json!({ "status": "ok" });
     Ok((jar, Json(body)))
 }
 
@@ -172,5 +185,8 @@ pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route("/login", post(login))
         .route("/register", post(register))
-        .route("/logout", get(logout))
+}
+
+pub fn protected_auth_routes() -> Router<AppState> {
+    Router::new().route("/logout", get(logout))
 }

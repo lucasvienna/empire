@@ -670,9 +670,9 @@ dependencies = [
 
 [[package]]
 name = "data-encoding"
-version = "2.8.0"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "575f75dfd25738df5b91b8e43e14d44bda14637a58fae779fd2b064f8bf3e010"
+checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
 name = "deranged"
@@ -850,10 +850,12 @@ dependencies = [
  "axum-extra",
  "axum-test",
  "bigdecimal",
+ "blake2",
  "chrono",
  "claims",
  "config",
  "cookie",
+ "data-encoding",
  "derive_more",
  "diesel",
  "diesel_migrations",
@@ -2269,6 +2271,7 @@ checksum = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.1",
+ "serde",
 ]
 
 [[package]]
@@ -2307,6 +2310,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a88e0da7a2c97baa202165137c158d0a2e824ac465d13d81046727b34cb247d3"
 dependencies = [
  "getrandom 0.3.2",
+ "serde",
  "zerocopy 0.8.20",
 ]
 

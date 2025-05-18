@@ -247,6 +247,14 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    player_session (id) {
+        id -> Text,
+        player_id -> Uuid,
+        expires_at -> Timestamptz,
+    }
+}
+
 diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> player (player_id));
 diesel::joinable!(building -> faction (faction));
@@ -259,6 +267,7 @@ diesel::joinable!(player_accumulator -> player (player_id));
 diesel::joinable!(player_building -> building (building_id));
 diesel::joinable!(player_building -> player (player_id));
 diesel::joinable!(player_resource -> player (player_id));
+diesel::joinable!(player_session -> player (player_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     active_modifiers,
@@ -273,4 +282,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     player_accumulator,
     player_building,
     player_resource,
+    player_session,
 );

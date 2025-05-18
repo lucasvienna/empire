@@ -87,6 +87,10 @@ pub enum ErrorKind {
     ConstructBuildingError,
     UpgradeBuildingError,
     ConfirmUpgradeError,
+
+    // Auth errors
+    NoSessionError,
+    SessionExpiredError,
 }
 
 impl Error {
@@ -163,6 +167,10 @@ impl From<ErrorKind> for StatusCode {
             ErrorKind::ConstructBuildingError
             | ErrorKind::UpgradeBuildingError
             | ErrorKind::ConfirmUpgradeError => StatusCode::CONFLICT,
+
+            // Auth errors
+            ErrorKind::NoSessionError => StatusCode::UNAUTHORIZED,
+            ErrorKind::SessionExpiredError => StatusCode::FORBIDDEN,
         }
     }
 }

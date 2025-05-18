@@ -23,7 +23,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer as TowerTraceLayer;
 use tracing::{error, info_span};
 
-use crate::controllers::{auth_routes, health_check_routes, user_routes};
+use crate::controllers::{auth_routes, health_check_routes, protected_auth_routes, user_routes};
 use crate::domain::app_state::AppState;
 use crate::net::auth::auth_middleware;
 use crate::net::request_id::MakeRequestUlid;
@@ -86,13 +86,18 @@ pub fn init(state: AppState) -> Router {
         .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .layer(PropagateRequestIdLayer::new(x_request_id));
 
+    let protected_routes = Router::new()
+        .merge(protected_auth_routes())
+        .merge(user_routes())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
     Router::new()
         .merge(health_check_routes())
         .merge(auth_routes())
-        .merge(user_routes().layer(middleware::from_fn_with_state(
-            state.clone(),
-            auth_middleware,
-        )))
+        .merge(protected_routes)
         .layer(middleware)
         .with_state(state)
 }

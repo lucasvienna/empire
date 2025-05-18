@@ -12,6 +12,7 @@ pub mod factions;
 pub mod migrations;
 pub mod modifiers;
 pub mod player_buildings;
+pub mod player_sessions;
 pub mod players;
 pub mod resources;
 

@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
+use empire::auth::utils::hash_password;
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::AppPool;
@@ -10,7 +11,6 @@ use empire::domain::factions::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::schema::{active_modifiers, modifier_history, modifiers, player};
-use empire::services::auth_service::hash_password;
 
 mod common;
 

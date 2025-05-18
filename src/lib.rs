@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+pub mod auth;
 pub mod configuration;
 pub mod controllers;
 pub mod custom_schema;
@@ -11,7 +12,6 @@ pub mod game;
 pub mod job_queue;
 pub mod net;
 pub mod schema;
-pub mod services;
 pub mod startup;
 pub mod telemetry;
 

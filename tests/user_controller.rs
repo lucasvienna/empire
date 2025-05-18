@@ -6,6 +6,7 @@ use axum_extra::headers;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use empire::auth::utils::hash_password;
 use empire::controllers::{
     NewUserPayload, RegisterPayload, UpdateUserPayload, UserBody, UserListBody,
 };
@@ -18,7 +19,6 @@ use empire::domain::player::buildings::PlayerBuilding;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
 use empire::schema::player::dsl::player;
 use empire::schema::player_building;
-use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 

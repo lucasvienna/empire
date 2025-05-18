@@ -1,6 +1,7 @@
 use axum::extract::FromRef;
 use diesel::prelude::*;
 use diesel::update;
+use empire::auth::utils::hash_password;
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::{AppPool, AppState};
@@ -9,7 +10,6 @@ use empire::domain::player::accumulator::PlayerAccumulator;
 use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::game::resources::resource_service::ResourceService;
 use empire::schema::{player_accumulator as acc, player_resource as rsc};
-use empire::services::auth_service::hash_password;
 
 use crate::common::TestServer;
 

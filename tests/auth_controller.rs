@@ -3,14 +3,13 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
+use empire::auth::utils::hash_password;
 use empire::controllers::{LoginPayload, RegisterPayload};
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::AppPool;
-use empire::domain::auth::AuthBody;
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, Player, UserEmail, UserName};
-use empire::services::auth_service::hash_password;
 use http_body_util::BodyExt;
 use serde_json::json;
 use tower::ServiceExt;
@@ -116,12 +115,13 @@ async fn login_succeeds_with_correct_credentials() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let body = String::from_utf8(Vec::from(body)).unwrap();
+    let cookie = response.headers().get(http::header::SET_COOKIE);
+    assert!(cookie.is_some());
+    let value = cookie.unwrap().to_str().unwrap();
     assert!(
-        body.contains("access_token"),
-        "Error message doesn't contain 'access_token': {}",
-        body
+        value.contains("rsession="),
+        "'rsession=' not found in cookie: {}",
+        value
     );
 }
 
@@ -201,8 +201,8 @@ async fn user_can_register_and_login() {
         .expect("Failed to execute login request.");
 
     assert_eq!(response.status(), StatusCode::OK);
-    let body: AuthBody = response.json().await.unwrap();
-    assert!(!body.access_token.is_empty());
+    let cookie = response.headers().get(http::header::SET_COOKIE);
+    assert!(cookie.is_some());
 }
 
 #[tokio::test]
@@ -225,15 +225,12 @@ async fn logout_succeeds() {
         .expect("Failed to execute login request.");
 
     assert_eq!(response.status(), StatusCode::OK);
-    let body: AuthBody = response.json().await.unwrap();
-    assert!(!body.access_token.is_empty());
+    let cookie = response.headers().get(http::header::SET_COOKIE);
+    assert!(cookie.is_some());
 
     let response = client
         .get(format!("{}/logout", &app.address))
-        .header(
-            http::header::AUTHORIZATION,
-            format!("{} {}", body.token_type, body.access_token),
-        )
+        .header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
         .send()
         .await
         .expect("Failed to execute logout request.");

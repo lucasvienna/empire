@@ -7,6 +7,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument};
 
+use crate::auth::utils::hash_password;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
@@ -14,7 +15,6 @@ use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{NewPlayer, Player, UpdatePlayer};
 use crate::game::resources::resource_scheduler::ProductionScheduler;
-use crate::services::auth_service::hash_password;
 use crate::{Error, ErrorKind, Result};
 
 /// Struct for creating a new player
