@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 mod auth;
 mod request_id;
 pub mod router;
