@@ -111,7 +111,7 @@ impl JobProcessor for ModifierProcessor {
         loop {
             tokio::select! {
                 _ = self.shutdown_rx.recv() => {
-                    info!("Worker {} shutting down", self.id);
+                    debug!("Worker {} shutting down", self.id);
                     break;
                 }
                 _ = interval.tick() => {
