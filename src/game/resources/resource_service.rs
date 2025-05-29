@@ -93,6 +93,7 @@ impl ResourceService {
             use crate::schema::player_accumulator::dsl::{
                 food, gold, id, player_accumulator, stone, wood,
             };
+            use crate::schema::player_resource::dsl::{self as pr, player_resource};
 
             trace!("Entering accumulator transaction");
             let acc_key: AccumulatorKey = {
@@ -121,6 +122,14 @@ impl ResourceService {
                 .returning(PlayerAccumulator::as_returning())
                 .get_result(conn)?;
             debug!("New accumulator state: {:?}", res);
+
+            let updated = diesel::update(player_resource)
+                .set(pr::produced_at.eq(Utc::now()))
+                .execute(conn)?;
+            assert_eq!(
+                updated, 1,
+                "Did not update last produced at. Expected 1, got none."
+            );
 
             Ok(res)
         })?;
