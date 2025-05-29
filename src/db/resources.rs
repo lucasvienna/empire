@@ -126,16 +126,18 @@ impl ResourcesRepository {
     pub fn deduct(
         &self,
         conn: &mut DbConn,
-        player_key: &PlayerResourceKey,
+        player_key: &PlayerKey,
         amounts: &Deduction,
     ) -> Result<PlayerResource> {
         debug!(
             "Deducting resources {:?} from player {}",
             amounts, player_key
         );
-        let res: PlayerResource = player_resource.find(player_key).first(conn)?;
+        let res: PlayerResource = player_resource
+            .filter(player_id.eq(player_key))
+            .first(conn)?;
         debug!("Current resources: {:?}", res);
-        let updated_res = diesel::update(player_resource.find(player_key))
+        let updated_res = diesel::update(player_resource.filter(player_id.eq(player_key)))
             .set((
                 food.eq(food - amounts.0),
                 wood.eq(wood - amounts.1),

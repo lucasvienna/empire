@@ -1,5 +1,3 @@
-#![allow(unused_macros)]
-
 /// Creates an HTTP 401 Unauthorized response with a JSON body.
 ///
 /// # Arguments
@@ -8,6 +6,7 @@
 ///
 /// # Returns
 /// A response with status code 401 and the provided JSON body
+#[macro_export]
 macro_rules! unauthorized {
     ($body:expr) => {
         (StatusCode::UNAUTHORIZED, Json($body)).into_response()
@@ -28,6 +27,7 @@ macro_rules! unauthorized {
 ///
 /// # Returns
 /// A response with status code 200 and the provided JSON body
+#[macro_export]
 macro_rules! okay {
     ($body:expr) => {
         (StatusCode::OK, Json($body)).into_response()

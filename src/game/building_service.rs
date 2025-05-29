@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use chrono::prelude::*;
 use diesel::Connection;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace};
 
 use crate::db::building_levels::BuildingLevelRepository;
 use crate::db::buildings::BuildingRepository;
@@ -122,7 +122,10 @@ impl BuildingService {
     }
 
     #[instrument(skip(self))]
-    pub fn upgrade_building(&self, player_bld_id: &buildings::PlayerBuildingKey) -> Result<()> {
+    pub fn upgrade_building(
+        &self,
+        player_bld_id: &buildings::PlayerBuildingKey,
+    ) -> Result<PlayerBuilding> {
         let mut conn = self.db_pool.get()?;
         let (player_bld, max_level) = self
             .player_bld_repo
@@ -162,6 +165,7 @@ impl BuildingService {
                     bld_lvl.req_gold.unwrap_or(0),
                 ),
             )?;
+            trace!("Deducted resources");
             // upgrade building
             let player_bld = self.player_bld_repo.set_upgrade_time(
                 connection,
@@ -173,7 +177,7 @@ impl BuildingService {
         });
 
         match res {
-            Ok(_) => Ok(()),
+            Ok(player_bld) => Ok(player_bld),
             Err(_) => Err(Error::from((
                 ErrorKind::UpgradeBuildingError,
                 "Failed to upgrade building",
@@ -209,7 +213,7 @@ impl BuildingService {
 
     fn has_enough_resources(&self, player_id: &PlayerKey, bld_lvl: &BuildingLevel) -> Result<bool> {
         debug!("Checking resources for player: {}", player_id);
-        let res = self.res_repo.get_by_id(player_id)?;
+        let res = self.res_repo.get_by_player_id(player_id)?;
         let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
         let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
         let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);

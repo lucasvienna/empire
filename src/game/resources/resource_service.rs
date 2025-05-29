@@ -135,7 +135,7 @@ impl ResourceService {
         })?;
 
         // enqueue next resources job
-        let next_production_time = Utc::now() + Duration::seconds(30);
+        let next_production_time = Utc::now() + Duration::minutes(2);
         let _ = self
             .resource_scheduler
             .schedule_production(player_key, next_production_time)
