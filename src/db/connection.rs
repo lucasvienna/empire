@@ -4,7 +4,7 @@ use anyhow::Result;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::PgConnection;
 use secrecy::ExposeSecret;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, trace};
 
 use crate::configuration::DatabaseSettings;
 
@@ -19,8 +19,8 @@ pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
 /// Exits the process if the pool cannot be created.
 #[instrument(skip(settings))]
 pub fn initialize_pool(settings: &DatabaseSettings) -> DbPool {
-    info!("Initializing database pool...");
-    debug!(
+    debug!("Initializing database pool...");
+    trace!(
         "Connecting to {:#?}",
         format!(
             "postgres://{}:{:?}@{}:{}/{}",

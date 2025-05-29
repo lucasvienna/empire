@@ -118,15 +118,15 @@ impl JobProcessor for ModifierProcessor {
                     match queue.get_next_job_of_type(&self.id, &JobType::Modifier) {
                         Ok(Some(job)) => {
                             // Found a job, process it
-                            trace!("Worker {} is processing job {:?}", self.id, job);
+                            debug!("Worker {} picked up job {}", self.id, job.id);
                             match self.process_job(job.clone()).await {
                                 Ok(()) => {
-                                    trace!("Worker {} completed job {:?}", self.id, job);
+                                    debug!("Worker {} completed job {}", self.id, job.id);
                                     queue.complete_job(&job.id)?;
                                 }
                                 Err(e) => {
-                                    warn!("Worker {} failed job {:?}", self.id, job);
-                                    trace!("Error: {}", e);
+                                    warn!("Worker {} failed to process job {}", self.id, job.id);
+                                    debug!("Failed job: {:#?} {:?}", job, e);
                                     queue.fail_job(&job.id, e.to_string())?;
                                 }
                             }

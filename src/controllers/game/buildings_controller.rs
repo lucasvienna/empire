@@ -5,7 +5,7 @@ use axum::routing::{get, post};
 use axum::{debug_handler, Extension, Router};
 use axum_extra::json;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace};
 
 use crate::db::player_buildings::{FullBuilding, PlayerBuildingRepository};
 use crate::domain::app_state::AppState;
@@ -55,8 +55,15 @@ async fn get_buildings(
     session: Extension<PlayerSession>,
 ) -> impl IntoResponse {
     let player_key = session.player_id;
+    debug!("Getting buildings for player: {}", player_key);
     let buildings = repo.get_game_buildings(&player_key).unwrap_or_default();
+    trace!("Found {} buildings for player", buildings.len());
     let body: Vec<GameBuilding> = buildings.into_iter().map(|v| v.into()).collect();
+    info!(
+        "Retrieved {} buildings for player: {}",
+        body.len(),
+        player_key
+    );
     json!(body)
 }
 
@@ -68,12 +75,28 @@ async fn get_building(
     session: Extension<PlayerSession>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let player_key = session.player_id;
-    let game_bld = repo
-        .get_game_building(&player_key, &player_building_key)
-        .map(GameBuilding::from)
-        .map(|b| json!(b))
-        .map_err(|_| StatusCode::NOT_FOUND)?;
-    Ok(game_bld)
+    let building_key = player_building_key.0;
+    debug!(
+        "Getting building {:?} for player: {}",
+        building_key, player_key
+    );
+
+    let result = repo.get_game_building(&player_key, &building_key);
+    if let Err(e) = &result {
+        debug!("Building not found: {}", e);
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    let building = result.unwrap();
+    trace!("Found building details: {:?}", building);
+
+    let game_bld = GameBuilding::from(building);
+    info!(
+        "Retrieved building {:?} for player: {}",
+        building_key, player_key
+    );
+
+    Ok(json!(game_bld))
 }
 
 #[instrument(skip(srv, repo, session))]
@@ -85,16 +108,27 @@ async fn upgrade_building(
     session: Extension<PlayerSession>,
 ) -> Result<impl IntoResponse> {
     let player_key = session.player_id;
+    let building_key = player_bld_key.0;
     debug!(
-        "Upgrading building {:?} for user {}",
-        player_bld_key, player_key
+        "Starting upgrade building {:?} for player {}",
+        building_key, player_key
     );
-    let bld = srv.upgrade_building(&player_bld_key)?;
-    info!("Building upgraded: {:?}", bld);
-    debug!("Upgrade ready in {}", bld.upgrade_time.unwrap_or_default());
+
+    let bld = srv.upgrade_building(&building_key)?;
+    trace!("Building upgrade details: {:?}", bld);
+
+    let upgrade_time = bld.upgrade_time.unwrap_or_default();
+    debug!("Building upgrade will be ready in {}", upgrade_time);
+
     let res = repo
         .get_game_building(&player_key, &bld.id)
         .map(GameBuilding::from)?;
+
+    info!(
+        "Successfully upgraded building {:?} for player {}",
+        building_key, player_key
+    );
+
     Ok(json!(res))
 }
 

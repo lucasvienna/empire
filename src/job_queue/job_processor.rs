@@ -4,7 +4,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use tokio::sync::broadcast;
-use tracing::info;
+use tracing::{debug, info, instrument, trace};
 
 use crate::domain::app_state::AppState;
 use crate::domain::jobs::Job;
@@ -46,9 +46,16 @@ pub trait JobProcessor {
     ///
     /// # Returns
     /// A Result indicating success or containing an error if job processing fails
+    #[instrument(skip(self, job), fields(job.id = %job.id))]
     async fn process_job(&self, job: Job) -> Result<(), Error> {
         // This will be implemented based on job types
-        info!("Processing job {:?}", job);
+        debug!("Starting to process job: {}", job.id);
+        trace!("Job details: {:?}", job);
+
+        // Default implementation just logs the job
+        // Actual implementations should override this method
+
+        info!("Successfully processed job: {}", job.id);
         Ok(())
     }
 }

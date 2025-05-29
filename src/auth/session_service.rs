@@ -9,7 +9,7 @@ use axum::extract::FromRef;
 use blake2::{Blake2s256, Digest};
 use chrono::{Duration, Utc};
 use data_encoding::BASE32_NOPAD_NOCASE;
-use tracing::warn;
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::db::player_sessions::{PlayerSessionRepository, SessionPlayerTuple};
 use crate::domain::app_state::{AppPool, AppState};
@@ -69,9 +69,13 @@ impl SessionService {
     ///
     /// # Returns
     /// A String containing the BASE32 encoded session token.
+    #[instrument(skip(self))]
     pub fn generate_session_token(&self) -> String {
+        debug!("Generating new session token");
         let bytes: [u8; 32] = rand::random();
-        BASE32_NOPAD_NOCASE.encode(&bytes)
+        let token = BASE32_NOPAD_NOCASE.encode(&bytes);
+        trace!("Generated token of length {}", token.len());
+        token
     }
 
     /// Creates a new session for a player. The session is associated with the provided token.
@@ -82,16 +86,23 @@ impl SessionService {
     ///
     /// # Returns
     /// A new Session instance containing the session details
+    #[instrument(skip(self, token))]
     pub fn create_session(&self, token: String, player_key: &PlayerKey) -> Result<PlayerSession> {
+        debug!("Creating new session");
         let session_id = self.encode_session_token(token);
+        trace!("Encoded session ID: {}", session_id);
 
+        let expires_at = Utc::now() + Duration::days(30);
         let new_session = NewPlayerSession {
             id: session_id,
             player_id: *player_key,
-            expires_at: Utc::now() + Duration::days(30),
+            expires_at,
         };
+        trace!("New session expires at: {}", expires_at);
 
-        self.repo.create(new_session)
+        let session = self.repo.create(new_session)?;
+        info!("Created new session");
+        Ok(session)
     }
 
     /// Validates a session token and retrieves associated session information.
@@ -101,21 +112,29 @@ impl SessionService {
     ///
     /// # Returns
     /// * `Ok(SessionPlayerTuple)` - If the token is valid, returns the session and player information
-    /// * `Err` - If the token is invalid or an error occurs during validation
+    /// * `Err` - If the token is invalid, or an error occurs during validation
+    #[instrument(skip(self, token))]
     pub fn validate_session_token(&self, token: String) -> Result<SessionPlayerTuple> {
+        debug!("Starting session token validation");
         let session_id = self.encode_session_token(token);
+        trace!("Encoded session ID: {}", session_id);
+
         let player_session = self.repo.find_by_id(&session_id)?;
 
         if player_session.is_none() {
+            warn!("No session found for token with ID: {}", session_id);
             return Err(Error::from((
                 ErrorKind::NoSessionError,
                 "No session found for the provided token.",
             )));
         }
+
         let (session, player) = player_session.unwrap();
+        debug!("Found session for player: {}", player.id);
 
         // Check if the session has expired.
         if session.expires_at <= Utc::now() {
+            warn!("Session expired for player: {}", player.id);
             let count = self.repo.delete(&session.id)?;
             debug_assert_eq!(count, 1, "Expected exactly one session to be deleted.");
             return Err(Error::from((
@@ -126,10 +145,13 @@ impl SessionService {
 
         // Refresh the session if it's within 15 days of expiration.
         if session.expires_at - Duration::days(15) < Utc::now() {
-            let session = self.repo.refresh_token(&session.id)?;
-            return Ok((session, player));
+            debug!("Refreshing session for player: {}", player.id);
+            let refreshed_session = self.repo.refresh_token(&session.id)?;
+            info!("Session refreshed for player: {}", player.id);
+            return Ok((refreshed_session, player));
         }
 
+        info!("Session validated successfully for player: {}", player.id);
         Ok((session, player))
     }
 
@@ -137,20 +159,41 @@ impl SessionService {
     ///
     /// # Parameters
     /// * `session_id` - The unique identifier of the session to invalidate
+    #[instrument(skip(self))]
     pub fn invalidate_session(&self, session_id: &SessionKey) {
-        let _ = self.repo.delete(session_id).map_err(|_| {
-            warn!("Failed to delete session: {}", session_id);
-        });
+        debug!("Starting invalidate session: {}", session_id);
+        match self.repo.delete(session_id) {
+            Ok(count) => {
+                if count > 0 {
+                    info!("Successfully invalidated session: {}", session_id);
+                } else {
+                    debug!("No session found to invalidate with ID: {}", session_id);
+                }
+            }
+            Err(e) => {
+                error!("Failed to delete session {}: {}", session_id, e);
+            }
+        }
     }
 
     /// Invalidates all sessions associated with a specific player.
     ///
     /// # Parameters
     /// * `player_key` - The unique identifier of the player whose sessions should be invalidated
+    #[instrument(skip(self))]
     pub fn invalidate_all_sessions(&self, player_key: &PlayerKey) {
-        let _ = self.repo.delete_by_player(player_key).map_err(|_| {
-            warn!("Failed to delete player sessions: {}", player_key);
-        });
+        debug!(
+            "Starting invalidate all sessions for player: {}",
+            player_key
+        );
+        match self.repo.delete_by_player(player_key) {
+            Ok(count) => {
+                info!("Invalidated {} sessions for player: {}", count, player_key);
+            }
+            Err(e) => {
+                error!("Failed to delete sessions for player {}: {}", player_key, e);
+            }
+        }
     }
 
     /// Encodes a session token using Blake2s256 hashing algorithm.
@@ -160,10 +203,14 @@ impl SessionService {
     ///
     /// # Returns
     /// A String containing the hexadecimal representation of the hashed token
+    #[instrument(skip_all)]
     fn encode_session_token(&self, token: impl AsRef<[u8]>) -> String {
+        trace!("Encoding session token");
         let mut hasher = Blake2s256::new();
         Digest::update(&mut hasher, token);
         let encoded_token = hasher.finalize();
-        format!("{:x}", encoded_token)
+        let result = format!("{:x}", encoded_token);
+        trace!("Token encoded successfully");
+        result
     }
 }

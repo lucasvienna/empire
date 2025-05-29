@@ -119,7 +119,7 @@ async fn register(
     Ok(StatusCode::CREATED)
 }
 
-#[instrument(skip(pool, jar, settings))]
+#[instrument(skip(pool, session_service, jar, settings, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 async fn login(
     State(pool): State<AppPool>,

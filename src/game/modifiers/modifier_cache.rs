@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use tokio::sync::RwLock;
-use tracing::trace;
+use tracing::{debug, info, instrument, trace, warn};
 use uuid::Uuid;
 
 use crate::configuration::CacheSettings;
@@ -32,6 +33,16 @@ pub struct CacheKey {
     pub target_resource: Option<ResourceType>,
 }
 
+impl std::fmt::Display for CacheKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CacheKey[{}/{}/{:?}]",
+            self.player_id, self.target_type, self.target_resource
+        )
+    }
+}
+
 pub struct ModifierCache {
     /// Main cache storage using RwLock for concurrent access
     cache: Arc<RwLock<HashMap<CacheKey, CacheEntry>>>,
@@ -43,10 +54,9 @@ pub struct ModifierCache {
 
 impl ModifierCache {
     pub fn new(default_ttl: chrono::Duration, max_entries_per_user: usize) -> Self {
-        trace!(
-            "Initializing modifier cache with TTL: {} and max entries per user: {}",
-            default_ttl,
-            max_entries_per_user
+        info!(
+            "Initializing modifier cache with TTL: {:?} and max entries per user: {}",
+            default_ttl, max_entries_per_user
         );
         Self {
             cache: Arc::new(RwLock::new(HashMap::new())),
@@ -55,34 +65,60 @@ impl ModifierCache {
         }
     }
 
+    #[instrument(skip(settings))]
     pub fn from_settings(settings: &CacheSettings) -> Self {
-        trace!("Initializing modifier cache from settings");
+        debug!(
+            "Initializing modifier cache from settings: ttl={}, max_entries={}",
+            settings.default_ttl, settings.max_user_entries
+        );
         let default_ttl = chrono::Duration::seconds(settings.default_ttl as i64);
         ModifierCache::new(default_ttl, settings.max_user_entries)
     }
 
     /// Get a cached modifier value if it exists and is valid
+    #[instrument(name = "cache_get", skip_all, fields(key = %key))]
     pub async fn get(&self, key: &CacheKey) -> Option<CacheEntry> {
+        trace!("Retrieving cache entry");
+
         let cache = self.cache.read().await;
-        let entry = cache.get(key)?;
+        let entry = cache.get(key);
+
+        if entry.is_none() {
+            trace!("Cache miss");
+            return None;
+        }
+
+        let entry = entry.unwrap();
 
         // Check if entry has expired
         if let Some(expires_at) = entry.expires_at {
             if expires_at <= Utc::now() {
+                trace!("Cache entry expired at {:?}", expires_at);
                 return None;
             }
         }
 
+        trace!(
+            "Cache hit: version={}, expires_at={:?}",
+            entry.version,
+            entry.expires_at
+        );
         Some(entry.clone())
     }
 
     /// Set a new cache entry with optional expiration
+    #[instrument(name = "cache_set", skip_all, fields(key = %key))]
     pub async fn set(
         &self,
         key: CacheKey,
         total_multiplier: BigDecimal,
         expires_at: Option<DateTime<Utc>>,
     ) -> Result<(), Error> {
+        trace!(
+            "Setting new cache entry: {}, expires_at: {:?}",
+            total_multiplier, expires_at
+        );
+        let start = Instant::now();
         let mut cache = self.cache.write().await;
 
         // Check player entry limit
@@ -91,7 +127,13 @@ impl ModifierCache {
             .filter(|k| k.player_id == key.player_id)
             .count();
 
+        trace!(
+            "Current entries for player: {}/{}",
+            user_entries, self.max_entries_per_user
+        );
+
         if user_entries >= self.max_entries_per_user {
+            warn!("Cache limit exceeded for player {}", key.player_id);
             return Err(Error::new(
                 ErrorKind::CacheError,
                 "Cache limit exceeded for player",
@@ -106,10 +148,12 @@ impl ModifierCache {
         };
 
         cache.insert(key, entry);
+        trace!("Cache entry set successfully in {:?}", start.elapsed());
         Ok(())
     }
 
     /// Update an existing cache entry with optimistic locking
+    #[instrument(name = "cache_update", skip_all, fields(key = %key))]
     pub async fn update(
         &self,
         key: &CacheKey,
@@ -117,10 +161,16 @@ impl ModifierCache {
         expires_at: Option<DateTime<Utc>>,
         expected_version: u64,
     ) -> Result<(), Error> {
+        trace!("Updating cache entry with version {}", expected_version);
+        let start = Instant::now();
         let mut cache = self.cache.write().await;
 
         if let Some(entry) = cache.get(key) {
             if entry.version != expected_version {
+                warn!(
+                    "Version mismatch: expected={}, actual={}",
+                    expected_version, entry.version
+                );
                 return Err(Error::new(
                     ErrorKind::CacheError,
                     "Cache entry version mismatch",
@@ -134,9 +184,15 @@ impl ModifierCache {
                 last_updated: Utc::now(),
             };
 
+            trace!(
+                "Updating entry from version {} to {}",
+                entry.version, new_entry.version
+            );
             cache.insert(key.clone(), new_entry);
+            trace!("Cache entry updated successfully in {:?}", start.elapsed());
             Ok(())
         } else {
+            warn!("Cache entry not found for update");
             Err(Error::new(
                 ErrorKind::CacheMissError,
                 "Cache entry not found",
@@ -145,33 +201,76 @@ impl ModifierCache {
     }
 
     /// Invalidate a specific cache entry
+    #[instrument(name = "cache_invalidate", skip_all, fields(key = %key))]
     pub async fn invalidate(&self, key: &CacheKey) {
+        debug!("Invalidating cache entry");
         let mut cache = self.cache.write().await;
-        cache.remove(key);
+        if cache.remove(key).is_some() {
+            debug!("Cache entry invalidated");
+        } else {
+            trace!("Cache entry not found for invalidation");
+        }
     }
 
     /// Invalidate all entries for a player
+    #[instrument(skip(self), fields(player_id = %player_id))]
     pub async fn invalidate_user(&self, player_id: Uuid) {
+        debug!("Invalidating all cache entries for player");
         let mut cache = self.cache.write().await;
+        let before_count = cache.len();
         cache.retain(|k, _| k.player_id != player_id);
+        let removed = before_count - cache.len();
+        info!("Invalidated {} cache entries for player", removed);
     }
 
     /// Get the next expiration time for a player's modifiers
+    #[instrument(skip(self), fields(player_id = %player_id))]
     pub async fn next_expiration(&self, player_id: Uuid) -> Option<DateTime<Utc>> {
+        debug!("Getting next expiration time for player");
         let cache = self.cache.read().await;
 
-        cache
+        let result = cache
             .iter()
             .filter(|(k, _)| k.player_id == player_id)
             .filter_map(|(_, v)| v.expires_at)
-            .min()
+            .min();
+
+        match &result {
+            Some(time) => debug!("Next expiration time: {:?}", time),
+            None => debug!("No expiring cache entries found for player"),
+        }
+
+        result
     }
 
     /// Clean up expired entries
+    #[instrument(name = "cache_cleanup", skip_all)]
     pub async fn cleanup(&self) {
+        debug!("Starting cache cleanup");
+        let start = Instant::now();
+
         let mut cache = self.cache.write().await;
+        let before_count = cache.len();
         let now = Utc::now();
-        cache.retain(|_, entry| entry.expires_at.map(|exp| exp > now).unwrap_or(true));
+
+        cache.retain(|k, entry| {
+            let keep = entry.expires_at.map(|exp| exp > now).unwrap_or(true);
+            if !keep {
+                trace!(
+                    "Removing expired entry for player {} target {:?}",
+                    k.player_id,
+                    k.target_type
+                );
+            }
+            keep
+        });
+
+        let removed = before_count - cache.len();
+        info!(
+            "Cache cleanup completed in {:?}: removed {} expired entries",
+            start.elapsed(),
+            removed
+        );
     }
 }
 

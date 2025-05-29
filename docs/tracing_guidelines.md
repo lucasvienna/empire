@@ -69,6 +69,9 @@ Use the following log levels consistently throughout the codebase:
     - Log at `warn` level for expected errors (e.g., validation failures)
     - Include error details and context
 
+7. **Skip instrumenting `new` and `drop` methods**
+    - These methods are called frequently and can cause performance issues
+
 ## Anti-Patterns
 
 1. **Logging sensitive information**

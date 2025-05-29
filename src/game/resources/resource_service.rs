@@ -67,13 +67,13 @@ impl ResourceService {
         let delta_secs = BigDecimal::from((Utc::now() - last_prod).num_seconds());
         let seconds_per_hours = BigDecimal::from(3600);
         let delta_hours = (delta_secs / seconds_per_hours).round(5);
-        debug!(
-            "Production Delta: {}h, last produced: {}",
-            delta_hours, last_prod
-        );
         // multiply resources rate proportionally to delta
         let current_rates = self.cur_prod_rates(player_key).await?;
-        trace!("Current Rates: {:#?}", current_rates);
+        debug!(
+            "Production Delta: {}h, last produced at: {}",
+            delta_hours, last_prod
+        );
+        debug!("Current Rates: {:?}", current_rates);
         let prod_amounts: HashMap<ResourceType, i64> = current_rates
             .into_iter()
             .map(|(res_type, prod_rate)| {
@@ -250,7 +250,7 @@ impl ResourceService {
     ///
     /// # Returns
     /// HashMap containing resource types mapped to their current hourly resources rates
-    #[instrument(skip(self))]
+    #[instrument(skip_all)]
     async fn cur_prod_rates(
         &self,
         player_key: &PlayerKey,
@@ -263,6 +263,7 @@ impl ResourceService {
                 .await?;
             mods.insert(res, multi);
         }
+        debug!(?mods, "Calculated modifiers");
         let rates = {
             use crate::custom_schema::resource_generation::dsl::{player_id, resource_generation};
 
@@ -275,15 +276,15 @@ impl ResourceService {
 
         let current_hourly_rates = mods
             .into_iter()
-            .map(|(key, mut value)| {
-                value = match key {
-                    ResourceType::Population => BigDecimal::from(rates.population) * value,
-                    ResourceType::Food => BigDecimal::from(rates.food) * value,
-                    ResourceType::Wood => BigDecimal::from(rates.wood) * value,
-                    ResourceType::Stone => BigDecimal::from(rates.stone) * value,
-                    ResourceType::Gold => BigDecimal::from(rates.gold) * value,
+            .map(|(key, mut modifier)| {
+                modifier = match key {
+                    ResourceType::Population => BigDecimal::from(rates.population) * modifier,
+                    ResourceType::Food => BigDecimal::from(rates.food) * modifier,
+                    ResourceType::Wood => BigDecimal::from(rates.wood) * modifier,
+                    ResourceType::Stone => BigDecimal::from(rates.stone) * modifier,
+                    ResourceType::Gold => BigDecimal::from(rates.gold) * modifier,
                 };
-                (key, value)
+                (key, modifier)
             })
             .collect();
 

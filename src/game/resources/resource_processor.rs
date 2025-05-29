@@ -90,15 +90,15 @@ impl JobProcessor for ResourceProcessor {
                     match queue.get_next_job_of_type(&self.id, &JobType::Resource) {
                         Ok(Some(job)) => {
                             // Found a job, process it
-                            trace!("Worker {} is processing job {:?}", self.id, job);
+                            trace!("Worker {} picked up job {}", self.id, job.id);
                             match self.process_job(job.clone()).await {
                                 Ok(()) => {
-                                    trace!("Worker {} completed job {:?}", self.id, job);
+                                    trace!("Worker {} completed job {}", self.id, job.id);
                                     queue.complete_job(&job.id)?;
                                 }
                                 Err(e) => {
-                                    warn!("Worker {} failed job {:?}", self.id, job);
-                                    trace!("Error: {}", e);
+                                    warn!("Worker {} failed to process job {}", self.id, job.id);
+                                    debug!("Failed job: {:#?} {:?}",job, e);
                                     queue.fail_job(&job.id, e.to_string())?;
                                 }
                             }
@@ -120,43 +120,65 @@ impl JobProcessor for ResourceProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, job))]
     async fn process_job(&self, job: Job) -> Result<(), Error> {
-        info!("Processing job {:?}", job);
+        debug!("Processing job: {}", job.id);
+        trace!("Job details: {:?}", job);
+
         assert_eq!(
             job.job_type,
             JobType::Resource,
-            "Expected a modifier job, got: {}",
+            "Expected a resource job, got: {}",
             job.job_type
         );
+
         let payload: ProductionJobPayload = serde_json::from_value(job.payload.clone())?;
 
         match payload {
             ProductionJobPayload::ProduceResources { players_id } => {
+                debug!(
+                    "Processing produce resources job for player: {}",
+                    players_id
+                );
                 match self.srv.produce_for_player(&players_id).await {
                     Ok(_) => {
-                        debug!("Produced resources for player {}", players_id);
+                        info!("Successfully produced resources for player: {}", players_id);
                     }
                     Err(e) => {
-                        warn!("Error producing resources: {}", e);
-                        debug!("Error: {:?}", e);
+                        error!(
+                            "Failed to produce resources for player {}: {}",
+                            players_id, e
+                        );
+                        trace!("Detailed error: {:?}", e);
                         return Err(e);
                     }
                 }
             }
             ProductionJobPayload::CollectResources { players_id } => {
+                debug!(
+                    "Processing collect resources job for player: {}",
+                    players_id
+                );
                 match self.srv.collect_resources(&players_id) {
                     Ok(_) => {
-                        debug!("Collected resources for player {}", players_id);
+                        info!(
+                            "Successfully collected resources for player: {}",
+                            players_id
+                        );
                     }
                     Err(e) => {
-                        warn!("Error collecting resources: {}", e);
-                        debug!("Error: {:?}", e);
+                        error!(
+                            "Failed to collect resources for player {}: {}",
+                            players_id, e
+                        );
+                        trace!("Detailed error: {:?}", e);
                         return Err(e);
                     }
                 }
             }
         }
 
+        debug!("Completed process job: {}", job.id);
         Ok(())
     }
 }

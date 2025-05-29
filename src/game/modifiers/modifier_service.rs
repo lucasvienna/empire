@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use tracing::{debug, info, trace};
+use tracing::{info, trace};
 
 use crate::db::active_modifiers::ActiveModifiersRepository;
 use crate::db::modifiers::ModifiersRepository;
@@ -121,22 +121,20 @@ impl ModifierService {
 
         // Try to get from cache first
         if let Some(entry) = self.cache.get(&cache_key).await {
-            debug!(?cache_key, "Cache hit for modifier calculation");
+            trace!(%cache_key, total_multiplier = %entry.total_multiplier, "Cache hit for modifier calculation");
             return Ok(entry.total_multiplier);
         }
 
-        debug!(?cache_key, "Cache miss for modifier calculation");
         // Calculate and cache if not found
         let total_multiplier = self
             .calculate_total_multiplier(player_id, target_type, target_resource)
             .await?;
-        trace!("Total modifier multiplier: {}", total_multiplier);
+        trace!(%cache_key, %total_multiplier, "Cache miss, calculated total modifier");
 
         // Get the nearest expiration time from active modifiers
         let expires_at = self
             .get_nearest_expiration(player_id, target_type, target_resource)
             .await?;
-        trace!(?expires_at, "Nearest expiration time");
 
         // Cache the result
         self.cache
