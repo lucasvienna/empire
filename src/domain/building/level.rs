@@ -1,7 +1,17 @@
+//! Building level management module.
+//!
+//! This module provides types and structures for managing building levels in the game.
+//! It includes functionality for:
+//! - Representing building levels and their requirements
+//! - Handling building level creation and updates
+//! - Managing building upgrade requirements and timing
+//! - Tracking resource requirements for building upgrades
+
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
+use crate::domain::building::BuildingKey;
 use crate::schema::building_level;
 
 /// Unique identifier type for building levels
@@ -16,7 +26,7 @@ pub type BuildingLevelKey = Uuid;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct BuildingLevel {
     pub id: BuildingLevelKey,
-    pub building_id: i32,
+    pub building_id: BuildingKey,
     #[diesel(column_name = level)]
     pub building_level: i32,
     pub upgrade_time: String,

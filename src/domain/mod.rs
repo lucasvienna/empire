@@ -1,7 +1,6 @@
 pub mod app_state;
 pub mod auth;
-pub mod building_levels;
-pub mod buildings;
+pub mod building;
 pub mod error;
 pub mod factions;
 pub mod jobs;

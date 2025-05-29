@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use crate::domain::buildings::Building;
+use crate::domain::building::Building;
 use crate::domain::player::{Player, PlayerKey};
 use crate::schema::player_building;
 

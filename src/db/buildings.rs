@@ -5,7 +5,7 @@ use diesel::prelude::*;
 
 use crate::db::Repository;
 use crate::domain::app_state::AppPool;
-use crate::domain::buildings::{Building, BuildingKey, NewBuilding, UpdateBuilding};
+use crate::domain::building::{Building, BuildingKey, NewBuilding, UpdateBuilding};
 use crate::domain::error::Result;
 use crate::schema::building::dsl::*;
 

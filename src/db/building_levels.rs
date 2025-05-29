@@ -6,10 +6,10 @@ use tracing::debug;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::app_state::AppPool;
-use crate::domain::building_levels::{
+use crate::domain::building::level::{
     BuildingLevel, BuildingLevelKey, NewBuildingLevel, UpdateBuildingLevel,
 };
-use crate::domain::buildings::BuildingKey;
+use crate::domain::building::BuildingKey;
 use crate::domain::error::Result;
 // can't glob import the dsl because it conflicts with the debug! macro
 use crate::schema::building_level as bl;

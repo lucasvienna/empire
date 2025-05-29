@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::app_state::AppPool;
-use crate::domain::buildings::{Building, BuildingKey};
+use crate::domain::building::{Building, BuildingKey};
 use crate::domain::error::Result;
 use crate::domain::player::buildings::{
     NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey, UpdatePlayerBuilding,

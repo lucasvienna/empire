@@ -1,6 +1,9 @@
 //! Contains domain entities and types related to buildings in the game.
 //! Buildings are structures that can be constructed by factions and have various levels and counts.
 
+pub mod level;
+pub mod resources;
+
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 
