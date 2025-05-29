@@ -116,7 +116,8 @@ impl ModifierCache {
     ) -> Result<(), Error> {
         trace!(
             "Setting new cache entry: {}, expires_at: {:?}",
-            total_multiplier, expires_at
+            total_multiplier,
+            expires_at
         );
         let start = Instant::now();
         let mut cache = self.cache.write().await;
@@ -129,7 +130,8 @@ impl ModifierCache {
 
         trace!(
             "Current entries for player: {}/{}",
-            user_entries, self.max_entries_per_user
+            user_entries,
+            self.max_entries_per_user
         );
 
         if user_entries >= self.max_entries_per_user {
@@ -186,7 +188,8 @@ impl ModifierCache {
 
             trace!(
                 "Updating entry from version {} to {}",
-                entry.version, new_entry.version
+                entry.version,
+                new_entry.version
             );
             cache.insert(key.clone(), new_entry);
             trace!("Cache entry updated successfully in {:?}", start.elapsed());

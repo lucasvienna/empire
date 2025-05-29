@@ -26,6 +26,10 @@ define_sql_function! {
     #[sql_name = "LEAST"]
     fn least(a: Int8, b: Int8) -> Int8
 }
+define_sql_function! {
+    #[sql_name = "GREATEST"]
+    fn greatest(a: Int8, b: Int8) -> Int8
+}
 
 /// Service responsible for managing resources for players.
 /// Handles calculation and application of resources rates, considering modifiers
@@ -90,6 +94,7 @@ impl ResourceService {
         // add to accumulator up to the cap
         let mut conn = self.db_pool.get()?;
         let player_acc = conn.transaction(|conn| -> Result<PlayerAccumulator> {
+            use crate::custom_schema::resource_generation::dsl as rg;
             use crate::schema::player_accumulator::dsl::{
                 food, gold, id, player_accumulator, stone, wood,
             };
@@ -105,6 +110,8 @@ impl ResourceService {
                     .first(conn)?
             };
             trace!("Found player accumulator: {:?}", acc_key);
+            let acc_caps: ResourceGeneration =
+                rg::resource_generation.find(player_key).first(conn)?;
 
             let produced_food = prod_amounts.get(&ResourceType::Food).unwrap_or(&0);
             let produced_wood = prod_amounts.get(&ResourceType::Wood).unwrap_or(&0);
@@ -114,10 +121,10 @@ impl ResourceService {
             let res = diesel::update(player_accumulator)
                 .filter(id.eq(&acc_key))
                 .set((
-                    food.eq(food + produced_food),
-                    wood.eq(wood + produced_wood),
-                    stone.eq(stone + produced_stone),
-                    gold.eq(gold + produced_gold),
+                    food.eq(greatest(food + produced_food, acc_caps.food_acc_cap)),
+                    wood.eq(greatest(wood + produced_wood, acc_caps.wood_acc_cap)),
+                    stone.eq(greatest(stone + produced_stone, acc_caps.stone_acc_cap)),
+                    gold.eq(greatest(gold + produced_gold, acc_caps.gold_acc_cap)),
                 ))
                 .returning(PlayerAccumulator::as_returning())
                 .get_result(conn)?;
