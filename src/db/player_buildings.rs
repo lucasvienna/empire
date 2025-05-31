@@ -360,39 +360,4 @@ impl PlayerBuildingRepository {
             .get_result(conn)?;
         Ok(building)
     }
-
-    /// Diesel version of the resource_generation view
-    fn res_gen_view(&self, conn: &mut DbConn, player_key: &PlayerKey) -> Result<()> {
-        use bigdecimal::BigDecimal;
-        use diesel::dsl::sum;
-
-        use crate::schema::{building_resource as br, player_building as pb};
-
-        let something = pb::table
-            .left_join(
-                br::table.on(pb::building_id
-                    .eq(br::building_id)
-                    .and(pb::level.eq(br::building_level))),
-            )
-            .group_by(pb::player_id)
-            .filter(pb::player_id.eq(player_key))
-            .select((
-                pb::player_id,
-                sum(br::population).assume_not_null(),
-                sum(br::food).assume_not_null(),
-                sum(br::wood).assume_not_null(),
-                sum(br::stone).assume_not_null(),
-                sum(br::gold).assume_not_null(),
-            ))
-            .first::<(
-                Uuid,
-                BigDecimal,
-                BigDecimal,
-                BigDecimal,
-                BigDecimal,
-                BigDecimal,
-            )>(conn)?;
-
-        Ok(())
-    }
 }

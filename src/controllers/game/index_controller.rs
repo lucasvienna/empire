@@ -1,14 +1,5 @@
 use std::collections::HashMap;
 
-use axum::extract::State;
-use axum::response::IntoResponse;
-use axum::{debug_handler, Extension};
-use chrono::{DateTime, Utc};
-use diesel::prelude::*;
-use diesel::QueryResult;
-use serde::{Deserialize, Serialize};
-use tracing::instrument;
-
 use crate::db::DbConn;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::building::BuildingKey;
@@ -18,6 +9,16 @@ use crate::domain::player::session::PlayerSession;
 use crate::domain::player::PlayerKey;
 use crate::schema::player_building::dsl::player_building;
 use crate::Result;
+use axum::extract::State;
+use axum::response::IntoResponse;
+use axum::{debug_handler, Extension};
+use bigdecimal::{BigDecimal, ToPrimitive};
+use chrono::{DateTime, Utc};
+use diesel::prelude::*;
+use diesel::QueryResult;
+use serde::{Deserialize, Serialize};
+use tracing::instrument;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct GameState {
@@ -34,7 +35,7 @@ struct PlayerState {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct ResourcesState {
+pub struct ResourcesState {
     pub food: i64,
     pub wood: i64,
     pub stone: i64,
@@ -128,13 +129,13 @@ fn get_player_data(conn: &mut DbConn, current_player_id: PlayerKey) -> QueryResu
         })
 }
 
-fn get_resources_data(
-    conn: &mut PgConnection,
+// TODO: relocate this somewhere proper
+pub fn get_resources_data(
+    conn: &mut DbConn,
     current_player_id: PlayerKey,
-) -> QueryResult<ResourcesState> {
+) -> Result<ResourcesState> {
     use crate::schema::player_accumulator::dsl as pa;
     use crate::schema::player_resource::dsl as pr;
-
     let (pr_data, pa_data) = pr::player_resource
         .inner_join(pa::player_accumulator.on(pr::player_id.eq(pa::player_id)))
         .filter(pr::player_id.eq(current_player_id))
@@ -171,15 +172,8 @@ fn get_resources_data(
             (i64, i64, i64, i64),
         )>(conn)?;
 
-    // The *_acc_cap fields in ResourcesState are not directly in player_resource or player_accumulator.
-    // They seem to be derived from building_resource sums.
-    // This would typically require another query or more complex aggregation.
-    // For this example, I'll set them to a default or placeholder.
-    // In a real scenario, you'd sum these from the player's building_resource data.
-    let food_acc_cap_val = 0; // Placeholder
-    let wood_acc_cap_val = 0; // Placeholder
-    let stone_acc_cap_val = 0; // Placeholder
-    let gold_acc_cap_val = 0; // Placeholder
+    let (_, _, food_acc_cap_val, wood_acc_cap_val, stone_acc_cap_val, gold_acc_cap_val) =
+        res_gen_view(conn, &current_player_id)?;
 
     Ok(ResourcesState {
         food: pr_data.0,
@@ -196,11 +190,47 @@ fn get_resources_data(
         wood_acc: pa_data.1,
         stone_acc: pa_data.2,
         gold_acc: pa_data.3,
-        food_acc_cap: food_acc_cap_val, // Needs calculation from building_resources
-        wood_acc_cap: wood_acc_cap_val, // Needs calculation from building_resources
-        stone_acc_cap: stone_acc_cap_val, // Needs calculation from building_resources
-        gold_acc_cap: gold_acc_cap_val, // Needs calculation from building_resources
+        food_acc_cap: food_acc_cap_val.to_i64().unwrap_or_default(),
+        wood_acc_cap: wood_acc_cap_val.to_i64().unwrap_or_default(),
+        stone_acc_cap: stone_acc_cap_val.to_i64().unwrap_or_default(),
+        gold_acc_cap: gold_acc_cap_val.to_i64().unwrap_or_default(),
     })
+}
+
+type ResourceGenerationView = (
+    Uuid,       // player_id
+    BigDecimal, // population
+    BigDecimal, // food
+    BigDecimal, // wood
+    BigDecimal, // stone
+    BigDecimal, // gold
+);
+
+/// Diesel version of the resource_generation view
+fn res_gen_view(conn: &mut DbConn, player_key: &PlayerKey) -> Result<ResourceGenerationView> {
+    use diesel::dsl::sum;
+
+    use crate::schema::{building_resource as br, player_building as pb};
+
+    let something = pb::table
+        .left_join(
+            br::table.on(pb::building_id
+                .eq(br::building_id)
+                .and(pb::level.eq(br::building_level))),
+        )
+        .group_by(pb::player_id)
+        .filter(pb::player_id.eq(player_key))
+        .select((
+            pb::player_id,
+            sum(br::population).assume_not_null(),
+            sum(br::food).assume_not_null(),
+            sum(br::wood).assume_not_null(),
+            sum(br::stone).assume_not_null(),
+            sum(br::gold).assume_not_null(),
+        ))
+        .first::<ResourceGenerationView>(conn)?;
+
+    Ok(something)
 }
 
 fn get_player_buildings_data(
