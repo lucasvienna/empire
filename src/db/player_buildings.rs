@@ -4,7 +4,6 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use diesel::prelude::*;
 use tracing::info;
-use uuid::Uuid;
 
 use crate::db::{DbConn, Repository};
 use crate::domain::app_state::{AppPool, AppState};
