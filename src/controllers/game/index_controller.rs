@@ -1,14 +1,5 @@
 use std::collections::HashMap;
 
-use crate::db::DbConn;
-use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::building::BuildingKey;
-use crate::domain::factions::FactionCode;
-use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::domain::player::session::PlayerSession;
-use crate::domain::player::PlayerKey;
-use crate::schema::player_building::dsl::player_building;
-use crate::Result;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension};
@@ -19,6 +10,16 @@ use diesel::QueryResult;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
+
+use crate::db::DbConn;
+use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::building::BuildingKey;
+use crate::domain::factions::FactionCode;
+use crate::domain::player::buildings::PlayerBuildingKey;
+use crate::domain::player::session::PlayerSession;
+use crate::domain::player::PlayerKey;
+use crate::schema::player_building::dsl::player_building;
+use crate::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct GameState {

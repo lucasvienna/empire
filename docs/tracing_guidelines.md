@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document outlines best practices, anti-patterns, and recommendations for 
-tracing and telemetry in the Empire project. Consistent and effective tracing 
-is essential for monitoring, debugging, and understanding the behavior of our 
+This document outlines best practices, antipatterns, and recommendations for
+tracing and telemetry in the Empire project. Consistent and effective tracing
+is essential for monitoring, debugging, and understanding the behavior of our
 application in production.
 
 ## Current Implementation Analysis
@@ -17,7 +17,7 @@ The current tracing implementation in the Empire project has several strengths a
 - Configuration of both console and file outputs
 - Log file rotation with size limits
 - Use of span-based tracing with the `#[instrument]` macro in some areas
-- Appropriate use of different log levels in some components
+- The appropriate use of different log levels in some components
 
 ### Weaknesses
 

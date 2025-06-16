@@ -87,7 +87,7 @@ impl WorkerPool {
     /// - `'static` lifetime for thread spawning
     #[instrument(skip(self, worker))]
     pub fn add_worker(&mut self, mut worker: impl JobProcessor + Send + 'static) {
-        debug!("Starting to add new worker to pool");
+        debug!("Adding new worker to pool");
         let queue = self.queue.clone();
         let handle = tokio::spawn(async move {
             if let Err(e) = worker.run(queue).await {
@@ -121,7 +121,7 @@ impl WorkerPool {
     #[instrument(skip(self, workers))]
     pub fn add_workers(&mut self, workers: Vec<impl JobProcessor + Send + 'static>) {
         let worker_count = workers.len();
-        debug!("Starting to add {} workers to pool", worker_count);
+        debug!("Adding {} workers to pool", worker_count);
 
         for (i, worker) in workers.into_iter().enumerate() {
             trace!("Adding worker {}/{}", i + 1, worker_count);

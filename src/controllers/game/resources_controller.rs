@@ -1,8 +1,3 @@
-use crate::controllers::game::index_controller::get_resources_data;
-use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::player::session::PlayerSession;
-use crate::game::resources::resource_service::ResourceService;
-use crate::Result;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -10,6 +5,12 @@ use axum::routing::post;
 use axum::{debug_handler, Extension, Json, Router};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
+
+use crate::controllers::game::index_controller::get_resources_data;
+use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::player::session::PlayerSession;
+use crate::game::resources::resource_service::ResourceService;
+use crate::Result;
 
 #[instrument(skip(pool, srv))]
 #[debug_handler(state = AppState)]

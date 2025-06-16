@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use cookie::{time, Cookie, SameSite};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::auth::session_service::SessionService;
 use crate::auth::utils::hash_password;
@@ -79,25 +79,33 @@ impl Debug for LoginPayload {
     }
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 async fn register(
     State(pool): State<AppPool>,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    trace!("Starting player registration process");
     let repo = PlayerRepository::new(&pool);
     let new_user = NewPlayer::try_from(payload).map_err(|err| {
-        error!("Failed to parse player: {}", err);
+        error!("Failed to parse player during registration: {}", err);
         let body = json!({ "status": "error", "message": err.to_string() });
         (StatusCode::BAD_REQUEST, Json(body))
     })?;
 
+    debug!("Player data parsed successfully");
+
     match repo.exists_by_name(&new_user.name) {
         Ok(exists) => {
             if exists {
+                warn!(
+                    "Registration attempted with existing username: {}",
+                    new_user.name
+                );
                 let body = json!({ "status": "error", "message": "Username already taken" });
                 return Err((StatusCode::CONFLICT, Json(body)));
             }
+            debug!("Username {} is available for registration", new_user.name);
         }
         Err(err) => {
             error!("Failed to check if player exists: {}", err);
@@ -116,7 +124,13 @@ async fn register(
         "Created player successfully"
     );
 
-    Ok(StatusCode::CREATED)
+    let body = json!({ "status": "success", "message": "Player registered successfully" });
+    info!(
+        player_id = created_user.id.to_string(),
+        "Player registration completed successfully"
+    );
+
+    Ok((StatusCode::CREATED, Json(body)))
 }
 
 #[instrument(skip(pool, session_service, jar, settings, payload), fields(username = %payload.username))]
@@ -132,29 +146,55 @@ async fn login(
         return Err(AuthError::MissingCredentials);
     }
 
+    trace!("Beginning authentication for user: {}", payload.username);
     let repo = PlayerRepository::new(&pool);
     let user = repo.get_by_name(&payload.username).map_err(|err| {
-        warn!("Invalid player: {}", err);
+        warn!("User login failed - player not found: {}", err);
         AuthError::WrongCredentials
     })?;
 
+    debug!("Found player record for login attempt");
+
+    trace!("Verifying password for player {}", user.name);
     let argon2 = Argon2::default();
-    let hash = PasswordHash::new(&user.pwd_hash).map_err(|_| AuthError::ArgonError)?;
+    let hash = PasswordHash::new(&user.pwd_hash).map_err(|e| {
+        error!(
+            "Failed to parse password hash for player {}: {:?}",
+            user.name, e
+        );
+        AuthError::ArgonError
+    })?;
+
     if argon2
         .verify_password(payload.password.as_ref(), &hash)
         .is_err()
     {
-        warn!("Invalid password for player: {}", user.name);
+        warn!(
+            player_id = %user.id,
+            "Authentication failed - invalid password for player: {}",
+            user.name
+        );
         return Err(AuthError::WrongCredentials);
     }
 
+    debug!("Password verified successfully for player {}", user.name);
+
+    trace!("Generating session token for player {}", user.id);
     let session_token = session_service.generate_session_token();
+
+    debug!("Creating session for player {}", user.id);
     let session = session_service
         .create_session(session_token.clone(), &user.id)
-        .map_err(|_| AuthError::TokenCreation)?;
+        .map_err(|e| {
+            error!("Failed to create session for player {}: {:?}", user.id, e);
+            AuthError::TokenCreation
+        })?;
+
     info!(
-        "Player {} logged in. Session valid until {}",
-        &user.id, session.expires_at
+        player_id = %user.id,
+        session_id = %session.id,
+        expires_at = %session.expires_at,
+        "Player successfully logged in"
     );
 
     let max_age = session.expires_at - Utc::now();
@@ -169,17 +209,25 @@ async fn login(
     Ok(jar.add(cookie))
 }
 
-#[instrument(skip(jar))]
+#[instrument(skip(jar, srv), fields(session_id = %session.id))]
 #[debug_handler(state = AppState)]
 async fn logout(
     State(srv): State<SessionService>,
     session: Extension<PlayerSession>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, AuthError> {
+    debug!("Processing logout request for session {}", session.id);
+
     let jar = jar
         .remove(Cookie::from(SESSION_COOKIE_NAME))
         .remove(Cookie::from(TOKEN_COOKIE_NAME));
+
+    trace!("Invalidating session {}", session.id);
     srv.invalidate_session(&session.id);
+    info!(
+        "Player logged out successfully, session {} invalidated",
+        session.id
+    );
 
     let body = json!({ "status": "ok" });
     Ok((jar, Json(body)))
@@ -205,7 +253,7 @@ struct SessionDto {
     expires_at: DateTime<Utc>,
 }
 
-#[instrument(skip(jar))]
+#[instrument(skip(jar, srv, token), fields(player_id = %player.id, session_id = %session.id))]
 #[debug_handler(state = AppState)]
 async fn session(
     State(srv): State<SessionService>,
@@ -214,6 +262,7 @@ async fn session(
     token: Extension<SessionToken>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, AuthError> {
+    trace!("Preparing session info response for player {}", player.id);
     let session = SessionDto {
         token: token.to_string(),
         expires_at: session.expires_at,
@@ -225,6 +274,10 @@ async fn session(
         faction: player.faction.to_string(),
     };
 
+    debug!(
+        "Session info retrieved successfully for player {}",
+        player.id
+    );
     Ok((jar, Json(PlayerDtoResponse { session, player })))
 }
 

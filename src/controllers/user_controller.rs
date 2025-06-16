@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -5,7 +7,7 @@ use axum::routing::get;
 use axum::{debug_handler, Json, Router};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::auth::utils::hash_password;
 use crate::db::players::PlayerRepository;
@@ -119,74 +121,92 @@ impl From<Player> for UserBody {
 #[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
 async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, StatusCode> {
+    debug!("Starting fetch all users");
     let repo = PlayerRepository::new(&pool);
 
     let result = repo.get_all().map_err(|err| {
         error!("Failed to fetch users: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    debug!("Fetched {} users successfully", result.len());
 
+    let count = result.len();
     let response: UserListBody = result.into_iter().map(UserBody::from).collect();
+
+    info!(count, "Completed fetch all users successfully");
 
     Ok(Json(response))
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
 async fn get_user_by_id(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
+    debug!("Starting fetch user by ID");
     let repo = PlayerRepository::new(&pool);
 
     let user = repo.get_by_id(&player_id).map_err(|err| {
-        error!("Failed to fetch player: {}", err);
+        error!(player_id = %player_id, "Failed to fetch player: {}", err);
         StatusCode::NOT_FOUND
     })?;
-    debug!(?user, "Fetched player successfully");
+
+    info!(player_id = %player_id, "Completed fetch user successfully");
+    trace!(?user, "User details");
 
     Ok(Json(user.into()))
 }
 
-#[instrument(skip(pool, prod_scheduler))]
+#[instrument(skip(pool, prod_scheduler), fields(username = ?payload.username, faction = ?payload.faction))]
 #[debug_handler(state = AppState)]
 async fn create_user(
     State(pool): State<AppPool>,
     State(prod_scheduler): State<ProductionScheduler>,
     Json(payload): Json<NewUserPayload>,
 ) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
+    // AIDEV-NOTE: Critical user creation path with production scheduling
+    debug!("Starting user creation");
+    let start = Instant::now();
     let repo = PlayerRepository::new(&pool);
+
     let new_user = match NewPlayer::try_from(payload) {
         Ok(new_user) => new_user,
         Err(err) => {
-            error!("Failed to parse player: {}", err);
+            warn!(error = %err, "User validation failed");
             return Err(StatusCode::BAD_REQUEST);
         }
     };
 
     let created_user = repo.create(new_user).map_err(|err| {
-        error!("Failed to insert player: {:#?}", err);
+        error!(error = %err, "Failed to insert player in database");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    info!(
-        player_id = created_user.id.to_string(),
-        "Created player successfully"
-    );
+
+    debug!(player_id = %created_user.id, "User created, checking faction for production scheduling");
 
     if created_user.faction != FactionCode::Neutral {
+        debug!(player_id = %created_user.id, faction = ?created_user.faction, "Scheduling initial production");
         prod_scheduler
             .schedule_production(&created_user.id, Utc::now())
             .map_err(|err| {
-                error!("Failed to schedule production: {}", err);
+                error!(player_id = %created_user.id, error = %err, "Failed to schedule production");
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
     }
 
+    let duration = start.elapsed();
+    info!(
+        player_id = %created_user.id,
+        username = %created_user.name,
+        faction = ?created_user.faction,
+        duration_ms = duration.as_millis(),
+        "Completed user creation successfully"
+    );
+
     Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(pool, prod_scheduler))]
+#[instrument(skip(pool, prod_scheduler), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
 async fn update_user(
     State(pool): State<AppPool>,
@@ -194,51 +214,97 @@ async fn update_user(
     Path(player_key): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    // AIDEV-NOTE: User update with potential faction change requires production scheduling
+    debug!("Starting user update");
+    let start = Instant::now();
     let repo = PlayerRepository::new(&pool);
 
     let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_key, payload)) {
         Ok(update) => update,
         Err(err) => {
-            error!("Failed to parse player: {}", err);
+            warn!(player_id = %player_key, error = %err, "User update validation failed");
             return Err(StatusCode::BAD_REQUEST);
         }
     };
 
-    let user = repo
-        .get_by_id(&player_key)
-        .map_err(|err| StatusCode::NOT_FOUND)?;
+    let user = repo.get_by_id(&player_key).map_err(|err| {
+        error!(player_id = %player_key, error = %err, "User not found for update");
+        StatusCode::NOT_FOUND
+    })?;
+
+    debug!(player_id = %player_key, "Found existing user, applying changes");
 
     let updated_user = repo.update(&changeset).map_err(|err| {
-        error!("Failed to update player: {}", err);
+        error!(player_id = %player_key, error = %err, "Failed to update player in database");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    info!(?updated_user, "Updated player successfully");
 
-    if user.faction != updated_user.faction && user.faction == FactionCode::Neutral {
+    // Track state changes for key fields
+    let name_changed = changeset.name.is_some();
+    let email_changed = changeset.email.is_some();
+    let password_changed = changeset.pwd_hash.is_some();
+    let faction_changed = changeset.faction.is_some() && changeset.faction != Some(user.faction);
+
+    if faction_changed && user.faction == FactionCode::Neutral {
+        debug!(
+            player_id = %player_key,
+            old_faction = ?user.faction,
+            new_faction = ?updated_user.faction,
+            "Faction changed from Neutral, scheduling production"
+        );
+
         prod_scheduler
             .schedule_production(&player_key, Utc::now())
             .map_err(|err| {
-                error!("Failed to schedule production: {}", err);
+                error!(player_id = %player_key, error = %err, "Failed to schedule production after faction change");
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
     }
 
+    let duration = start.elapsed();
+    info!(
+        player_id = %player_key,
+        name_changed = name_changed,
+        email_changed = email_changed,
+        password_changed = password_changed,
+        faction_changed = faction_changed,
+        duration_ms = duration.as_millis(),
+        "Completed user update successfully"
+    );
+
+    trace!(?updated_user, "Updated user details");
+
     Ok((StatusCode::ACCEPTED, Json(UserBody::from(updated_user))))
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
 async fn delete_user(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {
+    debug!(player_id = %player_id, "Starting user deletion");
+    let start = Instant::now();
     let repo = PlayerRepository::new(&pool);
 
+    // First check if user exists
+    if let Err(err) = repo.get_by_id(&player_id) {
+        warn!(player_id = %player_id, error = %err, "Attempted to delete non-existent user");
+        return Err(StatusCode::NOT_FOUND);
+    }
+
     let count = repo.delete(&player_id).map_err(|err| {
-        error!("Failed to delete player: {}", err);
-        StatusCode::NOT_FOUND
+        error!(player_id = %player_id, error = %err, "Failed to delete player from database");
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    info!(count, "Deleted player successfully");
+
+    let duration = start.elapsed();
+    info!(
+        player_id = %player_id,
+        count = count,
+        duration_ms = duration.as_millis(),
+        "Completed user deletion successfully"
+    );
 
     Ok(StatusCode::NO_CONTENT)
 }
