@@ -16,19 +16,23 @@ use uuid::Uuid;
 
 use crate::configuration::Settings;
 
-/// JWT secret keys used for encoding and decoding tokens.
-/// This static instance is initialized lazily on first access.
+/// Static secret keys holder used for encoding and decoding JWTs.
+/// Using `LazyLock` ensures one-time initialization on first use.
+/// This avoids repeatedly retrieving the secret and creating keys.
 static KEYS: LazyLock<Keys> = LazyLock::new(|| {
+    // Read the secret from the environment once at runtime
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     Keys::new(secret.as_bytes())
 });
 
+/// Container struct that encapsulates JWT encoding and decoding keys.
 pub struct Keys {
     encoding: EncodingKey,
     decoding: DecodingKey,
 }
 
 impl Keys {
+    /// Constructs new encoding and decoding keys from the given secret.
     pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
@@ -37,15 +41,18 @@ impl Keys {
     }
 }
 
+/// JWT claims struct holding essential token data.
+/// Fields follow JWT claim conventions: subject ID, expiration, issued-at.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: Uuid,  // User associated with the token
-    pub exp: usize, // Expiry time of the token
-    pub iat: usize, // Issued at time of the token
+    pub sub: Uuid,  // User identifier associated with the token
+    pub exp: usize, // Expiration time (timestamp)
+    pub iat: usize, // Issued at time (timestamp)
 }
 
 impl Display for Claims {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Custom Display implementation for convenient logging/debugging.
         write!(
             f,
             "Claims {{ sub: {}, exp: {}, iat: {} }}",
@@ -54,27 +61,34 @@ impl Display for Claims {
     }
 }
 
+/// Extractor implementation that extracts and verifies JWT Claims from request headers.
+/// Utilizes Axum's FromRequestParts trait and integrates with app state for settings.
+///
+/// This replaces manually extracting and decoding tokens in handlers,
+/// enabling clean and consistent authorization extraction.
 impl<S> FromRequestParts<S> for Claims
 where
     S: Send + Sync,
-    Settings: axum::extract::FromRef<S>,
+    Settings: FromRef<S>,
 {
     type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        // Extract Bearer token from the Authorization header using typed headers.
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
             .map_err(|_| AuthError::InvalidToken)?;
 
-        let settings = Settings::from_ref(state);
-        let token = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
-            .map_err(|_| AuthError::InvalidToken)?;
-
-        Ok(token.claims)
+        // Decode and validate the token using the pre-initialized decoding key.
+        decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+            .map(|token_data| token_data.claims)
+            .map_err(|_| AuthError::InvalidToken)
     }
 }
 
+/// Response body struct for returning an access token and token type name.
+/// Common pattern in OAuth2-like authentication responses.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthBody {
     pub access_token: String,
@@ -82,6 +96,7 @@ pub struct AuthBody {
 }
 
 impl AuthBody {
+    /// Convenient constructor setting token_type to the conventional "Bearer".
     pub fn new(access_token: String) -> Self {
         Self {
             access_token,
@@ -90,6 +105,7 @@ impl AuthBody {
     }
 }
 
+/// Enumerates all authentication-related error cases in a clear and concise way.
 #[derive(Debug)]
 pub enum AuthError {
     WrongCredentials,
@@ -100,6 +116,7 @@ pub enum AuthError {
 }
 
 impl IntoResponse for AuthError {
+    /// Converts an AuthError into an HTTP response with an appropriate status code and JSON body.
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
             AuthError::WrongCredentials => (StatusCode::UNAUTHORIZED, "Wrong credentials"),
@@ -113,32 +130,16 @@ impl IntoResponse for AuthError {
     }
 }
 
-/// Encodes the given JWT `Claims` into a token string.
+/// Encodes claims into a JWT token string using the static encoding key.
 ///
-/// This function uses the `encoding` key stored in the `KEYS` static instance
-/// to sign the provided `Claims` and produce a Base64-encoded, signed JWT token.
-///
-/// ### Returns:
-/// - `Ok(String)`: A signed JWT token string, if the encoding operation is successful.
-/// - `Err(AuthError)`: Returns `AuthError::TokenCreation` if the token creation fails due
-///   to any reason (e.g., invalid key or internal encoding error).
+/// Returns a signed, base64-encoded JWT string on success, otherwise returns a token creation error.
 pub fn encode_token(claims: Claims) -> Result<String, AuthError> {
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
 }
 
-/// Decodes the given JWT token string into `Claims`.
+/// Decodes a JWT token string into Claims, verifying using the static decoding key.
 ///
-/// This function uses the `decoding` key stored in the `KEYS` static instance
-/// to verify the provided token and extract its claims. The token is expected
-/// to be a Base64-encoded, signed JWT token.
-///
-/// ### Parameters:
-/// - `token` (`&str`): The JWT token string to decode.
-///
-/// ### Returns:
-/// - `Ok(Claims)`: Decoded claims from the token if the decoding operation is successful.
-/// - `Err(AuthError)`: Returns `AuthError::InvalidToken` if the token is invalid,
-///   has expired, or cannot be decoded (e.g., due to an incorrect signature or a malformed token).
+/// Returns decoded claims on success or an invalid token error if validation fails.
 pub fn decode_token(token: &str) -> Result<TokenData<Claims>, AuthError> {
     decode::<Claims>(token, &KEYS.decoding, &Validation::default())
         .map_err(|_| AuthError::InvalidToken)
