@@ -876,6 +876,8 @@ dependencies = [
  "serde",
  "serde-aux",
  "serde_json",
+ "strum",
+ "strum_macros",
  "tokio",
  "tokio-util",
  "tower",

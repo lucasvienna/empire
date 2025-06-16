@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::str::from_utf8;
 
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
@@ -7,11 +8,13 @@ use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 use uuid::Uuid;
 
 use crate::domain::player::{Player, PlayerKey};
 use crate::schema::player_resource;
 
+/// `PlayerResourceKey` is a type alias for `Uuid`.
 pub type PlayerResourceKey = Uuid;
 
 #[derive(
@@ -19,6 +22,7 @@ pub type PlayerResourceKey = Uuid;
     FromSqlRow,
     Serialize,
     Deserialize,
+    EnumIter,
     Debug,
     Clone,
     Copy,
@@ -38,46 +42,37 @@ pub enum ResourceType {
     Gold,
 }
 
+impl ResourceType {
+    /// Helper function to get the string representation of the enum variant.
+    /// This improves code maintainability by centralizing the string mapping.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Population => "population",
+            Self::Food => "food",
+            Self::Wood => "wood",
+            Self::Stone => "stone",
+            Self::Gold => "gold",
+        }
+    }
+}
+
 impl ToSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        match *self {
-            ResourceType::Population => out.write_all(b"population")?,
-            ResourceType::Food => out.write_all(b"food")?,
-            ResourceType::Wood => out.write_all(b"wood")?,
-            ResourceType::Stone => out.write_all(b"stone")?,
-            ResourceType::Gold => out.write_all(b"gold")?,
-        }
+        out.write_all(self.as_str().as_bytes())?;
         Ok(IsNull::No)
     }
 }
 
 impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"population" => Ok(ResourceType::Population),
-            b"food" => Ok(ResourceType::Food),
-            b"wood" => Ok(ResourceType::Wood),
-            b"stone" => Ok(ResourceType::Stone),
-            b"gold" => Ok(ResourceType::Gold),
-            _ => {
-                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
-            }
+        match from_utf8(bytes.as_bytes())? {
+            "population" => Ok(Self::Population),
+            "food" => Ok(Self::Food),
+            "wood" => Ok(Self::Wood),
+            "stone" => Ok(Self::Stone),
+            "gold" => Ok(Self::Gold),
+            other => Err(format!("Unrecognized enum variant: {}", other).into()),
         }
-    }
-}
-
-impl ResourceType {
-    /// Returns an iterator over all resource types.
-    pub fn iter() -> impl Iterator<Item = Self> {
-        [
-            ResourceType::Population,
-            ResourceType::Food,
-            ResourceType::Wood,
-            ResourceType::Stone,
-            ResourceType::Gold,
-        ]
-        .into_iter()
     }
 }
 

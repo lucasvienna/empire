@@ -6,6 +6,7 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::Int8;
+use strum::IntoEnumIterator;
 use tracing::{debug, instrument, trace, warn};
 
 use crate::db::resources::ResourcesRepository;

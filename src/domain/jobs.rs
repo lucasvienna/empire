@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::str::from_utf8;
 
 use chrono::{DateTime, Utc};
 use derive_more::Display;
@@ -12,9 +13,11 @@ use uuid::Uuid;
 
 use crate::schema::job;
 
-/// Unique identifier type for jobs, implemented as a UUID
+/// Strongly typed alias for job identifier using UUID for clarity.
 pub type JobKey = Uuid;
 
+/// Enumerates valid job categories with PostgreSQL and serde integration.
+/// Derives facilitate conversion to/from DB and serialization.
 #[derive(
     AsExpression,
     FromSqlRow,
@@ -32,41 +35,47 @@ pub type JobKey = Uuid;
 )]
 #[diesel(sql_type = crate::schema::sql_types::JobType)]
 #[serde(rename_all = "lowercase")]
-/// Represents different types of background jobs that can be processed by the system
 pub enum JobType {
-    /// Jobs that handle modifier-related tasks like applying or removing effects
+    /// Modifier related tasks such as applying or removing game modifiers.
     Modifier,
-    /// Jobs related to building construction, upgrade or maintenance
+    /// Building-related tasks like construction or upgrades.
     Building,
-    /// Jobs for resource collection, resources or distribution
+    /// Resource-related tasks such as gathering or distribution.
     Resource,
+}
+
+impl JobType {
+    /// Returns a static string slice for DB serialization.
+    #[inline]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            JobType::Modifier => "modifier",
+            JobType::Building => "building",
+            JobType::Resource => "resource",
+        }
+    }
 }
 
 impl ToSql<crate::schema::sql_types::JobType, Pg> for JobType {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        match *self {
-            JobType::Modifier => out.write_all(b"modifier")?,
-            JobType::Building => out.write_all(b"building")?,
-            JobType::Resource => out.write_all(b"resource")?,
-        }
+        out.write_all(self.as_str().as_bytes())?;
         Ok(IsNull::No)
     }
 }
 
 impl FromSql<crate::schema::sql_types::JobType, Pg> for JobType {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"modifier" => Ok(JobType::Modifier),
-            b"building" => Ok(JobType::Building),
-            b"resource" => Ok(JobType::Resource),
-            _ => {
-                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
-            }
+        match from_utf8(bytes.as_bytes())? {
+            "modifier" => Ok(JobType::Modifier),
+            "building" => Ok(JobType::Building),
+            "resource" => Ok(JobType::Resource),
+            other => Err(format!("Unrecognized job type: {}", other).into()),
         }
     }
 }
 
+/// Represents status of a job with Diesel and serde support.
+/// Explicit variants clarify job lifecycle states.
 #[derive(
     AsExpression,
     FromSqlRow,
@@ -83,75 +92,95 @@ impl FromSql<crate::schema::sql_types::JobType, Pg> for JobType {
 )]
 #[diesel(sql_type = crate::schema::sql_types::JobStatus)]
 #[serde(rename_all = "lowercase")]
-/// Represents the current state of a background job
 pub enum JobStatus {
-    /// Job is queued and waiting to be processed
+    /// Job is waiting in the queue.
     Pending,
-    /// A worker is currently processing Job
+    /// Job is currently being processed.
     InProgress,
-    /// Job has finished processing successfully
+    /// Job completed successfully.
     Completed,
-    /// Job encountered an error during processing
+    /// Job failed during processing.
     Failed,
-    /// Job was manually cancelled or terminated
+    /// Job was cancelled.
     Cancelled,
+}
+
+impl JobStatus {
+    /// Returns a static string slice for DB serialization.
+    #[inline]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            JobStatus::Pending => "pending",
+            JobStatus::InProgress => "in_progress",
+            JobStatus::Completed => "completed",
+            JobStatus::Failed => "failed",
+            JobStatus::Cancelled => "cancelled",
+        }
+    }
 }
 
 impl ToSql<crate::schema::sql_types::JobStatus, Pg> for JobStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        match *self {
-            JobStatus::Pending => out.write_all(b"pending")?,
-            JobStatus::InProgress => out.write_all(b"in_progress")?,
-            JobStatus::Completed => out.write_all(b"completed")?,
-            JobStatus::Failed => out.write_all(b"failed")?,
-            JobStatus::Cancelled => out.write_all(b"cancelled")?,
-        }
+        out.write_all(self.as_str().as_bytes())?;
         Ok(IsNull::No)
     }
 }
 
 impl FromSql<crate::schema::sql_types::JobStatus, Pg> for JobStatus {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"pending" => Ok(JobStatus::Pending),
-            b"in_progress" => Ok(JobStatus::InProgress),
-            b"completed" => Ok(JobStatus::Completed),
-            b"failed" => Ok(JobStatus::Failed),
-            b"cancelled" => Ok(JobStatus::Cancelled),
-            _ => {
-                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
-            }
+        // Match byte slice directly for performance.
+        match from_utf8(bytes.as_bytes())? {
+            "pending" => Ok(JobStatus::Pending),
+            "in_progress" => Ok(JobStatus::InProgress),
+            "completed" => Ok(JobStatus::Completed),
+            "failed" => Ok(JobStatus::Failed),
+            "cancelled" => Ok(JobStatus::Cancelled),
+            other => Err(format!("Unrecognized job status: {}", other).into()),
         }
     }
 }
 
+/// Represents a background job entity with comprehensive metadata.
+/// Diesel derives support querying, updating, and identifying by id.
 #[derive(Queryable, Selectable, Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq)]
 #[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-/// Represents a background job that can be queued and processed asynchronously
-/// by workers, with support for retries, priorities, and locking mechanisms
 pub struct Job {
+    /// Unique job identifier.
     pub id: JobKey,
+    /// Job category/type.
     pub job_type: JobType,
+    /// Current processing state.
     pub status: JobStatus,
+    /// JSON payload containing job-specific data.
     pub payload: serde_json::Value,
+    /// Scheduled time for execution.
     pub run_at: DateTime<Utc>,
+    /// Error message for last failure, if any.
     pub last_error: Option<String>,
+    /// Number of times the job has been retried.
     pub retries: i32,
+    /// Maximum allowed retry attempts.
     pub max_retries: i32,
+    /// Priority for job scheduling.
     pub priority: i32,
+    /// Timeout threshold in seconds.
     pub timeout_seconds: i32,
+    /// Timestamp when the job was locked for processing.
     pub locked_at: Option<DateTime<Utc>>,
+    /// Identifier of the worker that locked the job.
     pub locked_by: Option<String>,
+    /// Creation timestamp.
     pub created_at: DateTime<Utc>,
+    /// Last update timestamp.
     pub updated_at: DateTime<Utc>,
 }
 
+/// Data structure for inserting new jobs into the queue.
+/// Does not include `id` or mutable fields like retries or locks.
 #[derive(Insertable, AsChangeset, Debug, Clone, PartialEq, Eq)]
 #[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-/// Represents data required to create a new background job entry in the queue system
 pub struct NewJob {
     pub job_type: JobType,
     pub status: JobStatus,
@@ -163,11 +192,13 @@ pub struct NewJob {
     pub timeout_seconds: i32,
 }
 
+/// Data structure for updating existing jobs.
+/// All fields except for `id` are optional to allow partial updates.
 #[derive(AsChangeset, Debug, Clone, PartialEq, Eq)]
 #[diesel(table_name = job)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-/// Represents the fields that can be updated for an existing job in the queue system
 pub struct UpdateJob {
+    /// Unique job identifier to update.
     pub id: JobKey,
     pub job_type: Option<JobType>,
     pub status: Option<JobStatus>,

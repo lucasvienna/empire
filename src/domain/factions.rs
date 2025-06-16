@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::str::from_utf8;
 
 use chrono::{DateTime, Utc};
 use derive_more::Display;
@@ -43,33 +44,39 @@ pub enum FactionCode {
     Goblin,
 }
 
+impl FactionCode {
+    /// Helper function to get the string representation of the enum variant.
+    /// This centralizes the mapping, making the code more maintainable and
+    /// ensuring consistency between `ToSql` and `FromSql`.
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Neutral => "neutral",
+            Self::Human => "human",
+            Self::Orc => "orc",
+            Self::Elf => "elf",
+            Self::Dwarf => "dwarf",
+            Self::Goblin => "goblin",
+        }
+    }
+}
+
 impl ToSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        match *self {
-            FactionCode::Neutral => out.write_all(b"neutral")?,
-            FactionCode::Human => out.write_all(b"human")?,
-            FactionCode::Orc => out.write_all(b"orc")?,
-            FactionCode::Elf => out.write_all(b"elf")?,
-            FactionCode::Dwarf => out.write_all(b"dwarf")?,
-            FactionCode::Goblin => out.write_all(b"goblin")?,
-        }
+        out.write_all(self.as_str().as_bytes())?;
         Ok(IsNull::No)
     }
 }
 
 impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"neutral" => Ok(FactionCode::Neutral),
-            b"human" => Ok(FactionCode::Human),
-            b"orc" => Ok(FactionCode::Orc),
-            b"elf" => Ok(FactionCode::Elf),
-            b"dwarf" => Ok(FactionCode::Dwarf),
-            b"goblin" => Ok(FactionCode::Goblin),
-            _ => {
-                let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
-            }
+        match from_utf8(bytes.as_bytes())? {
+            "neutral" => Ok(FactionCode::Neutral),
+            "human" => Ok(FactionCode::Human),
+            "orc" => Ok(FactionCode::Orc),
+            "elf" => Ok(FactionCode::Elf),
+            "dwarf" => Ok(FactionCode::Dwarf),
+            "goblin" => Ok(FactionCode::Goblin),
+            other => Err(format!("Unrecognized enum variant: {}", other).into()),
         }
     }
 }
