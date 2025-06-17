@@ -173,7 +173,7 @@ pub fn get_resources_data(
             (i64, i64, i64, i64),
         )>(conn)?;
 
-    let (_, _, food_acc_cap_val, wood_acc_cap_val, stone_acc_cap_val, gold_acc_cap_val) =
+    let (_, _, _, _, _, _, food_acc_cap_val, wood_acc_cap_val, stone_acc_cap_val, gold_acc_cap_val) =
         res_gen_view(conn, &current_player_id)?;
 
     Ok(ResourcesState {
@@ -205,6 +205,10 @@ type ResourceGenerationView = (
     BigDecimal, // wood
     BigDecimal, // stone
     BigDecimal, // gold
+    BigDecimal, // food acc cap
+    BigDecimal, // wood acc cap
+    BigDecimal, // stone acc cap
+    BigDecimal, // gold acc cap
 );
 
 /// Diesel version of the resource_generation view
@@ -213,7 +217,7 @@ fn res_gen_view(conn: &mut DbConn, player_key: &PlayerKey) -> Result<ResourceGen
 
     use crate::schema::{building_resource as br, player_building as pb};
 
-    let something = pb::table
+    let result = pb::table
         .left_join(
             br::table.on(pb::building_id
                 .eq(br::building_id)
@@ -228,10 +232,14 @@ fn res_gen_view(conn: &mut DbConn, player_key: &PlayerKey) -> Result<ResourceGen
             sum(br::wood).assume_not_null(),
             sum(br::stone).assume_not_null(),
             sum(br::gold).assume_not_null(),
+            sum(br::food_acc_cap).assume_not_null(),
+            sum(br::wood_acc_cap).assume_not_null(),
+            sum(br::stone_acc_cap).assume_not_null(),
+            sum(br::gold_acc_cap).assume_not_null(),
         ))
         .first::<ResourceGenerationView>(conn)?;
 
-    Ok(something)
+    Ok(result)
 }
 
 fn get_player_buildings_data(

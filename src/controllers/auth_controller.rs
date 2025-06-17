@@ -79,7 +79,7 @@ impl Debug for LoginPayload {
     }
 }
 
-#[instrument(skip(pool), fields(username = %payload.username))]
+#[instrument(skip(pool, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 async fn register(
     State(pool): State<AppPool>,

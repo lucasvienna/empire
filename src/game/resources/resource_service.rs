@@ -60,7 +60,7 @@ impl ResourceService {
         }
     }
 
-    /// Produces resources for a player based on their resources rates and time elapsed since last resources.
+    /// Produces resources for a player based on their resource rates and time elapsed since last resources.
     /// Calculates the amount of resources to produce, applies modifiers, and updates the player's accumulator.
     ///
     /// # Arguments
@@ -122,10 +122,10 @@ impl ResourceService {
             let res = diesel::update(player_accumulator)
                 .filter(id.eq(&acc_key))
                 .set((
-                    food.eq(greatest(food + produced_food, acc_caps.food_acc_cap)),
-                    wood.eq(greatest(wood + produced_wood, acc_caps.wood_acc_cap)),
-                    stone.eq(greatest(stone + produced_stone, acc_caps.stone_acc_cap)),
-                    gold.eq(greatest(gold + produced_gold, acc_caps.gold_acc_cap)),
+                    food.eq(least(food + produced_food, acc_caps.food_acc_cap)),
+                    wood.eq(least(wood + produced_wood, acc_caps.wood_acc_cap)),
+                    stone.eq(least(stone + produced_stone, acc_caps.stone_acc_cap)),
+                    gold.eq(least(gold + produced_gold, acc_caps.gold_acc_cap)),
                 ))
                 .returning(PlayerAccumulator::as_returning())
                 .get_result(conn)?;
