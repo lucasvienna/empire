@@ -44,6 +44,7 @@ pub struct ServerSettings {
 pub struct JwtSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub expires_in: u64,
+    pub secret: SecretString,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -163,38 +164,6 @@ pub fn get_settings() -> Result<Settings> {
     Ok(settings)
 }
 
-/// Loads environment variables and sets up logging configurations.
-///
-/// This function attempts to load environment variables from a `.env` file
-/// using the `dotenvy` crate. If the `RUST_LOG` environment variable is set,
-/// it ensures that logging information for Diesel queries is included.
-/// If `RUST_LOG` is not set, it defaults to configure logging at the debug
-/// for the `empire` application, for Diesel queries, and for axum HTTP requests.
-///
-/// # Returns
-///
-/// Returns a `Result` indicating success or an error if setting environment
-/// variables fails.
-pub fn load_env() -> Result<()> {
-    dotenvy::dotenv().ok();
-    match env::var("RUST_LOG").ok() {
-        Some(v) => {
-            if !v.contains("diesel") {
-                env::set_var("RUST_LOG", format!("{},diesel=debug", v));
-            }
-            if !v.contains("tower_http") {
-                env::set_var("RUST_LOG", format!("{},tower_http=debug", v));
-            }
-            if !v.contains("axum::rejection") {
-                env::set_var("RUST_LOG", format!("{},axum::rejection=trace", v));
-            }
-        }
-        None => env::set_var("RUST_LOG", "empire=debug,tower_http=debug,diesel=debug"),
-    };
-
-    Ok(())
-}
-
 impl<S> FromRequestParts<S> for Settings
 where
     S: Send + Sync,
@@ -216,11 +185,6 @@ impl FromRef<AppState> for Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_load_env() {
-        load_env().unwrap();
-    }
 
     #[test]
     fn test_get() {

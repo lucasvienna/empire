@@ -6,3 +6,5 @@ database:
 cache:
   default_ttl: 30 # seconds
   max_user_entries: 10000
+jwt:
+  secret: jtw3Lfyqm0Ve2IHpaEKglJsNfLw4jbcgVFvUcs2EZeQ=

@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter};
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
@@ -10,20 +10,36 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::configuration::Settings;
 
 /// Static secret keys holder used for encoding and decoding JWTs.
-/// Using `LazyLock` ensures one-time initialization on first use.
+/// Using `OnceLock` ensures one-time initialization.
 /// This avoids repeatedly retrieving the secret and creating keys.
-static KEYS: LazyLock<Keys> = LazyLock::new(|| {
-    // Read the secret from the environment once at runtime
-    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    Keys::new(secret.as_bytes())
-});
+static KEYS: OnceLock<Keys> = OnceLock::new();
+
+/// One-time initialization of the JWT keys.
+/// This must be called before any JWT operations are performed.
+pub fn init_keys(secret: &SecretString) {
+    if KEYS
+        .set(Keys::new(secret.expose_secret().as_bytes()))
+        .is_err()
+    {
+        warn!("JWT keys were already initialized");
+    }
+}
+
+/// Retrieves the initialized keys.
+/// Panics if `init_keys` has not been called.
+fn keys() -> &'static Keys {
+    KEYS.get()
+        .expect("JWT keys must be initialized with `init_keys`")
+}
 
 /// Container struct that encapsulates JWT encoding and decoding keys.
 pub struct Keys {
@@ -81,7 +97,7 @@ where
             .map_err(|_| AuthError::InvalidToken)?;
 
         // Decode and validate the token using the pre-initialized decoding key.
-        decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+        decode::<Claims>(bearer.token(), &keys().decoding, &Validation::default())
             .map(|token_data| token_data.claims)
             .map_err(|_| AuthError::InvalidToken)
     }
@@ -134,13 +150,13 @@ impl IntoResponse for AuthError {
 ///
 /// Returns a signed, base64-encoded JWT string on success, otherwise returns a token creation error.
 pub fn encode_token(claims: Claims) -> Result<String, AuthError> {
-    encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
+    encode(&Header::default(), &claims, &keys().encoding).map_err(|_| AuthError::TokenCreation)
 }
 
 /// Decodes a JWT token string into Claims, verifying using the static decoding key.
 ///
 /// Returns decoded claims on success or an invalid token error if validation fails.
 pub fn decode_token(token: &str) -> Result<TokenData<Claims>, AuthError> {
-    decode::<Claims>(token, &KEYS.decoding, &Validation::default())
+    decode::<Claims>(token, &keys().decoding, &Validation::default())
         .map_err(|_| AuthError::InvalidToken)
 }

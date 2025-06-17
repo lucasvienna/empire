@@ -8,6 +8,7 @@ use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_pending;
 use empire::domain::app_state::{App, AppState};
+use empire::domain::auth::init_keys;
 use empire::net::router;
 use empire::Result;
 use secrecy::{ExposeSecret, SecretString};
@@ -48,7 +49,7 @@ pub fn init_server() -> TestServer {
     LazyLock::force(&TRACING);
 
     let mut settings = get_settings().expect("Failed to read configuration.");
-    env::set_var("JWT_SECRET", "fake testing secret");
+    init_keys(&settings.jwt.secret);
 
     let (pool, db_settings) = initialize_test_pool(&mut settings.database);
     settings.database = db_settings.clone();
