@@ -62,13 +62,11 @@ impl ModifierService {
         self.cache.invalidate(&cache_key).await;
 
         // Calculate and cache new values
-        let total_multiplier = self
-            .calculate_total_multiplier(
-                &active_mod.player_id,
-                modifier.target_type,
-                modifier.target_resource,
-            )
-            .await?;
+        let total_multiplier = self.calculate_total_multiplier(
+            &active_mod.player_id,
+            modifier.target_type,
+            modifier.target_resource,
+        )?;
 
         // Update cache with new values
         self.cache
@@ -126,9 +124,8 @@ impl ModifierService {
         }
 
         // Calculate and cache if not found
-        let total_multiplier = self
-            .calculate_total_multiplier(player_id, target_type, target_resource)
-            .await?;
+        let total_multiplier =
+            self.calculate_total_multiplier(player_id, target_type, target_resource)?;
         trace!(%cache_key, %total_multiplier, "Cache miss, calculated total modifier");
 
         // Get the nearest expiration time from active modifiers
@@ -145,7 +142,7 @@ impl ModifierService {
     }
 
     /// Calculate the total modifier multiplier from all active modifiers
-    async fn calculate_total_multiplier(
+    fn calculate_total_multiplier(
         &self,
         player_id: &PlayerKey,
         target_type: ModifierTarget,
