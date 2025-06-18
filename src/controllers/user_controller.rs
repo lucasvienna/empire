@@ -16,6 +16,7 @@ use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{NewPlayer, Player, UpdatePlayer};
+use crate::game::player_service::PlayerService;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::{Error, ErrorKind, Result};
 
@@ -56,42 +57,6 @@ pub struct UpdateUserPayload {
     pub password: Option<String>,
     pub email: Option<String>,
     pub faction: Option<FactionCode>,
-}
-
-/// Wrapper for player id and payload
-struct UpdateUserId(player::PlayerKey, UpdateUserPayload);
-
-impl TryFrom<UpdateUserId> for UpdatePlayer {
-    type Error = Error;
-
-    fn try_from(payload: UpdateUserId) -> Result<Self, Self::Error> {
-        let UpdateUserId(id, value) = payload;
-        let name: Option<player::UserName> = match value.username {
-            None => None,
-            Some(username) => Some(player::UserName::parse(username)?),
-        };
-        let email: Option<player::UserEmail> = match value.email {
-            None => None,
-            Some(email) => Some(player::UserEmail::parse(email)?),
-        };
-        let pwd_hash = match value.password {
-            None => None,
-            Some(password) => {
-                let pwd_hash = hash_password(&password)
-                    .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
-                Some(pwd_hash)
-            }
-        };
-
-        let update = Self {
-            id,
-            name,
-            email,
-            pwd_hash,
-            faction: value.faction,
-        };
-        Ok(update)
-    }
 }
 
 /// Struct for response data
@@ -206,61 +171,24 @@ async fn create_user(
     Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(pool, prod_scheduler), fields(player_id = ?player_key))]
+#[instrument(skip(srv), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
 async fn update_user(
-    State(pool): State<AppPool>,
-    State(prod_scheduler): State<ProductionScheduler>,
+    State(srv): State<PlayerService>,
     Path(player_key): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
     // AIDEV-NOTE: User update with potential faction change requires production scheduling
     debug!("Starting user update");
     let start = Instant::now();
-    let repo = PlayerRepository::new(&pool);
-
-    let changeset: UpdatePlayer = match UpdatePlayer::try_from(UpdateUserId(player_key, payload)) {
-        Ok(update) => update,
-        Err(err) => {
-            warn!(player_id = %player_key, error = %err, "User update validation failed");
-            return Err(StatusCode::BAD_REQUEST);
-        }
-    };
-
-    let user = repo.get_by_id(&player_key).map_err(|err| {
-        error!(player_id = %player_key, error = %err, "User not found for update");
-        StatusCode::NOT_FOUND
-    })?;
-
-    debug!(player_id = %player_key, "Found existing user, applying changes");
-
-    let updated_user = repo.update(&changeset).map_err(|err| {
-        error!(player_id = %player_key, error = %err, "Failed to update player in database");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
 
     // Track state changes for key fields
-    let name_changed = changeset.name.is_some();
-    let email_changed = changeset.email.is_some();
-    let password_changed = changeset.pwd_hash.is_some();
-    let faction_changed = changeset.faction.is_some() && changeset.faction != Some(user.faction);
+    let name_changed = payload.username.is_some();
+    let email_changed = payload.email.is_some();
+    let password_changed = payload.password.is_some();
+    let faction_changed = payload.faction.is_some();
 
-    if faction_changed && user.faction == FactionCode::Neutral {
-        debug!(
-            player_id = %player_key,
-            old_faction = ?user.faction,
-            new_faction = ?updated_user.faction,
-            "Faction changed from Neutral, scheduling production"
-        );
-
-        prod_scheduler
-            .schedule_production(&player_key, Utc::now())
-            .map_err(|err| {
-                error!(player_id = %player_key, error = %err, "Failed to schedule production after faction change");
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-    }
-
+    let updated_user = srv.update_user(player_key, payload)?;
     let duration = start.elapsed();
     info!(
         player_id = %player_key,

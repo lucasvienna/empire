@@ -1,6 +1,7 @@
 pub mod building_service;
 pub mod exp;
 pub mod modifiers;
+pub mod player_service;
 pub mod resources;
 pub mod service;
 
