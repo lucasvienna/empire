@@ -4,11 +4,11 @@ use empire::db::Repository;
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, UserName};
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_user_triggers() {
-    let server = common::init_server();
+    let server = TestHarness::new();
     let player_repo = PlayerRepository::new(&server.app.db_pool);
     let player_bld_repo = PlayerBuildingRepository::new(&server.app.db_pool);
 

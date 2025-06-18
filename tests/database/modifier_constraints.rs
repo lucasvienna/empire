@@ -6,11 +6,11 @@ use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
 use empire::domain::player::resource::ResourceType;
 use empire::schema::modifiers;
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_valid_modifier_constraints() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = TestHarness::new().db_pool;
     let mut conn = db_pool.get().unwrap();
 
     // Test resource modifier with valid resource type
@@ -50,7 +50,7 @@ async fn test_valid_modifier_constraints() {
 
 #[tokio::test]
 async fn test_invalid_modifier_constraints() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = TestHarness::new().db_pool;
     let mut conn = db_pool.get().unwrap();
 
     // Test resource modifier with null resource (should fail)
@@ -96,7 +96,7 @@ async fn test_invalid_modifier_constraints() {
 
 #[tokio::test]
 async fn test_unique_name_constraint() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = TestHarness::new().db_pool;
     let mut conn = db_pool.get().unwrap();
 
     let modifier = NewModifier {

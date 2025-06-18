@@ -14,11 +14,11 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use uuid::Uuid;
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_worker_pool_lifecycle() {
-    let common::TestServer { app, .. } = common::init_server();
+    let TestHarness { app, .. } = TestHarness::new();
     let state = AppState(app);
 
     // Start pool
@@ -66,7 +66,7 @@ async fn test_worker_pool_lifecycle() {
 
 #[tokio::test]
 async fn test_worker_pool_cancellation_token() {
-    let common::TestServer { app, .. } = common::init_server();
+    let TestHarness { app, .. } = TestHarness::new();
     let state = AppState(app);
 
     // Start pool

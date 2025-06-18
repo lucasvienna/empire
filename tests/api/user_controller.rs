@@ -22,13 +22,13 @@ use empire::schema::player_building;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-mod common;
+use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn get_all() {
-    let server = common::init_server();
-    let router = server.router;
-    let pool = Arc::new(server.db_pool);
+    let harness = TestHarness::new();
+    let router = harness.router;
+    let pool = Arc::new(harness.db_pool);
     let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
@@ -56,9 +56,9 @@ async fn get_all() {
 
 #[tokio::test]
 async fn create_and_get_by_id() {
-    let app = common::spawn_app();
+    let server = TestApp::new();
     let client = reqwest::Client::new();
-    let pool = Arc::new(app.db_pool);
+    let pool = Arc::new(server.db_pool);
     let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
@@ -69,7 +69,7 @@ async fn create_and_get_by_id() {
         faction: FactionCode::Human,
     };
     let response = client
-        .post(format!("{}/users", &app.address))
+        .post(format!("{}/users", &server.address))
         .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .bearer_auth(bearer.token())
         .json(&req)
@@ -88,7 +88,7 @@ async fn create_and_get_by_id() {
 
     let bearer = get_bearer(new_user.id);
     let response = client
-        .get(format!("{}/users/{}", &app.address, new_user.id))
+        .get(format!("{}/users/{}", &server.address, new_user.id))
         .bearer_auth(bearer.token())
         .send()
         .await
@@ -106,9 +106,9 @@ async fn create_and_get_by_id() {
 
 #[tokio::test]
 async fn update() {
-    let app = common::spawn_app();
+    let server = TestApp::new();
     let client = reqwest::Client::new();
-    let mut conn = app.db_pool.get().unwrap();
+    let mut conn = server.db_pool.get().unwrap();
 
     let req = RegisterPayload {
         username: "testy".to_string(),
@@ -116,7 +116,7 @@ async fn update() {
         email: None,
     };
     let response = client
-        .post(format!("{}/register", &app.address))
+        .post(format!("{}/register", &server.address))
         .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&req)
         .send()
@@ -141,7 +141,7 @@ async fn update() {
         faction: Some(FactionCode::Human),
     };
     let response = client
-        .put(format!("{}/users/{}", &app.address, user.id))
+        .put(format!("{}/users/{}", &server.address, user.id))
         .bearer_auth(bearer.token())
         .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&body)
@@ -159,14 +159,14 @@ async fn update() {
 
 #[tokio::test]
 async fn delete() {
-    let app = common::spawn_app();
+    let server = TestApp::new();
     let client = reqwest::Client::new();
-    let pool = Arc::new(app.db_pool);
+    let pool = Arc::new(server.db_pool);
     let user = create_test_user(&pool, None);
     let bearer = get_bearer(user.id);
 
     let res = client
-        .delete(format!("{}/users/{}", &app.address, user.id))
+        .delete(format!("{}/users/{}", &server.address, user.id))
         .bearer_auth(bearer.token())
         .send()
         .await
@@ -174,7 +174,7 @@ async fn delete() {
     assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
     let res = client
-        .get(format!("{}/users/{}", &app.address, user.id))
+        .get(format!("{}/users/{}", &server.address, user.id))
         .bearer_auth(bearer.token())
         .send()
         .await
@@ -188,7 +188,7 @@ async fn delete() {
     let user2 = create_test_user(&pool, None);
     let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired player trying to reuse the token
     let response = client
-        .get(format!("{}/users/{}", &app.address, user.id))
+        .get(format!("{}/users/{}", &server.address, user.id))
         .bearer_auth(bearer2.token())
         .send()
         .await

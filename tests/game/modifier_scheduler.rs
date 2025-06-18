@@ -8,11 +8,11 @@ use empire::job_queue::JobQueue;
 use empire::schema::job;
 use uuid::Uuid;
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_schedule_expiration() {
-    let pool = Arc::new(common::init_server().db_pool);
+    let pool = Arc::new(TestHarness::new().db_pool);
     let mut connection = pool.get().expect("Failed to get connection from pool");
     let queue = Arc::new(JobQueue::new(pool));
     let scheduler = ModifierScheduler::new(&queue);

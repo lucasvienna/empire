@@ -15,7 +15,7 @@ use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
-use crate::domain::player::{NewPlayer, Player, UpdatePlayer};
+use crate::domain::player::{NewPlayer, Player};
 use crate::game::player_service::PlayerService;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::{Error, ErrorKind, Result};

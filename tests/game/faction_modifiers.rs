@@ -12,12 +12,12 @@ use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::schema::{active_modifiers, modifier_history, modifiers, player};
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_faction_modifier_on_create() {
-    let app = common::spawn_app();
-    let pool = Arc::new(app.db_pool);
+    let harness = TestHarness::new();
+    let pool = Arc::new(harness.db_pool);
 
     // Create a player with Human faction
     let user = create_test_user(&pool, FactionCode::Human);
@@ -86,8 +86,8 @@ async fn test_faction_modifier_on_create() {
 
 #[tokio::test]
 async fn test_faction_change() {
-    let app = common::spawn_app();
-    let pool = Arc::new(app.db_pool);
+    let harness = TestHarness::new();
+    let pool = Arc::new(harness.db_pool);
 
     // Create player with Human faction
     let user = create_test_user(&pool, FactionCode::Human);

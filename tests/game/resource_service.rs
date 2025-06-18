@@ -11,13 +11,11 @@ use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::game::resources::resource_service::ResourceService;
 use empire::schema::{player_accumulator as acc, player_resource as rsc};
 
-use crate::common::TestServer;
-
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_collect_resource() {
-    let TestServer { app, db_pool, .. } = common::init_server();
+    let TestHarness { app, db_pool, .. } = TestHarness::new();
     let state = AppState(app);
     let mut conn = db_pool.get().unwrap();
     let user = create_test_user(&state.db_pool);

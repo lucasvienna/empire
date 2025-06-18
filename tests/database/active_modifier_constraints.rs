@@ -11,11 +11,11 @@ use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::schema::{active_modifiers, modifiers, player};
 use uuid::Uuid;
 
-mod common;
+use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_timespan_validation() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = TestHarness::new().db_pool;
     let mut conn = db_pool.get().unwrap();
 
     // Create a test player and modifier first
@@ -76,7 +76,7 @@ async fn test_timespan_validation() {
 
 #[tokio::test]
 async fn test_cascade_deletion() {
-    let db_pool = common::init_server().db_pool;
+    let db_pool = TestHarness::new().db_pool;
     let mut conn = db_pool.get().unwrap();
 
     // Create test data

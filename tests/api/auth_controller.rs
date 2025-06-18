@@ -14,11 +14,11 @@ use http_body_util::BodyExt;
 use serde_json::json;
 use tower::ServiceExt;
 
-mod common;
+use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn login_fails_without_body() {
-    let router = common::init_server().router;
+    let router = TestHarness::new().router;
     let response = router
         .oneshot(
             Request::builder()
@@ -35,7 +35,7 @@ async fn login_fails_without_body() {
 
 #[tokio::test]
 async fn login_fails_without_credentials() {
-    let router = common::init_server().router;
+    let router = TestHarness::new().router;
     let response = router
         .oneshot(
             Request::builder()
@@ -62,9 +62,9 @@ async fn login_fails_without_credentials() {
 
 #[tokio::test]
 async fn login_fails_with_wrong_credentials() {
-    let server = common::init_server();
-    let router = server.router;
-    let pool = Arc::new(server.db_pool);
+    let harness = TestHarness::new();
+    let router = harness.router;
+    let pool = Arc::new(harness.db_pool);
 
     let user = create_test_user(&pool);
 
@@ -94,9 +94,9 @@ async fn login_fails_with_wrong_credentials() {
 
 #[tokio::test]
 async fn login_succeeds_with_correct_credentials() {
-    let server = common::init_server();
-    let router = server.router;
-    let pool = Arc::new(server.db_pool);
+    let harness = TestHarness::new();
+    let router = harness.router;
+    let pool = Arc::new(harness.db_pool);
 
     let user = create_test_user(&pool);
 
@@ -127,9 +127,9 @@ async fn login_succeeds_with_correct_credentials() {
 
 #[tokio::test]
 async fn cannot_register_with_existing_username() {
-    let server = common::init_server();
-    let router = server.router;
-    let pool = Arc::new(server.db_pool);
+    let harness = TestHarness::new();
+    let router = harness.router;
+    let pool = Arc::new(harness.db_pool);
 
     let user = create_test_user(&pool);
     let register = RegisterPayload {
@@ -162,8 +162,8 @@ async fn cannot_register_with_existing_username() {
 
 #[tokio::test]
 async fn user_can_register_and_login() {
-    let app = common::spawn_app();
-    let pool = Arc::new(app.db_pool);
+    let server = TestApp::new();
+    let pool = Arc::new(server.db_pool);
     let client = reqwest::Client::new();
 
     let req = RegisterPayload {
@@ -172,7 +172,7 @@ async fn user_can_register_and_login() {
         email: None,
     };
     let response = client
-        .post(format!("{}/register", &app.address))
+        .post(format!("{}/register", &server.address))
         .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&req)
         .send()
@@ -193,7 +193,7 @@ async fn user_can_register_and_login() {
         password: req.password.clone(),
     };
     let response = client
-        .post(format!("{}/login", &app.address))
+        .post(format!("{}/login", &server.address))
         .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&req)
         .send()
@@ -207,8 +207,8 @@ async fn user_can_register_and_login() {
 
 #[tokio::test]
 async fn logout_succeeds() {
-    let app = common::spawn_app();
-    let pool = Arc::new(app.db_pool);
+    let server = TestApp::new();
+    let pool = Arc::new(server.db_pool);
     let client = reqwest::Client::new();
 
     let user = create_test_user(&pool);
@@ -217,7 +217,7 @@ async fn logout_succeeds() {
         password: "1234".to_string(),
     };
     let response = client
-        .post(format!("{}/login", &app.address))
+        .post(format!("{}/login", &server.address))
         .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
         .json(&req)
         .send()
@@ -229,7 +229,7 @@ async fn logout_succeeds() {
     assert!(cookie.is_some());
 
     let response = client
-        .get(format!("{}/logout", &app.address))
+        .get(format!("{}/logout", &server.address))
         .header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
         .send()
         .await

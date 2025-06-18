@@ -4,11 +4,11 @@ use empire::controllers::HealthCheckBody;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-mod common;
+use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn health_check_works() {
-    let router = common::init_server().router;
+    let router = TestHarness::new().router;
 
     let response = router
         .oneshot(
@@ -28,11 +28,11 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn health_check_with_server() {
-    let app = common::spawn_app();
+    let server = TestApp::new();
     let client = reqwest::Client::new();
 
     let response = client
-        .get(format!("{}/health", &app.address))
+        .get(format!("{}/health", &server.address))
         .send()
         .await
         .expect("Failed to execute request.");
