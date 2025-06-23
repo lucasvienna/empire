@@ -14,6 +14,7 @@ use crate::{Error, ErrorKind, Result};
 pub mod job_processor;
 pub mod worker_pool;
 
+/// Represents the priority level of a job or task.
 #[derive(Debug, Clone, Copy)]
 pub enum JobPriority {
     High = 0,
@@ -21,9 +22,21 @@ pub enum JobPriority {
     Low = 100,
 }
 
+/// A queue manager for handling asynchronous background jobs in the application.
+///
+/// The JobQueue provides functionality for enqueueing, processing, and managing the lifecycle
+/// of background jobs. It handles job prioritization, retries, and graceful shutdown of workers.
+///
+/// The JobQueue supports features like:
+/// * Automatic job retries with exponential backoff
+/// * Job timeouts and stuck job recovery
+/// * Batch job enqueueing
+/// * Type-safe job processing
 #[derive(Debug, Clone)]
 pub struct JobQueue {
+    /// The database connection pool used for job persistence and state management
     pool: AppPool,
+    /// A broadcast channel transceiver used to coordinate graceful shutdown of workers
     shutdown_tx: broadcast::Sender<()>,
 }
 
