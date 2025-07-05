@@ -71,7 +71,7 @@ impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
             "wood" => Ok(Self::Wood),
             "stone" => Ok(Self::Stone),
             "gold" => Ok(Self::Gold),
-            other => Err(format!("Unrecognized enum variant: {}", other).into()),
+            other => Err(format!("Unrecognized enum variant: {other}").into()),
         }
     }
 }

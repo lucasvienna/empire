@@ -127,7 +127,7 @@ impl TestApp {
         });
 
         Self {
-            address: format!("http://localhost:{}", port),
+            address: format!("http://localhost:{port}"),
             db_pool: harness.db_pool,
         }
     }
@@ -213,8 +213,7 @@ fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, user
     // Grant database-level permissions
     sql_query(
         format!(
-            r#"GRANT ALL ON DATABASE "{}" TO "{}";"#,
-            database_name, username
+            r#"GRANT ALL ON DATABASE "{database_name}" TO "{username}";"#
         )
         .as_str(),
     )
@@ -222,15 +221,14 @@ fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, user
     .expect("Failed to grant database privileges");
 
     // Grant schema permissions for current operations
-    sql_query(format!(r#"GRANT USAGE, CREATE ON SCHEMA public TO "{}";"#, username).as_str())
+    sql_query(format!(r#"GRANT USAGE, CREATE ON SCHEMA public TO "{username}";"#).as_str())
         .execute(conn)
         .expect("Failed to grant schema privileges");
 
     // Grant permissions on existing tables
     sql_query(
         format!(
-            r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{}";"#,
-            username
+            r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{username}";"#
         )
         .as_str(),
     )
@@ -240,8 +238,7 @@ fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, user
     // Set default permissions for future tables
     sql_query(
         format!(
-            r#"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{}";"#,
-            username
+            r#"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{username}";"#
         )
         .as_str(),
     )

@@ -61,7 +61,7 @@ impl FromSql<crate::schema::sql_types::ModifierActionType, Pg> for ModifierActio
             b"updated" => Ok(ModifierActionType::Updated),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+                Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
             }
         }
     }

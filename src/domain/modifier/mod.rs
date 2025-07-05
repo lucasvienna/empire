@@ -64,7 +64,7 @@ impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
             b"multiplier" => Ok(ModifierType::Multiplier),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+                Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
             }
         }
     }
@@ -116,7 +116,7 @@ impl FromSql<crate::schema::sql_types::ModifierTarget, Pg> for ModifierTarget {
             b"research" => Ok(ModifierTarget::Research),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+                Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
             }
         }
     }
@@ -163,7 +163,7 @@ impl FromSql<crate::schema::sql_types::StackingBehaviour, Pg> for StackingBehavi
             b"highest" => Ok(StackingBehaviour::HighestOnly),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-                Err(format!("Unrecognized enum variant: {}", unrecognized_value).into())
+                Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
             }
         }
     }

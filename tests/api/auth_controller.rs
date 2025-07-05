@@ -55,8 +55,7 @@ async fn login_fails_without_credentials() {
     let body = String::from_utf8(Vec::from(body)).unwrap();
     assert!(
         body.contains("Missing credentials"),
-        "Error message doesn't contain 'Missing credentials': {}",
-        body
+        "Error message doesn't contain 'Missing credentials': {body}"
     );
 }
 
@@ -87,8 +86,7 @@ async fn login_fails_with_wrong_credentials() {
     let body = String::from_utf8(Vec::from(body)).unwrap();
     assert!(
         body.contains("Wrong credentials"),
-        "Error message doesn't contain 'Wrong credentials': {}",
-        body
+        "Error message doesn't contain 'Wrong credentials': {body}"
     );
 }
 
@@ -120,8 +118,7 @@ async fn login_succeeds_with_correct_credentials() {
     let value = cookie.unwrap().to_str().unwrap();
     assert!(
         value.contains("rsession="),
-        "'rsession=' not found in cookie: {}",
-        value
+        "'rsession=' not found in cookie: {value}"
     );
 }
 
@@ -155,8 +152,7 @@ async fn cannot_register_with_existing_username() {
     let body = String::from_utf8(Vec::from(body)).unwrap();
     assert!(
         body.contains("Username already taken"),
-        "Error message doesn't contain 'Username already taken': {}",
-        body
+        "Error message doesn't contain 'Username already taken': {body}"
     );
 }
 

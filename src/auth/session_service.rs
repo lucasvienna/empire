@@ -209,7 +209,7 @@ impl SessionService {
         let mut hasher = Blake2s256::new();
         Digest::update(&mut hasher, token);
         let encoded_token = hasher.finalize();
-        let result = format!("{:x}", encoded_token);
+        let result = format!("{encoded_token:x}");
         trace!("Token encoded successfully");
         result
     }

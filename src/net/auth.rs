@@ -129,7 +129,7 @@ pub async fn auth_middleware(
                         jar = jar.remove(Cookie::new(TOKEN_COOKIE_NAME, ""));
                         let json_error = ErrorResponse {
                             status: "fail",
-                            message: format!("Error fetching player from database: {}", e),
+                            message: format!("Error fetching player from database: {e}"),
                         };
                         return Ok(unauthorized!(json_error, jar));
                     }

@@ -69,7 +69,7 @@ impl FromSql<crate::schema::sql_types::JobType, Pg> for JobType {
             "modifier" => Ok(JobType::Modifier),
             "building" => Ok(JobType::Building),
             "resource" => Ok(JobType::Resource),
-            other => Err(format!("Unrecognized job type: {}", other).into()),
+            other => Err(format!("Unrecognized job type: {other}").into()),
         }
     }
 }
@@ -135,7 +135,7 @@ impl FromSql<crate::schema::sql_types::JobStatus, Pg> for JobStatus {
             "completed" => Ok(JobStatus::Completed),
             "failed" => Ok(JobStatus::Failed),
             "cancelled" => Ok(JobStatus::Cancelled),
-            other => Err(format!("Unrecognized job status: {}", other).into()),
+            other => Err(format!("Unrecognized job status: {other}").into()),
         }
     }
 }

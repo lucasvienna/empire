@@ -102,8 +102,7 @@ impl TryFrom<String> for AppEnvironment {
             "prod" => Ok(Self::Production),
             "resources" => Ok(Self::Production),
             other => Err(config::ConfigError::Message(format!(
-                "Invalid environment: {}. Use either `local` or `resources`.",
-                other
+                "Invalid environment: {other}. Use either `local` or `resources`."
             ))
             .into()),
         }
