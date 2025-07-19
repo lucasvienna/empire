@@ -29,11 +29,11 @@ axum-test = { version = "17.3.0", features = ["all"] }
 bigdecimal = { version = "0.4.8", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.41", features = ["serde"] }
-config = "0.15.11"
+config = "0.15.13"
 cookie = { version = "0.18.1", features = ["secure"] }
 data-encoding = "2.9.0"
 derive_more = { version = "2.0.1", features = ["full"] }
-diesel = { version = "2.2.11", features = ["postgres", "extras"] }
+diesel = { version = "2.2.12", features = ["postgres", "extras"] }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"
 jsonwebtoken = "9.3.1"
@@ -42,11 +42,11 @@ logs-wheel = "0.3.1"
 mime = "0.3.17"
 r2d2 = "0.8.10"
 rand = { version = "0.9.1", features = ["default", "serde"] }
-reqwest = { version = "0.12.20", features = ["json"] }
+reqwest = { version = "0.12.22", features = ["json"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde-aux = "4.7.0"
-serde_json = "1.0.140"
+serde_json = "1.0.141"
 strum = "0.27.1"
 strum_macros = "0.27.1"
 tokio = { workspace = true }
@@ -76,6 +76,6 @@ members = [
 [workspace.dependencies]
 anyhow = "1.0.98"
 empire = { path = "." }
-tokio = { version = "1.45.1", features = ["full"] }
+tokio = { version = "1.46.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
