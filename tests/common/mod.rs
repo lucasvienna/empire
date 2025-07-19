@@ -211,14 +211,9 @@ fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut
 /// Panics if any of the permission grants fail.
 fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, username: &str) {
     // Grant database-level permissions
-    sql_query(
-        format!(
-            r#"GRANT ALL ON DATABASE "{database_name}" TO "{username}";"#
-        )
-        .as_str(),
-    )
-    .execute(conn)
-    .expect("Failed to grant database privileges");
+    sql_query(format!(r#"GRANT ALL ON DATABASE "{database_name}" TO "{username}";"#).as_str())
+        .execute(conn)
+        .expect("Failed to grant database privileges");
 
     // Grant schema permissions for current operations
     sql_query(format!(r#"GRANT USAGE, CREATE ON SCHEMA public TO "{username}";"#).as_str())
@@ -226,14 +221,9 @@ fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, user
         .expect("Failed to grant schema privileges");
 
     // Grant permissions on existing tables
-    sql_query(
-        format!(
-            r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{username}";"#
-        )
-        .as_str(),
-    )
-    .execute(conn)
-    .expect("Failed to grant table privileges");
+    sql_query(format!(r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{username}";"#).as_str())
+        .execute(conn)
+        .expect("Failed to grant table privileges");
 
     // Set default permissions for future tables
     sql_query(
