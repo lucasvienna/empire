@@ -1,5 +1,5 @@
 use std::io::{Read, Write};
-use std::{fmt, mem, ptr};
+use std::{fmt, ptr};
 
 use empire::{Error, ErrorKind};
 
@@ -117,23 +117,17 @@ pub fn read_string(buffer: &mut Buffer) -> anyhow::Result<String> {
 pub fn read_long(buffer: &mut Buffer) -> anyhow::Result<u64, Error> {
     let bytes: &mut [u8; 8] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
     try_read!(buffer.read(bytes), bytes.len());
-    Ok(u64::from_le(unsafe {
-        mem::transmute::<[u8; 8], u64>(*bytes)
-    }))
+    Ok(u64::from_le_bytes(*bytes))
 }
 pub fn read_integer(buffer: &mut Buffer) -> anyhow::Result<u32, Error> {
     let bytes: &mut [u8; 4] = &mut [0, 0, 0, 0];
     try_read!(buffer.read(bytes), bytes.len());
-    Ok(u32::from_le(unsafe {
-        mem::transmute::<[u8; 4], u32>(*bytes)
-    }))
+    Ok(u32::from_le_bytes(*bytes))
 }
 pub fn read_short(buffer: &mut Buffer) -> anyhow::Result<u16, Error> {
     let bytes: &mut [u8; 2] = &mut [0, 0];
     try_read!(buffer.read(bytes), bytes.len());
-    Ok(u16::from_le(unsafe {
-        mem::transmute::<[u8; 2], u16>(*bytes)
-    }))
+    Ok(u16::from_le_bytes(*bytes))
 }
 pub fn read_byte(buffer: &mut Buffer) -> anyhow::Result<u8, Error> {
     let bytes: &mut [u8; 1] = &mut [0];
