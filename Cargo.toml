@@ -29,7 +29,7 @@ axum-test = { version = "17.3.0", features = ["all"] }
 bigdecimal = { version = "0.4.8", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.41", features = ["serde"] }
-config = "0.15.11"
+config = "0.15.13"
 cookie = { version = "0.18.1", features = ["secure"] }
 data-encoding = "2.9.0"
 derive_more = { version = "2.0.1", features = ["full"] }
