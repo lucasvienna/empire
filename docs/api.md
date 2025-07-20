@@ -2,11 +2,14 @@
 
 ## Overview
 
-This document outlines a comprehensive API design for the Empire multiplayer strategy game, designed to support both web and mobile clients. The API is organized by path-based concerns and follows RESTful principles with JSON responses and JWT-based authentication.
+This document outlines a comprehensive API design for the Empire multiplayer strategy game, designed to support both web
+and mobile clients. The API is organized by path-based concerns and follows RESTful principles with JSON responses and
+JWT-based authentication.
 
 ## API Structure by Path
 
 The API is organized into the following main path sections:
+
 - `/auth/` - Authentication and session management
 - `/player/` - Player profile management
 - `/game/` - Core gameplay mechanics (factions, buildings, resources, combat, etc.)
@@ -19,42 +22,44 @@ The API is organized into the following main path sections:
 
 ---
 
-## /auth/ - Authentication & Session Management
+## /auth/ — Authentication & Session Management
 
 ### Rationale
 
-Secure user authentication is fundamental for a multiplayer game. JWT tokens provide stateless authentication suitable for both web and mobile clients, while session management enables proper user state tracking.
+Secure user authentication is fundamental for a multiplayer game. JWT tokens provide stateless authentication suitable
+for both web and mobile clients, while session management enables proper user state tracking.
 
 ### Endpoints
 
 #### POST /auth/register
 
 - **Purpose**: Create new player account
-- **Body**: `{ "name": "string", "email": "string", "password": "string", "faction": "human|orc|elf|dwarf|goblin" }`
-- **Response**: `{ "token": "jwt_token", "player": { "id": "uuid", "name": "string", "faction": "string" } }`
-- **Rationale**: Faction selection during registration is crucial as it determines passive bonuses and available buildings
+- **Body**: `{ "username": "string", "email": "string", "password": "string" }`
+- **Response**: `{ "status": "success|error", "message": "string" }`
+- **Rationale**: Faction selection happens after registration. It is crucial, as it determines passive bonuses and 
+  available buildings
 
 #### POST /auth/login
 
 - **Purpose**: Authenticate existing player
-- **Body**: `{ "name": "string", "password": "string" }`
+- **Body**: `{ "username": "string", "password": "string" }`
 - **Response**: `{ "token": "jwt_token", "player": { "id": "uuid", "name": "string", "faction": "string" } }`
 
 #### POST /auth/logout
 
 - **Purpose**: Invalidate current session
-- **Headers**: `Authorization: Bearer <token>`
+- **Headers**: `Authorization: Bearer <token>` or `Cookie: rsession <token>` or `Cookie: rstoken <token>`
 - **Response**: `{ "status": "success" }`
 
-#### GET /auth/me
+#### GET /auth/session
 
 - **Purpose**: Get current player information
-- **Headers**: `Authorization: Bearer <token>`
+- **Headers**: `Cookie: rsession <token>`
 - **Response**: `{ "id": "uuid", "name": "string", "email": "string", "faction": "string", "created_at": "datetime" }`
 
 ---
 
-## /player/ - Player Profile Management
+## /player/ — Player Profile Management
 
 ### Rationale
 
@@ -65,7 +70,8 @@ Players need to view and manage their profile information, including faction cha
 #### GET /player/profile
 
 - **Purpose**: Get detailed player profile
-- **Response**: `{ "id": "uuid", "name": "string", "email": "string", "faction": "string", "created_at": "datetime", "updated_at": "datetime" }`
+- **Response**:
+  `{ "id": "uuid", "name": "string", "email": "string", "faction": "string", "created_at": "datetime", "updated_at": "datetime" }`
 
 #### PUT /player/profile
 
@@ -82,11 +88,13 @@ Players need to view and manage their profile information, including faction cha
 
 ---
 
-## /game/ - Core Gameplay APIs
+## /game/ — Core Gameplay APIs
 
 ### Rationale
 
-Core gameplay mechanics including factions, buildings, resources, modifiers, research, religion, combat, and trading form the heart of the Empire game experience. These endpoints provide all the functionality needed for players to build, manage, and expand their empires.
+Core gameplay mechanics including factions, buildings, resources, modifiers, research, religion, combat, and trading
+form the heart of the Empire game experience. These endpoints provide all the functionality needed for players to build,
+manage, and expand their empires.
 
 ### Factions
 
@@ -445,11 +453,12 @@ Core gameplay mechanics including factions, buildings, resources, modifiers, res
 
 ---
 
-## /social/ - Social Features
+## /social/ — Social Features
 
 ### Rationale
 
-Social interaction drives player engagement. Guild systems, trading, and diplomacy create community aspects essential for multiplayer gameplay.
+Social interaction drives player engagement. Guild systems, trading, and diplomacy create community aspects essential
+for multiplayer gameplay.
 
 ### Guilds
 
@@ -493,11 +502,12 @@ Social interaction drives player engagement. Guild systems, trading, and diploma
 
 ---
 
-## /dashboard/ - Overview Mode
+## /dashboard/ — Overview Mode
 
 ### Rationale
 
-Players need comprehensive overview of their empire status for strategic decision-making. The dashboard provides a centralized view of all key game metrics and notifications.
+Players need comprehensive overview of their empire status for strategic decision-making. The dashboard provides a
+centralized view of all key game metrics and notifications.
 
 ### Endpoints
 
@@ -551,11 +561,13 @@ Players need comprehensive overview of their empire status for strategic decisio
 
 ---
 
-## /admin/ - Administrator Dashboard & Management
+## /admin/ — Administrator Dashboard & Management
 
 ### Rationale
 
-Game administrators need comprehensive tools to manage users, monitor system health, handle moderation tasks, configure game settings, and maintain operational oversight. These endpoints provide administrative control while maintaining security through role-based access control.
+Game administrators need comprehensive tools to manage users, monitor system health, handle moderation tasks, configure
+game settings, and maintain operational oversight. These endpoints provide administrative control while maintaining
+security through role-based access control.
 
 ### User Management
 
@@ -577,7 +589,10 @@ Game administrators need comprehensive tools to manage users, monitor system hea
       "level": 15,
       "last_login": "2025-07-20T16:30:00Z",
       "created_at": "2025-07-01T10:00:00Z",
-      "flags": ["premium", "verified"]
+      "flags": [
+        "premium",
+        "verified"
+      ]
     }
   ],
   "total": 1250,
@@ -697,11 +712,13 @@ Game administrators need comprehensive tools to manage users, monitor system hea
 
 ---
 
-## /health/ - System Observability & Health Monitoring
+## /health/ — System Observability & Health Monitoring
 
 ### Rationale
 
-Comprehensive system monitoring is essential for maintaining game stability, performance, and reliability. These endpoints provide detailed health information, performance metrics, and operational visibility for both automated monitoring systems and manual inspection.
+Comprehensive system monitoring is essential for maintaining game stability, performance, and reliability. These
+endpoints provide detailed health information, performance metrics, and operational visibility for both automated
+monitoring systems and manual inspection.
 
 ### Basic Health Checks
 
@@ -734,7 +751,11 @@ Comprehensive system monitoring is essential for maintaining game stability, per
     "cpu_usage": 45.2,
     "memory_usage": 68.5,
     "disk_usage": 32.1,
-    "load_average": [1.2, 1.5, 1.8]
+    "load_average": [
+      1.2,
+      1.5,
+      1.8
+    ]
   },
   "application": {
     "active_connections": 1250,
@@ -783,7 +804,9 @@ Comprehensive system monitoring is essential for maintaining game stability, per
       "status": "degraded",
       "response_time": 150,
       "last_check": "2025-07-20T16:30:00Z",
-      "issues": ["High queue depth"]
+      "issues": [
+        "High queue depth"
+      ]
     }
   ]
 }
@@ -810,11 +833,13 @@ Comprehensive system monitoring is essential for maintaining game stability, per
 
 ---
 
-## /liveops/ - LiveOps Dashboard & Real-time Analytics
+## /liveops/ — LiveOps Dashboard & Real-time Analytics
 
 ### Rationale
 
-LiveOps (Live Operations) is crucial for maintaining player engagement, optimizing game economy, and making data-driven decisions. These endpoints provide real-time analytics, player behavior insights, A/B testing capabilities, and tools for live content management essential for modern game operations.
+LiveOps (Live Operations) is crucial for maintaining player engagement, optimizing game economy, and making data-driven
+decisions. These endpoints provide real-time analytics, player behavior insights, A/B testing capabilities, and tools
+for live content management essential for modern game operations.
 
 ### Real-time Game Analytics
 
@@ -1080,9 +1105,18 @@ LiveOps (Live Operations) is crucial for maintaining player engagement, optimizi
     "websocket_connections": 800
   },
   "regional_performance": {
-    "NA": { "latency": 45, "error_rate": 0.01 },
-    "EU": { "latency": 52, "error_rate": 0.02 },
-    "ASIA": { "latency": 78, "error_rate": 0.03 }
+    "NA": {
+      "latency": 45,
+      "error_rate": 0.01
+    },
+    "EU": {
+      "latency": 52,
+      "error_rate": 0.02
+    },
+    "ASIA": {
+      "latency": 78,
+      "error_rate": 0.03
+    }
   }
 }
 ```
@@ -1094,11 +1128,12 @@ LiveOps (Live Operations) is crucial for maintaining player engagement, optimizi
 
 ---
 
-## /ws/ - Real-time Features & Chat
+## /ws/ — Real-time Features & Chat
 
 ### Rationale
 
-Real-time updates enhance user experience by providing immediate feedback on game state changes. WebSocket connections enable live communication and instant notifications for critical game events.
+Real-time updates enhance user experience by providing immediate feedback on game state changes. WebSocket connections
+enable live communication and instant notifications for critical game events.
 
 ### WebSocket Endpoints
 
@@ -1106,29 +1141,29 @@ Real-time updates enhance user experience by providing immediate feedback on gam
 
 - **Purpose**: Real-time game updates
 - **Events**:
-  - `resource_update`: Resource changes and production updates
-  - `building_complete`: Building upgrades finished
-  - `research_complete`: Research finished
-  - `attack_incoming`: Combat alerts and warnings
-  - `trade_completed`: Market transactions
-  - `modifier_applied`: New modifiers activated
-  - `modifier_expired`: Temporary modifiers ended
-  - `alliance_request`: Diplomatic proposals received
-  - `guild_message`: Guild announcements
+    - `resource_update`: Resource changes and production updates
+    - `building_complete`: Building upgrades finished
+    - `research_complete`: Research finished
+    - `attack_incoming`: Combat alerts and warnings
+    - `trade_completed`: Market transactions
+    - `modifier_applied`: New modifiers activated
+    - `modifier_expired`: Temporary modifiers ended
+    - `alliance_request`: Diplomatic proposals received
+    - `guild_message`: Guild announcements
 
 #### WS /ws/chat
 
 - **Purpose**: Real-time chat system
 - **Events**:
-  - `message_received`: New chat message
-  - `user_joined`: Player joined chat channel
-  - `user_left`: Player left chat channel
-  - `typing_indicator`: Player is typing
+    - `message_received`: New chat message
+    - `user_joined`: Player joined chat channel
+    - `user_left`: Player left chat channel
+    - `typing_indicator`: Player is typing
 - **Channels**:
-  - `global`: Server-wide chat
-  - `guild`: Guild-specific chat
-  - `alliance`: Alliance member chat
-  - `private`: Direct messages between players
+    - `global`: Server-wide chat
+    - `guild`: Guild-specific chat
+    - `alliance`: Alliance member chat
+    - `private`: Direct messages between players
 
 ### Chat REST Endpoints
 

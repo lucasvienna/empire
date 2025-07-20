@@ -20,7 +20,7 @@ use crate::db::Repository;
 use crate::domain::app_state::AppPool;
 use crate::domain::auth::{decode_token, AuthenticatedUser, Claims};
 
-pub const TOKEN_COOKIE_NAME: &str = "token";
+pub const TOKEN_COOKIE_NAME: &str = "rstoken";
 pub const SESSION_COOKIE_NAME: &str = "rsession";
 
 /// A session token.

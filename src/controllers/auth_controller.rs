@@ -309,6 +309,6 @@ pub fn auth_routes() -> Router<AppState> {
 
 pub fn protected_auth_routes() -> Router<AppState> {
     Router::new()
-        .route("/logout", get(logout))
+        .route("/logout", post(logout))
         .route("/session", get(session))
 }
