@@ -308,5 +308,6 @@ Since we're implementing a generic modifier system that can include both positiv
     - Diminishing returns on both positive and negative effects
     - Recovery mechanisms from severe penalties
 
-This architectural approach keeps the modifier logic in the domain layer while providing clear integration points with other systems. It maintains separation of concerns, with the modifier system
-responsible for calculating the effects and other services applying those effects to their respective domains.
+This architectural approach keeps the modifier logic in the domain layer while providing clear integration points with 
+other systems. It maintains separation of concerns, with the modifier system responsible for calculating the effects
+and other services applying those effects to their respective domains.
