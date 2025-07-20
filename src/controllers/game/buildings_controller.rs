@@ -9,8 +9,8 @@ use tracing::{debug, info, instrument, trace};
 
 use crate::db::player_buildings::{FullBuilding, PlayerBuildingRepository};
 use crate::domain::app_state::AppState;
+use crate::domain::auth::AuthenticatedUser;
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::domain::player::session::PlayerSession;
 use crate::domain::player::PlayerKey;
 use crate::game::building_service::BuildingService;
 use crate::Result;
@@ -48,13 +48,13 @@ impl From<FullBuilding> for GameBuilding {
     }
 }
 
-#[instrument(skip(repo))]
+#[instrument(skip(repo, player))]
 #[debug_handler(state = AppState)]
 async fn get_buildings(
     State(repo): State<PlayerBuildingRepository>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
-    let player_key = session.player_id;
+    let player_key = player.id;
     debug!("Getting buildings for player: {}", player_key);
     let buildings = repo.get_game_buildings(&player_key).unwrap_or_default();
     trace!("Found {} buildings for player", buildings.len());
@@ -67,14 +67,14 @@ async fn get_buildings(
     json!(body)
 }
 
-#[instrument(skip(repo))]
+#[instrument(skip(repo, player))]
 #[debug_handler(state = AppState)]
 async fn get_building(
     State(repo): State<PlayerBuildingRepository>,
     player_building_key: Path<PlayerBuildingKey>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let player_key = session.player_id;
+    let player_key = player.id;
     let building_key = player_building_key.0;
     debug!(
         "Getting building {:?} for player: {}",
@@ -99,15 +99,15 @@ async fn get_building(
     Ok(json!(game_bld))
 }
 
-#[instrument(skip(srv, repo, session))]
+#[instrument(skip(srv, repo, player))]
 #[debug_handler(state = AppState)]
 async fn upgrade_building(
     State(srv): State<BuildingService>,
     State(repo): State<PlayerBuildingRepository>,
     player_bld_key: Path<PlayerBuildingKey>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
-    let player_key = session.player_id;
+    let player_key = player.id;
     let building_key = player_bld_key.0;
     debug!(
         "Starting upgrade building {:?} for player {}",

@@ -9,6 +9,7 @@ use axum::{Json, RequestPartsExt};
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use derive_more::Deref;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,7 @@ use tracing::warn;
 use uuid::Uuid;
 
 use crate::configuration::Settings;
+use crate::domain::player::Player;
 
 /// Static secret keys holder used for encoding and decoding JWTs.
 /// Using `OnceLock` ensures one-time initialization.
@@ -129,6 +131,25 @@ pub enum AuthError {
     TokenCreation,
     ArgonError,
     InvalidToken,
+    MissingSession,
+    MismatchedModality,
+}
+
+impl AuthError {
+    /// Creates a new AuthError with a custom status code and message.
+    pub fn new(status: StatusCode, message: &str) -> Self {
+        match status {
+            StatusCode::BAD_REQUEST if message.contains("session") => Self::MissingSession,
+            StatusCode::BAD_REQUEST if message.contains("modality") => Self::MismatchedModality,
+            _ => {
+                warn!(
+                    "Using custom error handler with status: {}, message: {}",
+                    status, message
+                );
+                Self::MismatchedModality
+            }
+        }
+    }
 }
 
 impl IntoResponse for AuthError {
@@ -140,6 +161,10 @@ impl IntoResponse for AuthError {
             AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
             AuthError::ArgonError => (StatusCode::INTERNAL_SERVER_ERROR, "Cryptographic error"),
             AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
+            AuthError::MissingSession => (StatusCode::BAD_REQUEST, "Missing session"),
+            AuthError::MismatchedModality => {
+                (StatusCode::BAD_REQUEST, "Authentication modality mismatch")
+            }
         };
         let body = json!({ "error": error_message });
         (status, Json(body)).into_response()
@@ -160,3 +185,7 @@ pub fn decode_token(token: &str) -> Result<TokenData<Claims>, AuthError> {
     decode::<Claims>(token, &keys().decoding, &Validation::default())
         .map_err(|_| AuthError::InvalidToken)
 }
+
+/// Represents an authenticated user, regardless of the authentication method.
+#[derive(Debug, Clone, Deref)]
+pub struct AuthenticatedUser(pub Player);

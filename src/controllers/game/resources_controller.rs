@@ -8,7 +8,7 @@ use tracing::{debug, info, instrument, warn};
 
 use crate::controllers::game::index_controller::get_resources_data;
 use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::player::session::PlayerSession;
+use crate::domain::auth::AuthenticatedUser;
 use crate::game::resources::resource_service::ResourceService;
 use crate::Result;
 
@@ -17,9 +17,9 @@ use crate::Result;
 async fn collect_resources(
     State(pool): State<AppPool>,
     State(srv): State<ResourceService>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
-    let player_key = session.player_id;
+    let player_key = player.id;
     debug!("Collecting resources for player: {}", player_key);
     let resources = srv.collect_resources(&player_key);
     match resources {

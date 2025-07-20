@@ -15,10 +15,10 @@ use uuid::Uuid;
 use crate::controllers::{UpdateUserPayload, UserBody};
 use crate::db::DbConn;
 use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::auth::AuthenticatedUser;
 use crate::domain::building::BuildingKey;
 use crate::domain::factions::FactionCode;
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::domain::player::session::PlayerSession;
 use crate::domain::player::PlayerKey;
 use crate::game::player_service::PlayerService;
 use crate::schema::player_building::dsl::player_building;
@@ -96,13 +96,13 @@ impl From<JoinFactionPayload> for UpdateUserPayload {
     }
 }
 
-#[instrument(skip(pool))]
+#[instrument(skip(pool), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub async fn get_game(
     State(pool): State<AppPool>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
-    let player_key = session.player_id;
+    let player_key = player.id;
     let mut conn = pool.get()?;
 
     let player_state = get_player_data(&mut conn, player_key)?;
@@ -128,19 +128,19 @@ pub async fn get_game(
     Ok(Json(game_state))
 }
 
-#[instrument(skip(srv, session))]
+#[instrument(skip(srv, player), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub async fn join_faction(
     State(srv): State<PlayerService>,
-    session: Extension<PlayerSession>,
+    player: Extension<AuthenticatedUser>,
     Json(payload): Json<JoinFactionPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let player_key = session.player_id;
+    let player_key = player.id;
     let user = srv.update_user(player_key, payload.into());
     match user {
         Ok(usr) => {
             let body: UserBody = usr.into();
-            Ok(Json(body))
+            Ok((StatusCode::ACCEPTED, Json(body)))
         }
         Err(err) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }

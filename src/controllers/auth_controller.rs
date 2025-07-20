@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
@@ -19,11 +20,11 @@ use crate::configuration::Settings;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::auth::AuthError;
+use crate::domain::auth::{AuthError, AuthenticatedUser};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::session::PlayerSession;
-use crate::domain::player::{NewPlayer, Player, PlayerKey};
+use crate::domain::player::{NewPlayer, PlayerKey};
 use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
 use crate::ErrorKind;
 
@@ -209,28 +210,36 @@ async fn login(
     Ok(jar.add(cookie))
 }
 
-#[instrument(skip(jar, srv), fields(session_id = %session.id))]
+#[instrument(skip(jar, srv, maybe_session))]
 #[debug_handler(state = AppState)]
 async fn logout(
     State(srv): State<SessionService>,
-    session: Extension<PlayerSession>,
+    _player: Extension<AuthenticatedUser>,
+    maybe_session: Option<Extension<PlayerSession>>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, AuthError> {
-    debug!("Processing logout request for session {}", session.id);
+    if let Some(session) = maybe_session {
+        debug!("Processing logout request for session {}", session.id);
 
-    let jar = jar
-        .remove(Cookie::from(SESSION_COOKIE_NAME))
-        .remove(Cookie::from(TOKEN_COOKIE_NAME));
+        let jar = jar
+            .remove(Cookie::from(SESSION_COOKIE_NAME))
+            .remove(Cookie::from(TOKEN_COOKIE_NAME));
 
-    trace!("Invalidating session {}", session.id);
-    srv.invalidate_session(&session.id);
-    info!(
-        "Player logged out successfully, session {} invalidated",
-        session.id
-    );
+        trace!("Invalidating session {}", session.id);
+        srv.invalidate_session(&session.id);
+        info!(
+            "Player logged out successfully, session {} invalidated",
+            session.id
+        );
 
-    let body = json!({ "status": "ok" });
-    Ok((jar, Json(body)))
+        let body = json!({ "status": "ok" });
+        Ok((jar, Json(body)))
+    } else {
+        // User is authenticated via JWT, which doesn't have a server-side session to invalidate
+        let jar = jar.remove(Cookie::from(TOKEN_COOKIE_NAME));
+        let body = json!({ "status": "ok", "message": "JWT token removed" });
+        Ok((jar, Json(body)))
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -253,32 +262,43 @@ struct SessionDto {
     expires_at: DateTime<Utc>,
 }
 
-#[instrument(skip(jar, srv, token), fields(player_id = %player.id, session_id = %session.id))]
+#[instrument(skip(jar, srv, maybe_token), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 async fn session(
     State(srv): State<SessionService>,
-    player: Extension<Player>,
-    session: Extension<PlayerSession>,
-    token: Extension<SessionToken>,
+    player: Extension<AuthenticatedUser>,
+    maybe_session: Option<Extension<PlayerSession>>,
+    maybe_token: Option<Extension<SessionToken>>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, AuthError> {
-    trace!("Preparing session info response for player {}", player.id);
-    let session = SessionDto {
-        token: token.to_string(),
-        expires_at: session.expires_at,
-    };
-    let player = PlayerDto {
-        id: player.id,
-        name: player.name.clone(),
-        email: player.email.clone(),
-        faction: player.faction.to_string(),
-    };
+    if let (Some(session), Some(token)) = (maybe_session, maybe_token) {
+        trace!("Preparing session info response for player {}", player.id);
+        let session_dto = SessionDto {
+            token: token.to_string(),
+            expires_at: session.expires_at,
+        };
+        let player_dto = PlayerDto {
+            id: player.id,
+            name: player.name.clone(),
+            email: player.email.clone(),
+            faction: player.faction.to_string(),
+        };
 
-    debug!(
-        "Session info retrieved successfully for player {}",
-        player.id
-    );
-    Ok((jar, Json(PlayerDtoResponse { session, player })))
+        debug!(
+            "Session info retrieved successfully for player {}",
+            player.id
+        );
+        Ok((
+            jar,
+            Json(PlayerDtoResponse {
+                session: session_dto,
+                player: player_dto,
+            }),
+        ))
+    } else {
+        // User is authenticated via JWT, which is stateless
+        Err(AuthError::MismatchedModality)
+    }
 }
 
 pub fn auth_routes() -> Router<AppState> {

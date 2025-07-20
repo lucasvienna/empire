@@ -18,7 +18,7 @@ use crate::auth::session_service::SessionService;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppPool;
-use crate::domain::auth::{decode_token, Claims};
+use crate::domain::auth::{decode_token, AuthenticatedUser, Claims};
 
 pub const TOKEN_COOKIE_NAME: &str = "token";
 pub const SESSION_COOKIE_NAME: &str = "rsession";
@@ -78,7 +78,7 @@ pub async fn auth_middleware(
                     .build();
 
                 jar = jar.add(cookie);
-                req.extensions_mut().insert(player);
+                req.extensions_mut().insert(AuthenticatedUser(player));
                 req.extensions_mut().insert(session);
                 req.extensions_mut().insert(session_token);
             }
@@ -112,7 +112,7 @@ pub async fn auth_middleware(
                 let player_repo = PlayerRepository::new(&pool);
                 match player_repo.find_by_id(&player_id) {
                     Ok(Some(player)) => {
-                        req.extensions_mut().insert(player);
+                        req.extensions_mut().insert(AuthenticatedUser(player));
                     }
                     Ok(None) => {
                         error!("User not found in database");
