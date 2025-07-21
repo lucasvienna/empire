@@ -1,14 +1,14 @@
 use axum::routing::{get, post};
 use axum::Router;
 
-use crate::controllers::game::buildings_controller::buildings_routes;
+use crate::controllers::game::buildings::buildings_routes;
 use crate::controllers::game::index_controller::{get_game, join_faction};
-use crate::controllers::game::resources_controller::resource_routes;
+use crate::controllers::game::resources::resource_routes;
 use crate::domain::app_state::AppState;
 
-mod buildings_controller;
+mod buildings;
 mod index_controller;
-mod resources_controller;
+mod resources;
 
 pub fn game_routes() -> Router<AppState> {
     Router::new().nest(

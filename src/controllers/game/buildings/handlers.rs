@@ -1,56 +1,21 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
-use axum::{debug_handler, Extension, Router};
+use axum::{debug_handler, Extension};
 use axum_extra::json;
-use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace};
 
-use crate::db::player_buildings::{FullBuilding, PlayerBuildingRepository};
+use crate::controllers::game::buildings::models::GameBuilding;
+use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::domain::player::PlayerKey;
 use crate::game::building_service::BuildingService;
 use crate::Result;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-struct GameBuilding {
-    pub id: PlayerBuildingKey,
-    pub player_id: PlayerKey,
-    pub building_id: i32,
-    pub level: i32,
-    pub max_level: i32,
-    pub max_count: i32,
-    pub upgrade_time: String,
-    pub req_food: Option<i64>,
-    pub req_wood: Option<i64>,
-    pub req_stone: Option<i64>,
-    pub req_gold: Option<i64>,
-}
-impl From<FullBuilding> for GameBuilding {
-    fn from(value: FullBuilding) -> Self {
-        let (pb, bld, bl, br) = value;
-        GameBuilding {
-            id: pb.id,
-            player_id: pb.player_id,
-            building_id: bld.id,
-            level: pb.level,
-            max_level: bld.max_level,
-            max_count: bld.max_count,
-            upgrade_time: bl.upgrade_time,
-            req_food: bl.req_food,
-            req_wood: bl.req_wood,
-            req_stone: bl.req_stone,
-            req_gold: bl.req_gold,
-        }
-    }
-}
-
 #[instrument(skip(repo, player))]
 #[debug_handler(state = AppState)]
-async fn get_buildings(
+pub async fn get_buildings(
     State(repo): State<PlayerBuildingRepository>,
     player: Extension<AuthenticatedUser>,
 ) -> impl IntoResponse {
@@ -69,7 +34,7 @@ async fn get_buildings(
 
 #[instrument(skip(repo, player))]
 #[debug_handler(state = AppState)]
-async fn get_building(
+pub async fn get_building(
     State(repo): State<PlayerBuildingRepository>,
     player_building_key: Path<PlayerBuildingKey>,
     player: Extension<AuthenticatedUser>,
@@ -101,7 +66,7 @@ async fn get_building(
 
 #[instrument(skip(srv, repo, player))]
 #[debug_handler(state = AppState)]
-async fn upgrade_building(
+pub async fn upgrade_building(
     State(srv): State<BuildingService>,
     State(repo): State<PlayerBuildingRepository>,
     player_bld_key: Path<PlayerBuildingKey>,
@@ -130,14 +95,4 @@ async fn upgrade_building(
     );
 
     Ok(json!(res))
-}
-
-pub fn buildings_routes() -> Router<AppState> {
-    Router::new().nest(
-        "/buildings",
-        Router::new()
-            .route("/", get(get_buildings))
-            .route("/{player_bld_key}", get(get_building))
-            .route("/{player_bld_key}/upgrade", post(upgrade_building)),
-    )
 }

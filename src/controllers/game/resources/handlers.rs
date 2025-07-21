@@ -1,8 +1,7 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::post;
-use axum::{debug_handler, Extension, Json, Router};
+use axum::{debug_handler, Extension, Json};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
 
@@ -14,7 +13,7 @@ use crate::Result;
 
 #[instrument(skip(pool, srv))]
 #[debug_handler(state = AppState)]
-async fn collect_resources(
+pub async fn collect_resources(
     State(pool): State<AppPool>,
     State(srv): State<ResourceService>,
     player: Extension<AuthenticatedUser>,
@@ -36,11 +35,4 @@ async fn collect_resources(
             Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(body)))
         }
     }
-}
-
-pub fn resource_routes() -> Router<AppState> {
-    Router::new().nest(
-        "/resources",
-        Router::new().route("/collect", post(collect_resources)),
-    )
 }
