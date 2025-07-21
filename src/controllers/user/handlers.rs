@@ -3,89 +3,25 @@ use std::time::Instant;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::{debug_handler, Json, Router};
+use axum::{debug_handler, Json};
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use crate::auth::utils::hash_password;
+use crate::controllers::user::models::{NewUserPayload, UpdateUserPayload, UserBody, UserListBody};
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
-use crate::domain::player::{NewPlayer, Player};
+use crate::domain::player::NewPlayer;
 use crate::game::player_service::PlayerService;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
-use crate::{Error, ErrorKind, Result};
-
-/// Struct for creating a new player
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NewUserPayload {
-    pub username: String,
-    pub password: String,
-    pub email: Option<String>,
-    pub faction: FactionCode,
-}
-
-impl TryFrom<NewUserPayload> for NewPlayer {
-    type Error = Error;
-
-    fn try_from(req: NewUserPayload) -> Result<Self, Self::Error> {
-        let email: Option<player::UserEmail> = match req.email {
-            None => None,
-            Some(email) => Some(player::UserEmail::parse(email)?),
-        };
-        let pwd_hash = hash_password(&req.password)
-            .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
-
-        let user = Self {
-            name: player::UserName::parse(req.username)?,
-            pwd_hash,
-            email,
-            faction: req.faction,
-        };
-        Ok(user)
-    }
-}
-
-/// Struct for updating player details
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateUserPayload {
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub email: Option<String>,
-    pub faction: Option<FactionCode>,
-}
-
-/// Struct for response data
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UserBody {
-    pub id: player::PlayerKey,
-    pub username: String,
-    pub email: Option<String>,
-    pub faction: FactionCode,
-}
-
-pub type UserListBody = Vec<UserBody>;
-
-impl From<Player> for UserBody {
-    fn from(user: Player) -> Self {
-        Self {
-            id: user.id,
-            username: user.name,
-            email: user.email,
-            faction: user.faction,
-        }
-    }
-}
+use crate::Result;
 
 // === CRUD HANDLERS === //
-
 #[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
-async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, StatusCode> {
+pub async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, StatusCode> {
     debug!("Starting fetch all users");
     let repo = PlayerRepository::new(&pool);
 
@@ -104,7 +40,7 @@ async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, St
 
 #[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
-async fn get_user_by_id(
+pub async fn get_user_by_id(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
@@ -124,7 +60,7 @@ async fn get_user_by_id(
 
 #[instrument(skip(pool, prod_scheduler), fields(username = ?payload.username, faction = ?payload.faction))]
 #[debug_handler(state = AppState)]
-async fn create_user(
+pub async fn create_user(
     State(pool): State<AppPool>,
     State(prod_scheduler): State<ProductionScheduler>,
     Json(payload): Json<NewUserPayload>,
@@ -173,7 +109,7 @@ async fn create_user(
 
 #[instrument(skip(srv), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
-async fn update_user(
+pub async fn update_user(
     State(srv): State<PlayerService>,
     Path(player_key): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
@@ -207,7 +143,7 @@ async fn update_user(
 
 #[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
-async fn delete_user(
+pub async fn delete_user(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {
@@ -235,18 +171,4 @@ async fn delete_user(
     );
 
     Ok(StatusCode::NO_CONTENT)
-}
-
-// === ROUTES === //
-
-pub fn user_routes() -> Router<AppState> {
-    Router::new().nest(
-        "/users",
-        Router::new()
-            .route("/", get(get_users).post(create_user))
-            .route(
-                "/{id}",
-                get(get_user_by_id).put(update_user).delete(delete_user),
-            ),
-    )
 }

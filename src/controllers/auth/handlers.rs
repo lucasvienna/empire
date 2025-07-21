@@ -1,88 +1,32 @@
 use std::convert::TryFrom;
-use std::fmt::Debug;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
-use axum::{debug_handler, Extension, Json, Router};
+use axum::{debug_handler, Extension, Json};
 use axum_extra::extract::CookieJar;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use cookie::{time, Cookie, SameSite};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::auth::session_service::SessionService;
-use crate::auth::utils::hash_password;
 use crate::configuration::Settings;
+use crate::controllers::auth::models::{
+    LoginPayload, PlayerDto, PlayerDtoResponse, RegisterPayload, SessionDto,
+};
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::auth::{AuthError, AuthenticatedUser};
-use crate::domain::factions::FactionCode;
-use crate::domain::player;
 use crate::domain::player::session::PlayerSession;
-use crate::domain::player::{NewPlayer, PlayerKey};
+use crate::domain::player::NewPlayer;
 use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
-use crate::ErrorKind;
-
-#[derive(Serialize, Deserialize)]
-pub struct RegisterPayload {
-    pub username: String,
-    pub password: String,
-    pub email: Option<String>,
-}
-
-impl Debug for RegisterPayload {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RegisterPayload")
-            .field("username", &self.username)
-            .field("password", &"[redacted]")
-            .field("email", &self.email)
-            .finish()
-    }
-}
-
-impl TryFrom<RegisterPayload> for NewPlayer {
-    type Error = crate::Error;
-
-    fn try_from(value: RegisterPayload) -> Result<Self, Self::Error> {
-        let name = player::UserName::parse(value.username)?;
-        let email: Option<player::UserEmail> = match value.email {
-            None => None,
-            Some(email) => Some(player::UserEmail::parse(email)?),
-        };
-        let pwd_hash = hash_password(&value.password)
-            .map_err(|_| (ErrorKind::InternalError, "Failed to hash password"))?;
-        Ok(Self {
-            name,
-            pwd_hash,
-            email,
-            faction: FactionCode::Neutral,
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginPayload {
-    pub username: String,
-    pub password: String,
-}
-
-impl Debug for LoginPayload {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LoginPayload")
-            .field("username", &self.username)
-            .field("password", &"[redacted]")
-            .finish()
-    }
-}
 
 #[instrument(skip(pool, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
-async fn register(
+pub async fn register(
     State(pool): State<AppPool>,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -136,7 +80,7 @@ async fn register(
 
 #[instrument(skip(pool, session_service, jar, settings, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
-async fn login(
+pub async fn login(
     State(pool): State<AppPool>,
     State(session_service): State<SessionService>,
     jar: CookieJar,
@@ -212,7 +156,7 @@ async fn login(
 
 #[instrument(skip(jar, srv, maybe_session))]
 #[debug_handler(state = AppState)]
-async fn logout(
+pub async fn logout(
     State(srv): State<SessionService>,
     _player: Extension<AuthenticatedUser>,
     maybe_session: Option<Extension<PlayerSession>>,
@@ -242,29 +186,9 @@ async fn logout(
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PlayerDtoResponse {
-    player: PlayerDto,
-    session: SessionDto,
-}
-
-#[derive(Serialize, Deserialize)]
-struct PlayerDto {
-    id: PlayerKey,
-    name: String,
-    email: Option<String>,
-    faction: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct SessionDto {
-    token: String,
-    expires_at: DateTime<Utc>,
-}
-
 #[instrument(skip(jar, srv, maybe_token), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
-async fn session(
+pub async fn session(
     State(srv): State<SessionService>,
     player: Extension<AuthenticatedUser>,
     maybe_session: Option<Extension<PlayerSession>>,
@@ -299,16 +223,4 @@ async fn session(
         // User is authenticated via JWT, which is stateless
         Err(AuthError::MismatchedModality)
     }
-}
-
-pub fn auth_routes() -> Router<AppState> {
-    Router::new()
-        .route("/login", post(login))
-        .route("/register", post(register))
-}
-
-pub fn protected_auth_routes() -> Router<AppState> {
-    Router::new()
-        .route("/logout", post(logout))
-        .route("/session", get(session))
 }

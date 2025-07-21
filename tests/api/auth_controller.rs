@@ -225,7 +225,7 @@ async fn logout_succeeds() {
     assert!(cookie.is_some());
 
     let response = client
-        .get(format!("{}/logout", &server.address))
+        .post(format!("{}/logout", &server.address))
         .header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
         .send()
         .await
