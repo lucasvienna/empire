@@ -50,6 +50,7 @@ pub(super) async fn get_user_by_id(
     let repo = PlayerRepository::new(&pool);
 
     let user = repo.get_by_id(&player_id).map_err(|err| {
+        // TODO: differentiate between not found and other errors
         error!(player_id = %player_id, "Failed to fetch player: {}", err);
         StatusCode::NOT_FOUND
     })?;

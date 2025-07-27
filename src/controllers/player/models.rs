@@ -5,7 +5,7 @@ use crate::controllers::user::UpdateUserPayload;
 use crate::domain::factions::FactionCode;
 use crate::domain::player::{Player, PlayerKey};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PlayerProfileResponse {
     pub id: PlayerKey,
     pub username: String,

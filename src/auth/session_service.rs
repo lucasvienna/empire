@@ -122,7 +122,7 @@ impl SessionService {
         let player_session = self.repo.find_by_id(&session_id)?;
 
         if player_session.is_none() {
-            warn!("No session found for token with ID: {}", session_id);
+            warn!(%session_id, "No session found");
             return Err(Error::from((
                 ErrorKind::NoSessionError,
                 "No session found for the provided token.",
@@ -130,11 +130,11 @@ impl SessionService {
         }
 
         let (session, player) = player_session.unwrap();
-        debug!("Found session for player: {}", player.id);
+        debug!(player_key = %player.id, "Found session for player");
 
         // Check if the session has expired.
         if session.expires_at <= Utc::now() {
-            warn!("Session expired for player: {}", player.id);
+            warn!(player_key = %player.id, "Session expired for player");
             let count = self.repo.delete(&session.id)?;
             debug_assert_eq!(count, 1, "Expected exactly one session to be deleted.");
             return Err(Error::from((
@@ -145,13 +145,13 @@ impl SessionService {
 
         // Refresh the session if it's within 15 days of expiration.
         if session.expires_at - Duration::days(15) < Utc::now() {
-            debug!("Refreshing session for player: {}", player.id);
+            debug!(player_key = %player.id, "Refreshing session for player");
             let refreshed_session = self.repo.refresh_token(&session.id)?;
-            info!("Session refreshed for player: {}", player.id);
+            info!(player_key = %player.id, "Session refreshed for player");
             return Ok((refreshed_session, player));
         }
 
-        info!("Session validated successfully for player: {}", player.id);
+        info!(player_key = %player.id, "Session validated successfully for player");
         Ok((session, player))
     }
 
