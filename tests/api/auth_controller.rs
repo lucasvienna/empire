@@ -3,13 +3,18 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
+use axum_extra::headers;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use claims::assert_gt;
 use empire::auth::utils::hash_password;
-use empire::controllers::{LoginPayload, RegisterPayload};
+use empire::controllers::{LoginPayload, PlayerDtoResponse, RegisterPayload};
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::AppPool;
+use empire::domain::auth::{encode_token, Claims};
 use empire::domain::factions::FactionCode;
-use empire::domain::player::{NewPlayer, Player, UserEmail, UserName};
+use empire::domain::player::{NewPlayer, Player, PlayerKey, UserEmail, UserName};
 use http_body_util::BodyExt;
 use serde_json::json;
 use tower::ServiceExt;
@@ -242,6 +247,70 @@ async fn logout_succeeds() {
     assert_eq!(body.status, "ok");
 }
 
+#[tokio::test]
+async fn session_fails_with_jwt() {
+    let server = TestApp::new();
+    let pool = Arc::new(server.db_pool);
+    let client = reqwest::Client::new();
+
+    let user = create_test_user(&pool);
+    let bearer = get_bearer(&user.id);
+    let response = client
+        .get(format!("{}/session", &server.address))
+        .bearer_auth(bearer.token())
+        .send()
+        .await
+        .expect("Failed to execute session request.");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = response.bytes().await.unwrap();
+    let body = String::from_utf8(Vec::from(body)).unwrap();
+    assert!(
+        body.contains("modality mismatch"),
+        "Error message doesn't contain 'Invalid token': {body}"
+    );
+}
+
+#[tokio::test]
+async fn session_returns_valid_info() {
+    let server = TestApp::new();
+    let pool = Arc::new(server.db_pool);
+    let client = reqwest::Client::new();
+
+    let user = create_test_user(&pool);
+    let req = LoginPayload {
+        username: "test_user".to_string(),
+        password: "1234".to_string(),
+    };
+    let response = client
+        .post(format!("{}/login", &server.address))
+        .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+        .json(&req)
+        .send()
+        .await
+        .expect("Failed to execute login request.");
+    assert_eq!(response.status(), StatusCode::OK);
+    let cookie = response.headers().get(http::header::SET_COOKIE);
+    assert!(cookie.is_some());
+
+    let response = client
+        .get(format!("{}/session", &server.address))
+        .header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
+        .send()
+        .await
+        .expect("Failed to execute session request.");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.json::<PlayerDtoResponse>().await.unwrap();
+    assert_eq!(body.player.id, user.id);
+    assert!(!body.session.token.is_empty());
+    assert_gt!(
+        body.session.expires_at,
+        chrono::Utc::now() + chrono::Duration::days(14)
+    );
+}
+
 /// Create a player. Uses internal DB functions.
 fn create_test_user(pool: &AppPool) -> Player {
     let user_repo = PlayerRepository::new(pool);
@@ -258,4 +327,16 @@ fn create_test_user(pool: &AppPool) -> Player {
 fn get_user_by_name(pool: &AppPool, name: &str) -> empire::Result<Player> {
     let repo = PlayerRepository::new(pool);
     repo.get_by_name(name)
+}
+
+fn get_bearer(player_id: &PlayerKey) -> Authorization<Bearer> {
+    let now = chrono::Utc::now();
+    let token = encode_token(Claims {
+        sub: *player_id,
+        iat: now.timestamp() as usize,
+        exp: (now + chrono::Duration::minutes(5)).timestamp() as usize,
+    })
+    .unwrap();
+
+    headers::Authorization::bearer(&token).unwrap()
 }

@@ -54,10 +54,7 @@ fn format_uptime(duration: TimeDelta) -> String {
     let minutes = duration.num_minutes() % 60;
     let seconds = duration.num_seconds() % 60;
 
-    format!(
-        "{:02}d{:02}h{:02}m{:02}s",
-        days, hours, minutes, seconds
-    )
+    format!("{:02}d{:02}h{:02}m{:02}s", days, hours, minutes, seconds)
 }
 
 fn get_uptime() -> Option<Duration> {
