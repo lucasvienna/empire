@@ -43,6 +43,7 @@ pub struct JobQueue {
 /// A job request is a tuple of the job type, payload, priority, and run time.
 pub type JobRequest = (JobType, serde_json::Value, JobPriority, DateTime<Utc>);
 
+// FIXME: this is a job dispatcher, not a queue. Refactor the WorkerPool into a real queue
 impl JobQueue {
     pub fn new(pool: AppPool) -> Self {
         let (shutdown_tx, _) = broadcast::channel(1);
@@ -258,6 +259,18 @@ impl JobQueue {
         Ok(send_result)
     }
 
+    pub fn state(&self) -> JobQueueState {
+        // FIXME: implement this for real
+        let up = self.shutdown_tx.is_empty();
+        let num_workers = 0;
+        let num_jobs = 0;
+        JobQueueState {
+            up,
+            num_workers,
+            num_jobs,
+        }
+    }
+
     fn lock_job(
         &self,
         conn: &mut DbConn,
@@ -275,4 +288,10 @@ impl JobQueue {
             .execute(conn)?;
         Ok(())
     }
+}
+
+pub struct JobQueueState {
+    pub up: bool,
+    pub num_workers: usize,
+    pub num_jobs: usize,
 }

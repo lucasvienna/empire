@@ -36,3 +36,17 @@ macro_rules! okay {
         ($jar, (StatusCode::OK, Json($body)).into_response())
     };
 }
+
+/// Creates an HTTP 501 Not Implemented response with a JSON message.
+///
+/// # Returns
+/// A response with status code 501 and a standard "Not implemented" JSON message
+#[macro_export]
+macro_rules! not_implemented {
+    () => {
+        (
+            axum::http::StatusCode::NOT_IMPLEMENTED,
+            axum::Json(serde_json::json!({"message": "Not implemented"}))
+        ).into_response()
+    };
+}

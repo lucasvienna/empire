@@ -36,7 +36,7 @@ for both web and mobile clients, while session management enables proper user st
 - **Purpose**: Create new player account
 - **Body**: `{ "username": "string", "email": "string", "password": "string" }`
 - **Response**: `{ "status": "success|error", "message": "string" }`
-- **Rationale**: Faction selection happens after registration. It is crucial, as it determines passive bonuses and 
+- **Rationale**: Faction selection happens after registration. It is crucial, as it determines passive bonuses and
   available buildings
 
 #### POST /auth/login
@@ -738,6 +738,35 @@ monitoring systems and manual inspection.
 - **Purpose**: Liveness probe for container orchestration
 - **Response**: `{ "alive": true, "uptime": "72h15m30s" }`
 
+### Performance Monitoring
+
+#### GET /health/services
+
+- **Purpose**: Status of all dependent services
+- **Response**:
+
+```json
+{
+  "services": [
+    {
+      "name": "postgresql",
+      "status": "healthy",
+      "response_time": 5,
+      "last_check": "2025-07-20T16:30:00Z"
+    },
+    {
+      "name": "job_queue",
+      "status": "degraded",
+      "response_time": 150,
+      "last_check": "2025-07-20T16:30:00Z",
+      "issues": [
+        "High queue depth"
+      ]
+    }
+  ]
+}
+```
+
 ### Detailed System Metrics
 
 #### GET /health/metrics
@@ -778,58 +807,6 @@ monitoring systems and manual inspection.
   }
 }
 ```
-
-#### GET /health/services
-
-- **Purpose**: Status of all dependent services
-- **Response**:
-
-```json
-{
-  "services": [
-    {
-      "name": "postgresql",
-      "status": "healthy",
-      "response_time": 5,
-      "last_check": "2025-07-20T16:30:00Z"
-    },
-    {
-      "name": "redis",
-      "status": "healthy",
-      "response_time": 2,
-      "last_check": "2025-07-20T16:30:00Z"
-    },
-    {
-      "name": "job_queue",
-      "status": "degraded",
-      "response_time": 150,
-      "last_check": "2025-07-20T16:30:00Z",
-      "issues": [
-        "High queue depth"
-      ]
-    }
-  ]
-}
-```
-
-### Performance Monitoring
-
-#### GET /health/performance
-
-- **Purpose**: Application performance metrics
-- **Query**: `?period=1h&metric=response_time`
-- **Response**: Time-series performance data with percentiles and trends
-
-#### GET /health/errors
-
-- **Purpose**: Error tracking and analysis
-- **Query**: `?severity=error&limit=50&since=1h`
-- **Response**: Recent errors with stack traces, frequency, and impact analysis
-
-#### GET /health/alerts
-
-- **Purpose**: Active system alerts and warnings
-- **Response**: Current alerts with severity levels, affected components, and recommended actions
 
 ---
 
