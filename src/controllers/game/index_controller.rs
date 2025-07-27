@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension, Json};
 use bigdecimal::{BigDecimal, ToPrimitive};
@@ -12,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::controllers::{UpdateUserPayload, UserBody};
 use crate::db::DbConn;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::auth::AuthenticatedUser;
@@ -20,7 +18,6 @@ use crate::domain::building::BuildingKey;
 use crate::domain::factions::FactionCode;
 use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::domain::player::PlayerKey;
-use crate::game::player_service::PlayerService;
 use crate::schema::player_building::dsl::player_building;
 use crate::Result;
 
@@ -80,22 +77,6 @@ struct BuildingsState {
     pub gold_per_hour: i64,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct JoinFactionPayload {
-    faction_id: FactionCode,
-}
-
-impl From<JoinFactionPayload> for UpdateUserPayload {
-    fn from(value: JoinFactionPayload) -> Self {
-        Self {
-            username: None,
-            password: None,
-            email: None,
-            faction: Some(value.faction_id),
-        }
-    }
-}
-
 #[instrument(skip(pool), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub async fn get_game(
@@ -126,24 +107,6 @@ pub async fn get_game(
     };
 
     Ok(Json(game_state))
-}
-
-#[instrument(skip(srv, player), fields(player_id = %player.id))]
-#[debug_handler(state = AppState)]
-pub async fn join_faction(
-    State(srv): State<PlayerService>,
-    player: Extension<AuthenticatedUser>,
-    Json(payload): Json<JoinFactionPayload>,
-) -> Result<impl IntoResponse, StatusCode> {
-    let player_key = player.id;
-    let user = srv.update_user(player_key, payload.into());
-    match user {
-        Ok(usr) => {
-            let body: UserBody = usr.into();
-            Ok((StatusCode::ACCEPTED, Json(body)))
-        }
-        Err(err) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
 }
 
 fn get_player_data(conn: &mut DbConn, current_player_id: PlayerKey) -> QueryResult<PlayerState> {

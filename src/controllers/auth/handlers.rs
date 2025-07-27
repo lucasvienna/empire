@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -26,7 +24,7 @@ use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
 
 #[instrument(skip(pool, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
-pub async fn register(
+pub(super) async fn register(
     State(pool): State<AppPool>,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -80,7 +78,7 @@ pub async fn register(
 
 #[instrument(skip(pool, session_service, jar, settings, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
-pub async fn login(
+pub(super) async fn login(
     State(pool): State<AppPool>,
     State(session_service): State<SessionService>,
     jar: CookieJar,
@@ -156,7 +154,7 @@ pub async fn login(
 
 #[instrument(skip(jar, srv, maybe_session))]
 #[debug_handler(state = AppState)]
-pub async fn logout(
+pub(super) async fn logout(
     State(srv): State<SessionService>,
     _player: Extension<AuthenticatedUser>,
     maybe_session: Option<Extension<PlayerSession>>,
@@ -188,7 +186,7 @@ pub async fn logout(
 
 #[instrument(skip(jar, srv, maybe_token), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
-pub async fn session(
+pub(super) async fn session(
     State(srv): State<SessionService>,
     player: Extension<AuthenticatedUser>,
     maybe_session: Option<Extension<PlayerSession>>,

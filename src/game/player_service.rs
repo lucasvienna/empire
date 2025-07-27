@@ -4,7 +4,7 @@ use chrono::Utc;
 use tracing::{debug, error, info, warn};
 
 use crate::auth::utils::hash_password;
-use crate::controllers::UpdateUserPayload;
+use crate::controllers::user::UpdateUserPayload;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppState;

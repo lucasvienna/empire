@@ -21,7 +21,9 @@ use crate::Result;
 // === CRUD HANDLERS === //
 #[instrument(skip(pool))]
 #[debug_handler(state = AppState)]
-pub async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>, StatusCode> {
+pub(super) async fn get_users(
+    State(pool): State<AppPool>,
+) -> Result<Json<UserListBody>, StatusCode> {
     debug!("Starting fetch all users");
     let repo = PlayerRepository::new(&pool);
 
@@ -40,7 +42,7 @@ pub async fn get_users(State(pool): State<AppPool>) -> Result<Json<UserListBody>
 
 #[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
-pub async fn get_user_by_id(
+pub(super) async fn get_user_by_id(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
@@ -60,7 +62,7 @@ pub async fn get_user_by_id(
 
 #[instrument(skip(pool, prod_scheduler), fields(username = ?payload.username, faction = ?payload.faction))]
 #[debug_handler(state = AppState)]
-pub async fn create_user(
+pub(super) async fn create_user(
     State(pool): State<AppPool>,
     State(prod_scheduler): State<ProductionScheduler>,
     Json(payload): Json<NewUserPayload>,
@@ -109,7 +111,7 @@ pub async fn create_user(
 
 #[instrument(skip(srv), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
-pub async fn update_user(
+pub(super) async fn update_user(
     State(srv): State<PlayerService>,
     Path(player_key): Path<player::PlayerKey>,
     Json(payload): Json<UpdateUserPayload>,
@@ -143,7 +145,7 @@ pub async fn update_user(
 
 #[instrument(skip(pool), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
-pub async fn delete_user(
+pub(super) async fn delete_user(
     State(pool): State<AppPool>,
     Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {

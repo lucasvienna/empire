@@ -13,7 +13,7 @@ use crate::not_implemented;
 
 /// Health check handler
 #[debug_handler]
-pub async fn health_check() -> impl IntoResponse {
+pub(super) async fn health_check() -> impl IntoResponse {
     let body = HealthCheckBody {
         status: "OK".to_string(),
         timestamp: chrono::Utc::now(),
@@ -22,7 +22,7 @@ pub async fn health_check() -> impl IntoResponse {
 }
 
 #[debug_handler(state = AppState)]
-pub async fn readiness_check(
+pub(super) async fn readiness_check(
     State(pool): State<AppPool>,
     State(queue): State<AppQueue>,
 ) -> impl IntoResponse {
@@ -39,7 +39,7 @@ pub async fn readiness_check(
 }
 
 #[debug_handler]
-pub async fn liveness_check() -> impl IntoResponse {
+pub(super) async fn liveness_check() -> impl IntoResponse {
     let uptime = TimeDelta::from_std(get_uptime().unwrap_or_default()).unwrap_or_default();
     let body = LivenessCheckBody {
         alive: true,
@@ -65,11 +65,11 @@ fn get_uptime() -> Option<Duration> {
 }
 
 #[debug_handler]
-pub async fn services() -> impl IntoResponse {
+pub(super) async fn services() -> impl IntoResponse {
     not_implemented!()
 }
 
 #[debug_handler]
-pub async fn metrics() -> impl IntoResponse {
+pub(super) async fn metrics() -> impl IntoResponse {
     not_implemented!()
 }

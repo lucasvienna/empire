@@ -7,9 +7,8 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use empire::auth::utils::hash_password;
-use empire::controllers::{
-    NewUserPayload, RegisterPayload, UpdateUserPayload, UserBody, UserListBody,
-};
+use empire::controllers::auth::RegisterPayload;
+use empire::controllers::user::{NewUserPayload, UpdateUserPayload, UserBody, UserListBody};
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::AppPool;

@@ -5,7 +5,7 @@ use crate::controllers::health::handlers::*;
 use crate::domain::app_state::AppState;
 
 /// Function to define health check routes
-pub fn health_check_routes() -> Router<AppState> {
+pub fn health_routes() -> Router<AppState> {
     Router::new().nest(
         "/health",
         Router::new()

@@ -1,6 +1,6 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use empire::controllers::{HealthCheckBody, LivenessCheckBody, ReadyCheckBody};
+use empire::controllers::health::{HealthCheckBody, LivenessCheckBody, ReadyCheckBody};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 

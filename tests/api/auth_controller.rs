@@ -8,7 +8,7 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use claims::assert_gt;
 use empire::auth::utils::hash_password;
-use empire::controllers::{LoginPayload, PlayerDtoResponse, RegisterPayload};
+use empire::controllers::auth::{LoginPayload, PlayerDtoResponse, RegisterPayload};
 use empire::db::players::PlayerRepository;
 use empire::db::Repository;
 use empire::domain::app_state::AppPool;
