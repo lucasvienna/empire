@@ -126,7 +126,7 @@ pub(super) async fn update_user(
     let password_changed = payload.password.is_some();
     let faction_changed = payload.faction.is_some();
 
-    let updated_user = srv.update_user(player_key, payload)?;
+    let updated_user = srv.update_player(player_key, payload)?;
     let duration = start.elapsed();
     info!(
         player_id = %player_key,

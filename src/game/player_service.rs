@@ -29,7 +29,14 @@ impl FromRef<AppState> for PlayerService {
 }
 
 impl PlayerService {
-    pub fn update_user(
+    pub fn get_player(&self, player_key: &PlayerKey) -> Result<Player, StatusCode> {
+        self.repo.get_by_id(player_key).map_err(|err| {
+            warn!(player_id = %player_key, error = %err, "Failed to get user");
+            StatusCode::NOT_FOUND
+        })
+    }
+
+    pub fn update_player(
         &self,
         player_key: PlayerKey,
         payload: UpdateUserPayload,

@@ -4,33 +4,49 @@ use axum::response::IntoResponse;
 use axum::{debug_handler, Extension, Json};
 use tracing::instrument;
 
-use crate::controllers::player::JoinFactionPayload;
-use crate::controllers::user::UserBody;
-use crate::domain::app_state::{AppPool, AppState};
+use crate::controllers::player::{JoinFactionPayload, PlayerProfileResponse};
+use crate::controllers::user::{UpdateUserPayload, UserBody};
+use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::game::player_service::PlayerService;
 
-#[instrument(skip(pool))]
+#[instrument(skip(srv, player), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
-pub(super) async fn get_player_profile(State(pool): State<AppPool>) -> impl IntoResponse {
-    // Implementation placeholder
-    StatusCode::NOT_IMPLEMENTED
+pub(super) async fn get_player_profile(
+    State(srv): State<PlayerService>,
+    player: Extension<AuthenticatedUser>,
+) -> crate::Result<impl IntoResponse, StatusCode> {
+    let player_ = srv
+        .get_player(&player.id)
+        .map(PlayerProfileResponse::from)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(player_))
 }
 
 #[instrument(skip(srv, player), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
-pub async fn join_faction(
+pub(super) async fn update_player_profile(
+    State(srv): State<PlayerService>,
+    player: Extension<AuthenticatedUser>,
+    Json(payload): Json<UpdateUserPayload>,
+) -> crate::Result<impl IntoResponse, StatusCode> {
+    let update = srv
+        .update_player(player.id, payload)
+        .map(PlayerProfileResponse::from)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok((StatusCode::ACCEPTED, Json(update)))
+}
+
+#[instrument(skip(srv, player), fields(player_id = %player.id))]
+#[debug_handler(state = AppState)]
+pub(super) async fn join_faction(
     State(srv): State<PlayerService>,
     player: Extension<AuthenticatedUser>,
     Json(payload): Json<JoinFactionPayload>,
 ) -> crate::Result<impl IntoResponse, StatusCode> {
-    let player_key = player.id;
-    let user = srv.update_user(player_key, payload.into());
-    match user {
-        Ok(usr) => {
-            let body: UserBody = usr.into();
-            Ok((StatusCode::ACCEPTED, Json(body)))
-        }
-        Err(err) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
+    let body = srv
+        .update_player(player.id, payload.into())
+        .map(UserBody::from)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok((StatusCode::ACCEPTED, Json(body)))
 }

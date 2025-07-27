@@ -1,14 +1,22 @@
+#![allow(dead_code)]
+
+mod helpers;
+
 use std::env;
 use std::sync::{Arc, LazyLock};
 
 use axum::Router;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
 use axum_test::util::new_random_tokio_tcp_listener;
 use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
 use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_pending;
-use empire::domain::app_state::{App, AppState};
+use empire::domain::app_state::{App, AppPool, AppState};
 use empire::domain::auth::init_keys;
+use empire::domain::factions::FactionCode;
+use empire::domain::player::{Player, PlayerKey};
 use empire::net::router;
 use empire::Result;
 use secrecy::{ExposeSecret, SecretString};
@@ -16,6 +24,8 @@ use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, registry, EnvFilter};
 use uuid::Uuid;
+
+use crate::common::helpers::*;
 
 /// Test harness containing the core application components for integration testing.
 ///
@@ -30,6 +40,8 @@ pub struct TestHarness {
     pub router: Router,
     /// Database connection pool for direct database access in tests
     pub db_pool: DbPool,
+    /// Internal shared pointer to the connection pool.
+    app_pool: AppPool,
 }
 
 /// Running test server instance with network access.
@@ -43,6 +55,8 @@ pub struct TestApp {
     pub address: String,
     /// Database connection pool for test data management
     pub db_pool: DbPool,
+    /// Internal shared pointer to the connection pool.
+    app_pool: AppPool,
 }
 
 impl TestHarness {
@@ -63,7 +77,6 @@ impl TestHarness {
     /// Use this function when you need to test application logic without starting
     /// an actual HTTP server. This is more efficient for unit and integration tests
     /// that don't require network communication.
-    #[allow(dead_code)]
     pub fn new() -> Self {
         // Ensure tracing is initialized for test output
         LazyLock::force(&TRACING);
@@ -72,18 +85,29 @@ impl TestHarness {
         init_keys(&settings.jwt.secret);
 
         // Create an isolated test database and update settings
-        let (pool, updated_db_settings) = create_isolated_test_database(&mut settings.database);
+        let (db_pool, updated_db_settings) = create_isolated_test_database(&mut settings.database);
         settings.database = updated_db_settings.clone();
 
         // Initialize application components
-        let db_pool = Arc::new(pool.clone());
-        let app = Arc::new(App::with_pool(db_pool, settings));
+        let pool = Arc::new(db_pool.clone());
+        let app_pool = Arc::clone(&pool);
+        let app = Arc::new(App::with_pool(pool, settings));
 
         Self {
-            app: app.clone(),
-            db_pool: pool,
+            app: Arc::clone(&app),
+            db_pool,
+            app_pool,
             router: router::init(AppState(app)),
         }
+    }
+
+    /// Create a player with neutral faction. Uses internal DB functions.
+    pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
+        create_test_user(&self.app_pool, faction)
+    }
+
+    pub fn create_bearer_token(&self, player_key: PlayerKey) -> Authorization<Bearer> {
+        get_bearer(player_key)
     }
 }
 
@@ -108,9 +132,9 @@ impl TestApp {
     /// # Usage
     /// Use this function when you need to test the full HTTP server functionality,
     /// including middleware, routing, and request/response handling.
-    #[allow(dead_code)]
     pub fn new() -> Self {
         let harness = TestHarness::new();
+        let app_pool = Arc::clone(&harness.app_pool);
 
         // Bind to a random available port
         let listener = new_random_tokio_tcp_listener().expect("Failed to bind to random port");
@@ -129,7 +153,17 @@ impl TestApp {
         Self {
             address: format!("http://localhost:{port}"),
             db_pool: harness.db_pool,
+            app_pool,
         }
+    }
+
+    /// Create a player with neutral faction. Uses internal DB functions.
+    pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
+        create_test_user(&self.app_pool, faction)
+    }
+
+    pub fn create_bearer_token(&self, player_key: PlayerKey) -> Authorization<Bearer> {
+        get_bearer(player_key)
     }
 }
 

@@ -24,7 +24,7 @@ use tower_http::trace::TraceLayer as TowerTraceLayer;
 use tracing::{error, info_span};
 
 use crate::controllers::routes::{
-    auth_routes, game_routes, health_routes, protected_auth_routes, user_routes,
+    auth_routes, game_routes, health_routes, player_routes, protected_auth_routes, user_routes,
 };
 use crate::domain::app_state::AppState;
 use crate::net::auth::auth_middleware;
@@ -90,6 +90,7 @@ pub fn init(state: AppState) -> Router {
 
     let protected_routes = Router::new()
         .merge(protected_auth_routes())
+        .merge(player_routes())
         .merge(user_routes())
         .merge(game_routes())
         .layer(middleware::from_fn_with_state(

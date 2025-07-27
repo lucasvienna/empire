@@ -5,3 +5,4 @@ mod user_controller;
 
 #[path = "../common/mod.rs"]
 mod common;
+mod player_controller;
