@@ -2,7 +2,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension, Json};
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument};
 
 use crate::controllers::player::{JoinFactionPayload, PlayerProfileResponse};
 use crate::controllers::user::{UpdateUserPayload, UserBody};

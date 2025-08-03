@@ -5,7 +5,7 @@ use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use empire::domain::factions::FactionCode;
 use empire::domain::modifier::active_modifier::{ModifierSourceType, NewActiveModifier};
-use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
+use empire::domain::modifier::{MagnitudeKind, ModifierTarget, NewModifier};
 use empire::domain::player::resource::ResourceType;
 use empire::domain::player::{NewPlayer, Player, UserName};
 use empire::schema::{active_modifiers, modifiers, player};
@@ -171,7 +171,7 @@ fn create_test_modifier(conn: &mut PgConnection) -> Uuid {
     let new_modifier = NewModifier {
         name: format!("test_modifier_{}", Uuid::new_v4()),
         description: "Test modifier".to_string(),
-        modifier_type: ModifierType::Percentage,
+        magnitude_kind: MagnitudeKind::Percentage,
         magnitude: BigDecimal::from_str("0.15").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),

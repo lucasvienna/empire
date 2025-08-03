@@ -1,3 +1,3 @@
 DROP TABLE modifiers;
-DROP TYPE modifier_type;
+DROP TYPE magnitude_kind;
 DROP TYPE modifier_target;

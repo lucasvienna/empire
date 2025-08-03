@@ -14,6 +14,10 @@ pub mod sql_types {
     pub struct JobType;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "magnitude_kind"))]
+    pub struct MagnitudeKind;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_action_type"))]
     pub struct ModifierActionType;
 
@@ -24,10 +28,6 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "modifier_target"))]
     pub struct ModifierTarget;
-
-    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "modifier_type"))]
-    pub struct ModifierType;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "resource_type"))]
@@ -167,7 +167,7 @@ diesel::table! {
 
 diesel::table! {
     use diesel::sql_types::*;
-    use super::sql_types::ModifierType;
+    use super::sql_types::MagnitudeKind;
     use super::sql_types::ModifierTarget;
     use super::sql_types::ResourceType;
     use super::sql_types::StackingBehaviour;
@@ -176,8 +176,8 @@ diesel::table! {
         id -> Uuid,
         name -> Text,
         description -> Text,
-        modifier_type -> ModifierType,
         magnitude -> Numeric,
+        magnitude_kind -> MagnitudeKind,
         target_type -> ModifierTarget,
         target_resource -> Nullable<ResourceType>,
         stacking_behaviour -> StackingBehaviour,

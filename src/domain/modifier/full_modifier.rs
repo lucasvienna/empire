@@ -7,7 +7,7 @@ use crate::domain::modifier::active_modifier::{
     ActiveModifier, ActiveModifierKey, ModifierSourceType,
 };
 use crate::domain::modifier::{
-    Modifier, ModifierKey, ModifierTarget, ModifierType, StackingBehaviour,
+    MagnitudeKind, Modifier, ModifierKey, ModifierTarget, StackingBehaviour,
 };
 use crate::domain::player;
 use crate::domain::player::resource::ResourceType;
@@ -30,7 +30,7 @@ pub struct FullModifier {
     /// Numerical value of the modifier's effect
     pub magnitude: BigDecimal,
     /// Type of modification (e.g., additive, multiplicative)
-    pub modifier_type: ModifierType,
+    pub magnitude_kind: MagnitudeKind,
     /// Origin of the modifier (faction, item, skill, etc.)
     pub source_type: ModifierSourceType,
     /// Optional ID referencing the specific source entity
@@ -75,7 +75,7 @@ impl Modifier {
             name: self.name,
             description: self.description,
             magnitude: self.magnitude,
-            modifier_type: self.modifier_type,
+            magnitude_kind: self.magnitude_kind,
             source_type: active.source_type,
             source_id: active.source_id,
             target_type: self.target_type,

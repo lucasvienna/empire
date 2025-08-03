@@ -1,5 +1,5 @@
 -- Seed default faction modifiers
-INSERT INTO modifiers (name, description, modifier_type, magnitude, target_type, target_resource, stacking_group)
+INSERT INTO modifiers (name, description, magnitude_kind, magnitude, target_type, target_resource, stacking_group)
 VALUES
     -- Human faction modifiers
     ('human_wood_production',        'Human wood resources bonus',         'percentage', 0.15, 'resource', 'wood',       'faction_wood'      ),

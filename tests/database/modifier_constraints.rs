@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
 use diesel::prelude::*;
-use empire::domain::modifier::{ModifierTarget, ModifierType, NewModifier};
+use empire::domain::modifier::{MagnitudeKind, ModifierTarget, NewModifier};
 use empire::domain::player::resource::ResourceType;
 use empire::schema::modifiers;
 
@@ -17,7 +17,7 @@ async fn test_valid_modifier_constraints() {
     let wood_modifier = NewModifier {
         name: "wood_boost".to_string(),
         description: "Increases wood resources".to_string(),
-        modifier_type: ModifierType::Percentage,
+        magnitude_kind: MagnitudeKind::Percentage,
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),
@@ -34,7 +34,7 @@ async fn test_valid_modifier_constraints() {
     let combat_modifier = NewModifier {
         name: "combat_boost".to_string(),
         description: "Increases combat effectiveness".to_string(),
-        modifier_type: ModifierType::Multiplier,
+        magnitude_kind: MagnitudeKind::Multiplier,
         magnitude: BigDecimal::from_str("1.5").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: None,
@@ -57,7 +57,7 @@ async fn test_invalid_modifier_constraints() {
     let invalid_resource_modifier = NewModifier {
         name: "invalid_resource".to_string(),
         description: "Invalid resource modifier".to_string(),
-        modifier_type: ModifierType::Percentage,
+        magnitude_kind: MagnitudeKind::Percentage,
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: None,
@@ -77,7 +77,7 @@ async fn test_invalid_modifier_constraints() {
     let invalid_combat_modifier = NewModifier {
         name: "invalid_combat".to_string(),
         description: "Invalid combat modifier".to_string(),
-        modifier_type: ModifierType::Multiplier,
+        magnitude_kind: MagnitudeKind::Multiplier,
         magnitude: BigDecimal::from_str("1.25").unwrap(),
         target_type: ModifierTarget::Combat,
         target_resource: Some(ResourceType::Wood),
@@ -102,7 +102,7 @@ async fn test_unique_name_constraint() {
     let modifier = NewModifier {
         name: "unique_test".to_string(),
         description: "Test modifier".to_string(),
-        modifier_type: ModifierType::Percentage,
+        magnitude_kind: MagnitudeKind::Percentage,
         magnitude: BigDecimal::from_str("0.20").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Food),
@@ -120,7 +120,7 @@ async fn test_unique_name_constraint() {
     let duplicate_modifier = NewModifier {
         name: "unique_test".to_string(),
         description: "Different description".to_string(),
-        modifier_type: ModifierType::Flat,
+        magnitude_kind: MagnitudeKind::Flat,
         magnitude: BigDecimal::from_str("50").unwrap(),
         target_type: ModifierTarget::Resource,
         target_resource: Some(ResourceType::Wood),

@@ -37,31 +37,31 @@ pub type ModifierKey = Uuid;
     PartialOrd,
     Ord,
 )]
-#[diesel(sql_type = crate::schema::sql_types::ModifierType)]
+#[diesel(sql_type = crate::schema::sql_types::MagnitudeKind)]
 #[serde(rename_all = "lowercase")]
-pub enum ModifierType {
+pub enum MagnitudeKind {
     Percentage,
     Flat,
     Multiplier,
 }
 
-impl ToSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
+impl ToSql<crate::schema::sql_types::MagnitudeKind, Pg> for MagnitudeKind {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         match *self {
-            ModifierType::Percentage => out.write_all(b"percentage")?,
-            ModifierType::Flat => out.write_all(b"flat")?,
-            ModifierType::Multiplier => out.write_all(b"multiplier")?,
+            MagnitudeKind::Percentage => out.write_all(b"percentage")?,
+            MagnitudeKind::Flat => out.write_all(b"flat")?,
+            MagnitudeKind::Multiplier => out.write_all(b"multiplier")?,
         }
         Ok(IsNull::No)
     }
 }
 
-impl FromSql<crate::schema::sql_types::ModifierType, Pg> for ModifierType {
+impl FromSql<crate::schema::sql_types::MagnitudeKind, Pg> for MagnitudeKind {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
         match bytes.as_bytes() {
-            b"percentage" => Ok(ModifierType::Percentage),
-            b"flat" => Ok(ModifierType::Flat),
-            b"multiplier" => Ok(ModifierType::Multiplier),
+            b"percentage" => Ok(MagnitudeKind::Percentage),
+            b"flat" => Ok(MagnitudeKind::Flat),
+            b"multiplier" => Ok(MagnitudeKind::Multiplier),
             _ => {
                 let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
                 Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
@@ -175,8 +175,8 @@ pub struct Modifier {
     pub id: ModifierKey,
     pub name: String,
     pub description: String,
-    pub modifier_type: ModifierType,
     pub magnitude: BigDecimal,
+    pub magnitude_kind: MagnitudeKind,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_behaviour: StackingBehaviour,
@@ -190,8 +190,8 @@ pub struct Modifier {
 pub struct NewModifier {
     pub name: String,
     pub description: String,
-    pub modifier_type: ModifierType,
     pub magnitude: BigDecimal,
+    pub magnitude_kind: MagnitudeKind,
     pub target_type: ModifierTarget,
     pub target_resource: Option<ResourceType>,
     pub stacking_behaviour: Option<StackingBehaviour>,
@@ -204,8 +204,8 @@ pub struct UpdateModifier {
     pub id: ModifierKey,
     pub name: Option<String>,
     pub description: Option<String>,
-    pub modifier_type: Option<ModifierType>,
     pub magnitude: Option<BigDecimal>,
+    pub magnitude_kind: Option<MagnitudeKind>,
     pub target_type: Option<ModifierTarget>,
     pub target_resource: Option<ResourceType>,
     pub stacking_behaviour: Option<StackingBehaviour>,
