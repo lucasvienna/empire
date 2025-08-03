@@ -5,4 +5,5 @@ mod user_controller;
 
 #[path = "../common/mod.rs"]
 mod common;
+mod faction_controller;
 mod player_controller;

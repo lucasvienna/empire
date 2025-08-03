@@ -1,12 +1,14 @@
 use std::fmt;
 use std::sync::Arc;
 
+use axum::extract::FromRef;
 use diesel::prelude::*;
 
 use crate::db::Repository;
-use crate::domain::app_state::AppPool;
+use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::error::Result;
 use crate::domain::factions::{Faction, FactionKey, NewFaction, UpdateFaction};
+use crate::domain::modifier::Modifier;
 use crate::schema::faction::dsl::*;
 
 /// Repository for managing faction entities in the database.
@@ -22,6 +24,12 @@ pub struct FactionRepository {
 impl fmt::Debug for FactionRepository {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "FactionRepository")
+    }
+}
+
+impl FromRef<AppState> for FactionRepository {
+    fn from_ref(state: &AppState) -> Self {
+        Self::new(&state.db_pool)
     }
 }
 
@@ -97,5 +105,31 @@ impl Repository<Faction, NewFaction, &UpdateFaction, FactionKey> for FactionRepo
         let mut conn = self.pool.get()?;
         let rows_deleted = diesel::delete(faction.find(faction_id)).execute(&mut conn)?;
         Ok(rows_deleted)
+    }
+}
+
+impl FactionRepository {
+    /// Retrieves faction-specific bonuses (modifiers) from the database.
+    ///
+    /// # Arguments
+    /// * `faction_key` - Optional faction identifier to filter bonuses for a specific faction
+    pub fn get_bonuses(&self, faction_key: Option<&FactionKey>) -> Result<Vec<Modifier>> {
+        let mut conn = self.pool.get()?;
+        let bonuses = {
+            use crate::schema::modifiers as md;
+            let mut query = md::table
+                .select(Modifier::as_select())
+                .filter(md::stacking_group.similar_to("faction_%"))
+                .into_boxed();
+
+            if let Some(faction_key) = faction_key {
+                let ilike = format!("{}_%", faction_key);
+                query = query.filter(md::name.ilike(ilike));
+            }
+
+            query.get_results(&mut conn)?
+        };
+
+        Ok(bonuses)
     }
 }

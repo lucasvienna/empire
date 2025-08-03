@@ -22,7 +22,7 @@ async fn get_game_state_success() {
     let server = TestApp::new();
     let client = reqwest::Client::new();
     let user = server.create_test_user(Some(FactionCode::Human));
-    let bearer = server.create_bearer_token(user.id);
+    let bearer = server.create_bearer_token(&user.id);
 
     let response = client
         .get(format!("{}/game", &server.address))
@@ -98,7 +98,7 @@ async fn get_buildings_success() {
     let server = TestApp::new();
     let client = reqwest::Client::new();
     let user = server.create_test_user(Some(FactionCode::Human));
-    let bearer = server.create_bearer_token(user.id);
+    let bearer = server.create_bearer_token(&user.id);
 
     let response = client
         .get(format!("{}/game/buildings", &server.address))
@@ -140,7 +140,7 @@ async fn get_building_by_id_not_found() {
     let server = TestApp::new();
     let client = reqwest::Client::new();
     let user = server.create_test_user(Some(FactionCode::Human));
-    let bearer = server.create_bearer_token(user.id);
+    let bearer = server.create_bearer_token(&user.id);
 
     // Use a non-existent building ID
     let fake_building_id = uuid::Uuid::new_v4();
@@ -180,7 +180,7 @@ async fn collect_resources_success() {
     let server = TestApp::new();
     let client = reqwest::Client::new();
     let user = server.create_test_user(Some(FactionCode::Human));
-    let bearer = server.create_bearer_token(user.id);
+    let bearer = server.create_bearer_token(&user.id);
 
     let response = client
         .post(format!("{}/game/resources/collect", &server.address))

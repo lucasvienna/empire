@@ -12,7 +12,7 @@ async fn join_faction_success() {
     let server = TestApp::new();
     let client = reqwest::Client::new();
     let user = server.create_test_user(None); // Start with neutral faction
-    let bearer = server.create_bearer_token(user.id);
+    let bearer = server.create_bearer_token(&user.id);
 
     let response = client
         .post(format!("{}/player/faction", &server.address))

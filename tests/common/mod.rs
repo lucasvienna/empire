@@ -106,7 +106,7 @@ impl TestHarness {
         create_test_user(&self.app_pool, faction)
     }
 
-    pub fn create_bearer_token(&self, player_key: PlayerKey) -> Authorization<Bearer> {
+    pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
         get_bearer(player_key)
     }
 }
@@ -162,7 +162,7 @@ impl TestApp {
         create_test_user(&self.app_pool, faction)
     }
 
-    pub fn create_bearer_token(&self, player_key: PlayerKey) -> Authorization<Bearer> {
+    pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
         get_bearer(player_key)
     }
 }

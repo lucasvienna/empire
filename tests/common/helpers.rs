@@ -9,10 +9,10 @@ use empire::domain::auth::{encode_token, Claims};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
 
-pub(super) fn get_bearer(player_id: PlayerKey) -> Authorization<Bearer> {
+pub(super) fn get_bearer(player_id: &PlayerKey) -> Authorization<Bearer> {
     let now = chrono::Utc::now();
     let token = encode_token(Claims {
-        sub: player_id,
+        sub: *player_id,
         iat: now.timestamp() as usize,
         exp: (now + chrono::Duration::minutes(5)).timestamp() as usize,
     })

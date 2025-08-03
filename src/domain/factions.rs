@@ -1,5 +1,5 @@
 use std::io::Write;
-use std::str::from_utf8;
+use std::str::{from_utf8, FromStr};
 
 use chrono::{DateTime, Utc};
 use derive_more::Display;
@@ -44,11 +44,8 @@ pub enum FactionCode {
     Goblin,
 }
 
-impl FactionCode {
-    /// Helper function to get the string representation of the enum variant.
-    /// This centralizes the mapping, making the code more maintainable and
-    /// ensuring consistency between `ToSql` and `FromSql`.
-    fn as_str(&self) -> &'static str {
+impl AsRef<str> for FactionCode {
+    fn as_ref(&self) -> &str {
         match self {
             Self::Neutral => "neutral",
             Self::Human => "human",
@@ -60,24 +57,38 @@ impl FactionCode {
     }
 }
 
-impl ToSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        out.write_all(self.as_str().as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
-    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match from_utf8(bytes.as_bytes())? {
+impl FromStr for FactionCode {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
             "neutral" => Ok(FactionCode::Neutral),
             "human" => Ok(FactionCode::Human),
             "orc" => Ok(FactionCode::Orc),
             "elf" => Ok(FactionCode::Elf),
             "dwarf" => Ok(FactionCode::Dwarf),
             "goblin" => Ok(FactionCode::Goblin),
-            other => Err(format!("Unrecognized enum variant: {other}").into()),
+            other => Err(format!("Unrecognized enum variant: {other}")),
         }
+    }
+}
+
+impl Default for FactionCode {
+    fn default() -> Self {
+        Self::Neutral
+    }
+}
+
+impl ToSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        out.write_all(self.as_ref().as_bytes())?;
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::FactionCode, Pg> for FactionCode {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        let s = from_utf8(bytes.as_bytes())?;
+        Ok(Self::from_str(s)?)
     }
 }
 
