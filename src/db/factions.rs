@@ -123,7 +123,7 @@ impl FactionRepository {
                 .into_boxed();
 
             if let Some(faction_key) = faction_key {
-                let ilike = format!("{}_%", faction_key);
+                let ilike = format!("{faction_key}_%");
                 query = query.filter(md::name.ilike(ilike));
             }
 

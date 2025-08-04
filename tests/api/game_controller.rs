@@ -35,9 +35,9 @@ async fn get_game_state_success() {
     if response.status() != StatusCode::OK {
         let status = response.status();
         let body = response.text().await.unwrap();
-        println!("Response status: {}", status);
-        println!("Response body: {}", body);
-        panic!("Expected OK status, got {}", status);
+        println!("Response status: {status}");
+        println!("Response body: {body}");
+        panic!("Expected OK status, got {status}");
     }
 
     assert_eq!(response.status(), StatusCode::OK);
