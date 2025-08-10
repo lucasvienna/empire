@@ -13,12 +13,12 @@ mod index_controller;
 mod resources;
 
 pub fn game_routes() -> Router<AppState> {
-    Router::new().nest(
-        "/game",
-        Router::new()
-            .route("/", get(get_game))
-            .merge(buildings_routes())
-            .merge(resource_routes())
-            .merge(factions_routes()),
-    )
+	Router::new().nest(
+		"/game",
+		Router::new()
+			.route("/", get(get_game))
+			.merge(buildings_routes())
+			.merge(resource_routes())
+			.merge(factions_routes()),
+	)
 }

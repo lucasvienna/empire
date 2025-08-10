@@ -15,14 +15,14 @@ use crate::domain::player::Player;
 /// - `Ok(String)`: Contains the password hash in PHC string format (e.g., `$argon2id$v=19$...`).
 /// - `Err(password_hash::Error)`: If there is an issue with hashing the password.
 pub fn hash_password(pwd: impl AsRef<[u8]>) -> Result<String, password_hash::Error> {
-    let salt = SaltString::generate(&mut OsRng);
-    // Argon2 with default params (Argon2id v19)
-    let argon2 = Argon2::default();
+	let salt = SaltString::generate(&mut OsRng);
+	// Argon2 with default params (Argon2id v19)
+	let argon2 = Argon2::default();
 
-    // Hash password to PHC string ($argon2id$v=19$...)
-    let password_hash = argon2.hash_password(pwd.as_ref(), &salt)?.to_string();
+	// Hash password to PHC string ($argon2id$v=19$...)
+	let password_hash = argon2.hash_password(pwd.as_ref(), &salt)?.to_string();
 
-    Ok(password_hash)
+	Ok(password_hash)
 }
 
 /// Creates a JSON Web Token (JWT) for a player with the provided settings.
@@ -42,18 +42,18 @@ pub fn hash_password(pwd: impl AsRef<[u8]>) -> Result<String, password_hash::Err
 /// # Errors
 /// - Returns `AuthError::TokenCreation` if encoding the token fails.
 pub fn create_token_for_user(
-    user: Player,
-    jwt_settings: &JwtSettings,
+	user: Player,
+	jwt_settings: &JwtSettings,
 ) -> Result<String, AuthError> {
-    let now = chrono::Utc::now();
-    let expires_in = chrono::Duration::seconds(jwt_settings.expires_in as i64);
-    let claims = Claims {
-        sub: user.id,
-        exp: (now + expires_in).timestamp() as usize,
-        iat: now.timestamp() as usize,
-    };
+	let now = chrono::Utc::now();
+	let expires_in = chrono::Duration::seconds(jwt_settings.expires_in as i64);
+	let claims = Claims {
+		sub: user.id,
+		exp: (now + expires_in).timestamp() as usize,
+		iat: now.timestamp() as usize,
+	};
 
-    let token = encode_token(claims)?;
+	let token = encode_token(claims)?;
 
-    Ok(token)
+	Ok(token)
 }

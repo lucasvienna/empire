@@ -14,25 +14,25 @@ use crate::Result;
 #[instrument(skip(pool, srv))]
 #[debug_handler(state = AppState)]
 pub async fn collect_resources(
-    State(pool): State<AppPool>,
-    State(srv): State<ResourceService>,
-    player: Extension<AuthenticatedUser>,
+	State(pool): State<AppPool>,
+	State(srv): State<ResourceService>,
+	player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
-    let player_key = player.id;
-    debug!("Collecting resources for player: {}", player_key);
-    let resources = srv.collect_resources(&player_key);
-    match resources {
-        Ok(res) => {
-            info!("Collected resources: {}", res.id);
-            let mut conn = pool.get()?;
-            let res_state = get_resources_data(&mut conn, player_key)?;
-            let body = json!(res_state);
-            Ok((StatusCode::OK, Json(body)))
-        }
-        Err(err) => {
-            warn!("Error collecting resources: {}", err);
-            let body = json!({ "status": "fail", "message": err.to_string() });
-            Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(body)))
-        }
-    }
+	let player_key = player.id;
+	debug!("Collecting resources for player: {}", player_key);
+	let resources = srv.collect_resources(&player_key);
+	match resources {
+		Ok(res) => {
+			info!("Collected resources: {}", res.id);
+			let mut conn = pool.get()?;
+			let res_state = get_resources_data(&mut conn, player_key)?;
+			let body = json!(res_state);
+			Ok((StatusCode::OK, Json(body)))
+		}
+		Err(err) => {
+			warn!("Error collecting resources: {}", err);
+			let body = json!({ "status": "fail", "message": err.to_string() });
+			Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(body)))
+		}
+	}
 }

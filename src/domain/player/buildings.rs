@@ -13,28 +13,28 @@ pub type PlayerBuildingKey = Uuid;
 #[diesel(belongs_to(Building))]
 #[diesel(table_name = player_building, check_for_backend(diesel::pg::Pg))]
 pub struct PlayerBuilding {
-    pub id: PlayerBuildingKey,
-    pub player_id: PlayerKey,
-    pub building_id: i32,
-    pub level: i32,
-    pub upgrade_time: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+	pub id: PlayerBuildingKey,
+	pub player_id: PlayerKey,
+	pub building_id: i32,
+	pub level: i32,
+	pub upgrade_time: Option<String>,
+	pub created_at: DateTime<Utc>,
+	pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Insertable, Debug, Clone, PartialEq, Eq, Hash)]
 #[diesel(table_name = player_building, check_for_backend(diesel::pg::Pg))]
 pub struct NewPlayerBuilding {
-    pub player_id: PlayerKey,
-    pub building_id: i32,
-    pub level: Option<i32>,
-    pub upgrade_time: Option<String>,
+	pub player_id: PlayerKey,
+	pub building_id: i32,
+	pub level: Option<i32>,
+	pub upgrade_time: Option<String>,
 }
 
 #[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq, Hash)]
 #[diesel(table_name = player_building, check_for_backend(diesel::pg::Pg))]
 pub struct UpdatePlayerBuilding {
-    pub id: PlayerBuildingKey,
-    pub level: Option<i32>,
-    pub upgrade_time: Option<String>,
+	pub id: PlayerBuildingKey,
+	pub level: Option<i32>,
+	pub upgrade_time: Option<String>,
 }

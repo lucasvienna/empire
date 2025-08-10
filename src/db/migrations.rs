@@ -15,9 +15,9 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 /// * `connection` - A mutable reference to an object implementing `MigrationHarness`
 ///   for a `Pg` connection (PostgreSQL).
 pub fn run_pending(
-    connection: &mut impl MigrationHarness<Pg>,
+	connection: &mut impl MigrationHarness<Pg>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    connection.run_pending_migrations(MIGRATIONS)?;
+	connection.run_pending_migrations(MIGRATIONS)?;
 
-    Ok(())
+	Ok(())
 }

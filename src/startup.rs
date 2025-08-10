@@ -46,25 +46,25 @@ use crate::Result;
 /// - Retrieving the server's local address fails.
 /// - Starting the Axum server or handling graceful shutdown encounters an issue.
 pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
-    let token = CancellationToken::new();
-    let app_state = AppState(Arc::new(App::with_pool(pool.clone(), config.clone())));
+	let token = CancellationToken::new();
+	let app_state = AppState(Arc::new(App::with_pool(pool.clone(), config.clone())));
 
-    let mut subroutines = start_subroutines(&app_state, &config.server, token.clone())?;
-    let monitor = subroutines.monitor();
-    info!("Subroutines monitor started");
+	let mut subroutines = start_subroutines(&app_state, &config.server, token.clone())?;
+	let monitor = subroutines.monitor();
+	info!("Subroutines monitor started");
 
-    let (listener, router) = server::init(app_state).await?;
-    info!("Listening on {}", listener.local_addr()?);
+	let (listener, router) = server::init(app_state).await?;
+	info!("Listening on {}", listener.local_addr()?);
 
-    let server = axum::serve(listener, router.into_make_service())
-        .with_graceful_shutdown(shutdown_signal(token));
-    info!("Empire server started!");
+	let server = axum::serve(listener, router.into_make_service())
+		.with_graceful_shutdown(shutdown_signal(token));
+	info!("Empire server started!");
 
-    let (srv, _) = tokio::join!(server, monitor);
-    srv.map_err(|err| {
-        warn!("Server error while shutting down: {:#?}", err);
-        err.into()
-    })
+	let (srv, _) = tokio::join!(server, monitor);
+	srv.map_err(|err| {
+		warn!("Server error while shutting down: {:#?}", err);
+		err.into()
+	})
 }
 
 /// Initializes and starts worker pools for background processing.
@@ -93,19 +93,19 @@ pub async fn launch(config: Settings, pool: AppPool) -> Result<()> {
 /// The worker count is automatically adjusted based on the system's available parallelism
 /// to ensure optimal resource utilization.
 fn start_subroutines(
-    app_state: &AppState,
-    settings: &ServerSettings,
-    token: CancellationToken,
+	app_state: &AppState,
+	settings: &ServerSettings,
+	token: CancellationToken,
 ) -> Result<WorkerPool> {
-    let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
+	let mut worker_pool = WorkerPool::new(Arc::clone(&app_state.job_queue), token.clone());
 
-    let default_workers = settings.workers.unwrap_or(available_parallelism()?.get()) / 2;
-    let mod_workers = ModifierProcessor::initialise_n(default_workers, app_state);
-    let res_workers = ResourceProcessor::initialise_n(default_workers, app_state);
-    worker_pool.add_workers(mod_workers);
-    worker_pool.add_workers(res_workers);
+	let default_workers = settings.workers.unwrap_or(available_parallelism()?.get()) / 2;
+	let mod_workers = ModifierProcessor::initialise_n(default_workers, app_state);
+	let res_workers = ResourceProcessor::initialise_n(default_workers, app_state);
+	worker_pool.add_workers(mod_workers);
+	worker_pool.add_workers(res_workers);
 
-    Ok(worker_pool)
+	Ok(worker_pool)
 }
 
 /// Waits for a shutdown signal in the application.
@@ -123,39 +123,39 @@ fn start_subroutines(
 /// - If the `Ctrl+C` signal handler fails to install.
 /// - On Unix-based systems, if the `SIGTERM` signal handler fails to install.
 async fn shutdown_signal(token: CancellationToken) {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
+	let ctrl_c = async {
+		signal::ctrl_c()
+			.await
+			.expect("failed to install Ctrl+C handler");
+	};
 
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
+	#[cfg(unix)]
+	let terminate = async {
+		signal::unix::signal(signal::unix::SignalKind::terminate())
+			.expect("failed to install signal handler")
+			.recv()
+			.await;
+	};
 
-    #[cfg(unix)]
-    let interrupt = async {
-        signal::unix::signal(signal::unix::SignalKind::interrupt())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
+	#[cfg(unix)]
+	let interrupt = async {
+		signal::unix::signal(signal::unix::SignalKind::interrupt())
+			.expect("failed to install signal handler")
+			.recv()
+			.await;
+	};
 
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+	#[cfg(not(unix))]
+	let terminate = std::future::pending::<()>();
 
-    #[cfg(not(unix))]
-    let interrupt = std::future::pending::<()>();
+	#[cfg(not(unix))]
+	let interrupt = std::future::pending::<()>();
 
-    tokio::select! {
-        _ = ctrl_c => token.cancel(),
-        _ = terminate => token.cancel(),
-        _ = interrupt => token.cancel(),
-    }
+	tokio::select! {
+		_ = ctrl_c => token.cancel(),
+		_ = terminate => token.cancel(),
+		_ = interrupt => token.cancel(),
+	}
 
-    info!("Shutting down...");
+	info!("Shutting down...");
 }

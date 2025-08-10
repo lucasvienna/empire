@@ -24,7 +24,7 @@ use tower_http::trace::TraceLayer as TowerTraceLayer;
 use tracing::{error, info_span};
 
 use crate::controllers::routes::{
-    auth_routes, game_routes, health_routes, player_routes, protected_auth_routes, user_routes,
+	auth_routes, game_routes, health_routes, player_routes, protected_auth_routes, user_routes,
 };
 use crate::domain::app_state::AppState;
 use crate::net::auth::auth_middleware;
@@ -52,56 +52,56 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
 /// - Request timeout
 /// - Authentication middleware for protected routes
 pub fn init(state: AppState) -> Router {
-    let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
+	let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
 
-    let middleware = ServiceBuilder::new()
-        .layer(SetRequestIdLayer::new(
-            x_request_id.clone(),
-            MakeRequestUlid,
-        ))
-        .layer(
-            TowerTraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
-                // Log the request id as generated.
-                let request_id = request.headers().get(REQUEST_ID_HEADER);
+	let middleware = ServiceBuilder::new()
+		.layer(SetRequestIdLayer::new(
+			x_request_id.clone(),
+			MakeRequestUlid,
+		))
+		.layer(
+			TowerTraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
+				// Log the request id as generated.
+				let request_id = request.headers().get(REQUEST_ID_HEADER);
 
-                match request_id {
-                    Some(request_id) => info_span!(
-                        "http_request",
-                        request_id = ?request_id,
-                        method = %request.method(),
-                        path = %request.uri().path(),
-                    ),
-                    None => {
-                        error!("could not extract request_id");
-                        info_span!(
-                            "http_request",
-                            method = %request.method(),
-                            path = %request.uri().path(),
-                        )
-                    }
-                }
-            }),
-        )
-        .layer(TowerCatchPanicLayer::new())
-        .layer(TowerCorsLayer::permissive())
-        .layer(TowerCompressionLayer::new())
-        .layer(TimeoutLayer::new(Duration::from_secs(10)))
-        .layer(PropagateRequestIdLayer::new(x_request_id));
+				match request_id {
+					Some(request_id) => info_span!(
+						"http_request",
+						request_id = ?request_id,
+						method = %request.method(),
+						path = %request.uri().path(),
+					),
+					None => {
+						error!("could not extract request_id");
+						info_span!(
+							"http_request",
+							method = %request.method(),
+							path = %request.uri().path(),
+						)
+					}
+				}
+			}),
+		)
+		.layer(TowerCatchPanicLayer::new())
+		.layer(TowerCorsLayer::permissive())
+		.layer(TowerCompressionLayer::new())
+		.layer(TimeoutLayer::new(Duration::from_secs(10)))
+		.layer(PropagateRequestIdLayer::new(x_request_id));
 
-    let protected_routes = Router::new()
-        .merge(protected_auth_routes())
-        .merge(player_routes())
-        .merge(user_routes())
-        .merge(game_routes())
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            auth_middleware,
-        ));
+	let protected_routes = Router::new()
+		.merge(protected_auth_routes())
+		.merge(player_routes())
+		.merge(user_routes())
+		.merge(game_routes())
+		.layer(middleware::from_fn_with_state(
+			state.clone(),
+			auth_middleware,
+		));
 
-    Router::new()
-        .merge(health_routes())
-        .merge(auth_routes())
-        .merge(protected_routes)
-        .layer(middleware)
-        .with_state(state)
+	Router::new()
+		.merge(health_routes())
+		.merge(auth_routes())
+		.merge(protected_routes)
+		.layer(middleware)
+		.with_state(state)
 }

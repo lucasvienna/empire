@@ -20,29 +20,29 @@ pub use connection::{DbConn, DbPool};
 
 pub trait Repository<Entity, NewEntity, UpdateEntity, EntityKey>
 where
-    UpdateEntity: Identifiable + AsChangeset,
+	UpdateEntity: Identifiable + AsChangeset,
 {
-    /// Creates a new repository instance from a connection pool.
-    ///
-    /// # Arguments
-    /// * `pool` - Reference to a [`AppPool`] connection pool
-    ///
-    /// # Returns
-    /// * `Self` - New repository instance
-    fn new(pool: &AppPool) -> Self;
+	/// Creates a new repository instance from a connection pool.
+	///
+	/// # Arguments
+	/// * `pool` - Reference to a [`AppPool`] connection pool
+	///
+	/// # Returns
+	/// * `Self` - New repository instance
+	fn new(pool: &AppPool) -> Self;
 
-    /// get all entities
-    fn get_all(&self) -> Result<Vec<Entity>>;
+	/// get all entities
+	fn get_all(&self) -> Result<Vec<Entity>>;
 
-    /// get a single entity by id
-    fn get_by_id(&self, key: &EntityKey) -> Result<Entity>;
+	/// get a single entity by id
+	fn get_by_id(&self, key: &EntityKey) -> Result<Entity>;
 
-    /// add an entity to the database
-    fn create(&self, entity: NewEntity) -> Result<Entity>;
+	/// add an entity to the database
+	fn create(&self, entity: NewEntity) -> Result<Entity>;
 
-    /// update an entity
-    fn update(&self, changeset: UpdateEntity) -> Result<Entity>;
+	/// update an entity
+	fn update(&self, changeset: UpdateEntity) -> Result<Entity>;
 
-    /// delete an entity by its id
-    fn delete(&self, key: &EntityKey) -> Result<usize>;
+	/// delete an entity by its id
+	fn delete(&self, key: &EntityKey) -> Result<usize>;
 }

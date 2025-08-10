@@ -24,161 +24,161 @@ use crate::Error;
 ///
 /// Each processor instance runs in its own task and polls the job queue for new work.
 pub struct ResourceProcessor {
-    /// A unique ID for the processor instance
-    id: String,
-    /// A reference to the application's database connection pool
-    db_pool: AppPool,
-    /// A broadcast channel receiver for handling graceful shutdowns
-    shutdown_rx: Receiver<()>,
-    /// Modifier service instance
-    srv: ResourceService,
+	/// A unique ID for the processor instance
+	id: String,
+	/// A reference to the application's database connection pool
+	db_pool: AppPool,
+	/// A broadcast channel receiver for handling graceful shutdowns
+	shutdown_rx: Receiver<()>,
+	/// Modifier service instance
+	srv: ResourceService,
 }
 
 impl ResourceProcessor {
-    pub fn initialise_n(n: usize, state: &AppState) -> Vec<ResourceProcessor> {
-        (0..n)
-            .map(|_| ResourceProcessor::from_ref(state))
-            .collect::<Vec<_>>()
-    }
+	pub fn initialise_n(n: usize, state: &AppState) -> Vec<ResourceProcessor> {
+		(0..n)
+			.map(|_| ResourceProcessor::from_ref(state))
+			.collect::<Vec<_>>()
+	}
 }
 
 impl FromRef<AppState> for ResourceProcessor {
-    fn from_ref(state: &AppState) -> Self {
-        let rx = state.job_queue.subscribe_shutdown();
-        Self::new(state, rx)
-    }
+	fn from_ref(state: &AppState) -> Self {
+		let rx = state.job_queue.subscribe_shutdown();
+		Self::new(state, rx)
+	}
 }
 
 impl JobProcessor for ResourceProcessor {
-    /// Creates a new `ProductionProcessor` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `db_pool` - A reference to the application's database connection pool
-    /// * `shutdown_rx` - A broadcast channel receiver for handling graceful shutdowns
-    ///
-    /// # Returns
-    ///
-    /// A new `ProductionProcessor` instance with a unique ID
-    fn new(app_state: &AppState, shutdown_rx: Receiver<()>) -> Self
-    where
-        Self: Sized,
-    {
-        let id = format!("resource-goblin-{}", Ulid::new());
-        let srv = ResourceService::from_ref(app_state);
-        debug!("Starting worker {}", id);
-        Self {
-            id,
-            db_pool: Arc::clone(&app_state.db_pool),
-            shutdown_rx,
-            srv,
-        }
-    }
+	/// Creates a new `ProductionProcessor` instance.
+	///
+	/// # Arguments
+	///
+	/// * `db_pool` - A reference to the application's database connection pool
+	/// * `shutdown_rx` - A broadcast channel receiver for handling graceful shutdowns
+	///
+	/// # Returns
+	///
+	/// A new `ProductionProcessor` instance with a unique ID
+	fn new(app_state: &AppState, shutdown_rx: Receiver<()>) -> Self
+	where
+		Self: Sized,
+	{
+		let id = format!("resource-goblin-{}", Ulid::new());
+		let srv = ResourceService::from_ref(app_state);
+		debug!("Starting worker {}", id);
+		Self {
+			id,
+			db_pool: Arc::clone(&app_state.db_pool),
+			shutdown_rx,
+			srv,
+		}
+	}
 
-    #[instrument(skip(self, queue))]
-    async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
-        let mut interval = tokio::time::interval(Duration::from_secs(1));
-        trace!("Worker {} running", self.id);
+	#[instrument(skip(self, queue))]
+	async fn run(&mut self, queue: Arc<JobQueue>) -> Result<(), Error> {
+		let mut interval = tokio::time::interval(Duration::from_secs(1));
+		trace!("Worker {} running", self.id);
 
-        loop {
-            tokio::select! {
-                _ = self.shutdown_rx.recv() => {
-                    debug!("Worker {} shutting down", self.id);
-                    break;
-                }
-                _ = interval.tick() => {
-                    match queue.get_next_job_of_type(&self.id, &JobType::Resource) {
-                        Ok(Some(job)) => {
-                            // Found a job, process it
-                            trace!("Worker {} picked up job {}", self.id, job.id);
-                            match self.process_job(job.clone()).await {
-                                Ok(()) => {
-                                    trace!("Worker {} completed job {}", self.id, job.id);
-                                    queue.complete_job(&job.id)?;
-                                }
-                                Err(e) => {
-                                    warn!("Worker {} failed to process job {}", self.id, job.id);
-                                    debug!("Failed job: {:#?} {:?}",job, e);
-                                    queue.fail_job(&job.id, e.to_string())?;
-                                }
-                            }
-                        }
-                        Ok(None) => {
-                            // No jobs available, continue polling
-                            sleep(Duration::from_secs(1)).await;
-                        }
-                        Err(e) => {
-                            // Error fetching job, retry after a short delay
-                            error!("Error fetching job: {}", e);
-                            sleep(Duration::from_secs(5)).await;
-                        }
-                    }
-                }
-            }
-        }
+		loop {
+			tokio::select! {
+				_ = self.shutdown_rx.recv() => {
+					debug!("Worker {} shutting down", self.id);
+					break;
+				}
+				_ = interval.tick() => {
+					match queue.get_next_job_of_type(&self.id, &JobType::Resource) {
+						Ok(Some(job)) => {
+							// Found a job, process it
+							trace!("Worker {} picked up job {}", self.id, job.id);
+							match self.process_job(job.clone()).await {
+								Ok(()) => {
+									trace!("Worker {} completed job {}", self.id, job.id);
+									queue.complete_job(&job.id)?;
+								}
+								Err(e) => {
+									warn!("Worker {} failed to process job {}", self.id, job.id);
+									debug!("Failed job: {:#?} {:?}",job, e);
+									queue.fail_job(&job.id, e.to_string())?;
+								}
+							}
+						}
+						Ok(None) => {
+							// No jobs available, continue polling
+							sleep(Duration::from_secs(1)).await;
+						}
+						Err(e) => {
+							// Error fetching job, retry after a short delay
+							error!("Error fetching job: {}", e);
+							sleep(Duration::from_secs(5)).await;
+						}
+					}
+				}
+			}
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    #[instrument(skip(self, job))]
-    async fn process_job(&self, job: Job) -> Result<(), Error> {
-        debug!("Processing job: {}", job.id);
-        trace!("Job details: {:?}", job);
+	#[instrument(skip(self, job))]
+	async fn process_job(&self, job: Job) -> Result<(), Error> {
+		debug!("Processing job: {}", job.id);
+		trace!("Job details: {:?}", job);
 
-        assert_eq!(
-            job.job_type,
-            JobType::Resource,
-            "Expected a resource job, got: {}",
-            job.job_type
-        );
+		assert_eq!(
+			job.job_type,
+			JobType::Resource,
+			"Expected a resource job, got: {}",
+			job.job_type
+		);
 
-        let payload: ProductionJobPayload = serde_json::from_value(job.payload.clone())?;
+		let payload: ProductionJobPayload = serde_json::from_value(job.payload.clone())?;
 
-        match payload {
-            ProductionJobPayload::ProduceResources { players_id } => {
-                debug!(
-                    "Processing produce resources job for player: {}",
-                    players_id
-                );
-                match self.srv.produce_for_player(&players_id).await {
-                    Ok(_) => {
-                        info!("Successfully produced resources for player: {}", players_id);
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to produce resources for player {}: {}",
-                            players_id, e
-                        );
-                        trace!("Detailed error: {:?}", e);
-                        return Err(e);
-                    }
-                }
-            }
-            ProductionJobPayload::CollectResources { players_id } => {
-                debug!(
-                    "Processing collect resources job for player: {}",
-                    players_id
-                );
-                match self.srv.collect_resources(&players_id) {
-                    Ok(_) => {
-                        info!(
-                            "Successfully collected resources for player: {}",
-                            players_id
-                        );
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to collect resources for player {}: {}",
-                            players_id, e
-                        );
-                        trace!("Detailed error: {:?}", e);
-                        return Err(e);
-                    }
-                }
-            }
-        }
+		match payload {
+			ProductionJobPayload::ProduceResources { players_id } => {
+				debug!(
+					"Processing produce resources job for player: {}",
+					players_id
+				);
+				match self.srv.produce_for_player(&players_id).await {
+					Ok(_) => {
+						info!("Successfully produced resources for player: {}", players_id);
+					}
+					Err(e) => {
+						error!(
+							"Failed to produce resources for player {}: {}",
+							players_id, e
+						);
+						trace!("Detailed error: {:?}", e);
+						return Err(e);
+					}
+				}
+			}
+			ProductionJobPayload::CollectResources { players_id } => {
+				debug!(
+					"Processing collect resources job for player: {}",
+					players_id
+				);
+				match self.srv.collect_resources(&players_id) {
+					Ok(_) => {
+						info!(
+							"Successfully collected resources for player: {}",
+							players_id
+						);
+					}
+					Err(e) => {
+						error!(
+							"Failed to collect resources for player {}: {}",
+							players_id, e
+						);
+						trace!("Detailed error: {:?}", e);
+						return Err(e);
+					}
+				}
+			}
+		}
 
-        debug!("Completed process job: {}", job.id);
-        Ok(())
-    }
+		debug!("Completed process job: {}", job.id);
+		Ok(())
+	}
 }

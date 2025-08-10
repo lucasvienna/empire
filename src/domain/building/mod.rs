@@ -17,35 +17,35 @@ pub type BuildingKey = i32;
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, Hash)]
 #[diesel(table_name = building, check_for_backend(diesel::pg::Pg))]
 pub struct Building {
-    pub id: BuildingKey,
-    pub name: String,
-    pub max_level: i32,
-    pub max_count: i32,
-    pub faction: FactionKey,
-    pub starter: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+	pub id: BuildingKey,
+	pub name: String,
+	pub max_level: i32,
+	pub max_count: i32,
+	pub faction: FactionKey,
+	pub starter: bool,
+	pub created_at: DateTime<Utc>,
+	pub updated_at: DateTime<Utc>,
 }
 
 /// Data transfer object for creating a new building
 #[derive(Insertable, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = building, check_for_backend(diesel::pg::Pg))]
 pub struct NewBuilding {
-    pub name: String,
-    pub max_level: i32,
-    pub max_count: i32,
-    pub faction: FactionKey,
-    pub starter: bool,
+	pub name: String,
+	pub max_level: i32,
+	pub max_count: i32,
+	pub faction: FactionKey,
+	pub starter: bool,
 }
 
 /// Data transfer object for updating an existing building
 #[derive(Identifiable, AsChangeset, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[diesel(table_name = building, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateBuilding {
-    pub id: BuildingKey,
-    pub name: Option<String>,
-    pub max_level: Option<i32>,
-    pub max_count: Option<i32>,
-    pub faction: Option<FactionKey>,
-    pub starter: Option<bool>,
+	pub id: BuildingKey,
+	pub name: Option<String>,
+	pub max_level: Option<i32>,
+	pub max_count: Option<i32>,
+	pub faction: Option<FactionKey>,
+	pub starter: Option<bool>,
 }

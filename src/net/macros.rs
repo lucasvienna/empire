@@ -8,15 +8,15 @@
 /// A response with status code 401 and the provided JSON body
 #[macro_export]
 macro_rules! unauthorized {
-    ($body:expr) => {
-        (StatusCode::UNAUTHORIZED, Json($body)).into_response()
-    };
-    ($body:expr, $jar:expr) => {
-        (
-            $jar,
-            (StatusCode::UNAUTHORIZED, Json($body)).into_response(),
-        )
-    };
+	($body:expr) => {
+		(StatusCode::UNAUTHORIZED, Json($body)).into_response()
+	};
+	($body:expr, $jar:expr) => {
+		(
+			$jar,
+			(StatusCode::UNAUTHORIZED, Json($body)).into_response(),
+		)
+	};
 }
 
 /// Creates an HTTP 200 OK response with a JSON body.
@@ -29,12 +29,12 @@ macro_rules! unauthorized {
 /// A response with status code 200 and the provided JSON body
 #[macro_export]
 macro_rules! okay {
-    ($body:expr) => {
-        (StatusCode::OK, Json($body)).into_response()
-    };
-    ($body:expr, $jar:expr) => {
-        ($jar, (StatusCode::OK, Json($body)).into_response())
-    };
+	($body:expr) => {
+		(StatusCode::OK, Json($body)).into_response()
+	};
+	($body:expr, $jar:expr) => {
+		($jar, (StatusCode::OK, Json($body)).into_response())
+	};
 }
 
 /// Creates an HTTP 501 Not Implemented response with a JSON message.

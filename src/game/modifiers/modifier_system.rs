@@ -35,33 +35,33 @@ use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 /// Central coordinator for the modifier subsystem that manages caching and scheduling.
 #[derive(Clone)]
 pub struct ModifierSystem {
-    /// Thread-safe reference to the modifier calculation cache
-    pub cache: Arc<ModifierCache>,
-    /// Thread-safe reference to the modifier job scheduler
-    pub scheduler: Arc<ModifierScheduler>,
+	/// Thread-safe reference to the modifier calculation cache
+	pub cache: Arc<ModifierCache>,
+	/// Thread-safe reference to the modifier job scheduler
+	pub scheduler: Arc<ModifierScheduler>,
 }
 
 impl ModifierSystem {
-    /// Creates a new `ModifierSystem` instance with provided cache and scheduler components.
-    ///
-    /// # Arguments
-    ///
-    /// * `cache` - Arc-wrapped `ModifierCache` instance for caching modifier calculations
-    /// * `scheduler` - Arc-wrapped `ModifierScheduler` instance for managing modifier jobs
-    pub fn new(cache: Arc<ModifierCache>, scheduler: Arc<ModifierScheduler>) -> Self {
-        Self { cache, scheduler }
-    }
+	/// Creates a new `ModifierSystem` instance with provided cache and scheduler components.
+	///
+	/// # Arguments
+	///
+	/// * `cache` - Arc-wrapped `ModifierCache` instance for caching modifier calculations
+	/// * `scheduler` - Arc-wrapped `ModifierScheduler` instance for managing modifier jobs
+	pub fn new(cache: Arc<ModifierCache>, scheduler: Arc<ModifierScheduler>) -> Self {
+		Self { cache, scheduler }
+	}
 
-    /// Creates a new `ModifierSystem` instance integrated with the application's job queue.
-    ///
-    /// # Arguments
-    ///
-    /// * `settings` - Application settings containing cache configuration
-    /// * `job_queue` - Reference to the application's job queue for scheduling
-    pub fn with_job_queue(settings: &Settings, job_queue: &AppQueue) -> Self {
-        // TODO: get these from settings
-        let cache = Arc::new(ModifierCache::new(Duration::hours(1), 100));
-        let scheduler = Arc::new(ModifierScheduler::new(job_queue));
-        Self { cache, scheduler }
-    }
+	/// Creates a new `ModifierSystem` instance integrated with the application's job queue.
+	///
+	/// # Arguments
+	///
+	/// * `settings` - Application settings containing cache configuration
+	/// * `job_queue` - Reference to the application's job queue for scheduling
+	pub fn with_job_queue(settings: &Settings, job_queue: &AppQueue) -> Self {
+		// TODO: get these from settings
+		let cache = Arc::new(ModifierCache::new(Duration::hours(1), 100));
+		let scheduler = Arc::new(ModifierScheduler::new(job_queue));
+		Self { cache, scheduler }
+	}
 }

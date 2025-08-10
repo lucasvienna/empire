@@ -15,178 +15,178 @@ use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_timespan_validation() {
-    let db_pool = TestHarness::new().db_pool;
-    let mut conn = db_pool.get().unwrap();
+	let db_pool = TestHarness::new().db_pool;
+	let mut conn = db_pool.get().unwrap();
 
-    // Create a test player and modifier first
-    let player_id = create_test_user(&mut conn);
-    let modifier_id = create_test_modifier(&mut conn);
+	// Create a test player and modifier first
+	let player_id = create_test_user(&mut conn);
+	let modifier_id = create_test_modifier(&mut conn);
 
-    // Test case 1: Valid timespan (expires_at > started_at)
-    let valid_modifier = NewActiveModifier {
-        player_id,
-        modifier_id,
-        started_at: None,
-        expires_at: Some(Utc::now() + Duration::hours(1)),
-        source_type: ModifierSourceType::Event,
-        source_id: None,
-    };
+	// Test case 1: Valid timespan (expires_at > started_at)
+	let valid_modifier = NewActiveModifier {
+		player_id,
+		modifier_id,
+		started_at: None,
+		expires_at: Some(Utc::now() + Duration::hours(1)),
+		source_type: ModifierSourceType::Event,
+		source_id: None,
+	};
 
-    let result = diesel::insert_into(active_modifiers::table)
-        .values(&valid_modifier)
-        .execute(&mut conn);
-    assert!(result.is_ok(), "Failed to insert valid timespan modifier");
+	let result = diesel::insert_into(active_modifiers::table)
+		.values(&valid_modifier)
+		.execute(&mut conn);
+	assert!(result.is_ok(), "Failed to insert valid timespan modifier");
 
-    // Test case 2: Invalid timespan (expires_at < started_at)
-    let invalid_modifier = NewActiveModifier {
-        player_id,
-        modifier_id,
-        started_at: None,
-        expires_at: Some(Utc::now() - Duration::hours(1)),
-        source_type: ModifierSourceType::Event,
-        source_id: None,
-    };
+	// Test case 2: Invalid timespan (expires_at < started_at)
+	let invalid_modifier = NewActiveModifier {
+		player_id,
+		modifier_id,
+		started_at: None,
+		expires_at: Some(Utc::now() - Duration::hours(1)),
+		source_type: ModifierSourceType::Event,
+		source_id: None,
+	};
 
-    let result = diesel::insert_into(active_modifiers::table)
-        .values(&invalid_modifier)
-        .execute(&mut conn);
-    assert!(
-        result.is_err(),
-        "Should fail: Expiration time before start time"
-    );
+	let result = diesel::insert_into(active_modifiers::table)
+		.values(&invalid_modifier)
+		.execute(&mut conn);
+	assert!(
+		result.is_err(),
+		"Should fail: Expiration time before start time"
+	);
 
-    // Test case 3: Valid null expiration
-    let no_expiry_modifier = NewActiveModifier {
-        player_id,
-        modifier_id,
-        started_at: None,
-        expires_at: None,
-        source_type: ModifierSourceType::Faction,
-        source_id: None,
-    };
+	// Test case 3: Valid null expiration
+	let no_expiry_modifier = NewActiveModifier {
+		player_id,
+		modifier_id,
+		started_at: None,
+		expires_at: None,
+		source_type: ModifierSourceType::Faction,
+		source_id: None,
+	};
 
-    let result = diesel::insert_into(active_modifiers::table)
-        .values(&no_expiry_modifier)
-        .execute(&mut conn);
-    assert!(
-        result.is_ok(),
-        "Failed to insert modifier without expiration"
-    );
+	let result = diesel::insert_into(active_modifiers::table)
+		.values(&no_expiry_modifier)
+		.execute(&mut conn);
+	assert!(
+		result.is_ok(),
+		"Failed to insert modifier without expiration"
+	);
 }
 
 #[tokio::test]
 async fn test_cascade_deletion() {
-    let db_pool = TestHarness::new().db_pool;
-    let mut conn = db_pool.get().unwrap();
+	let db_pool = TestHarness::new().db_pool;
+	let mut conn = db_pool.get().unwrap();
 
-    // Create test data
-    let player_id = create_test_user(&mut conn);
-    let modifier_id = create_test_modifier(&mut conn);
+	// Create test data
+	let player_id = create_test_user(&mut conn);
+	let modifier_id = create_test_modifier(&mut conn);
 
-    // Create an active modifier
-    let active_modifier = NewActiveModifier {
-        player_id,
-        modifier_id,
-        started_at: None,
-        expires_at: None,
-        source_type: ModifierSourceType::Event,
-        source_id: None,
-    };
+	// Create an active modifier
+	let active_modifier = NewActiveModifier {
+		player_id,
+		modifier_id,
+		started_at: None,
+		expires_at: None,
+		source_type: ModifierSourceType::Event,
+		source_id: None,
+	};
 
-    diesel::insert_into(active_modifiers::table)
-        .values(&active_modifier)
-        .execute(&mut conn)
-        .expect("Failed to insert test active modifier");
+	diesel::insert_into(active_modifiers::table)
+		.values(&active_modifier)
+		.execute(&mut conn)
+		.expect("Failed to insert test active modifier");
 
-    // Test case 1: Cascade on player deletion
-    let delete_user_result =
-        diesel::delete(player::table.filter(player::id.eq(&player_id))).execute(&mut conn);
-    assert!(delete_user_result.is_ok(), "Failed to delete user");
+	// Test case 1: Cascade on player deletion
+	let delete_user_result =
+		diesel::delete(player::table.filter(player::id.eq(&player_id))).execute(&mut conn);
+	assert!(delete_user_result.is_ok(), "Failed to delete user");
 
-    // Verify active modifier was deleted
-    let remaining_modifiers = active_modifiers::table
-        .filter(active_modifiers::player_id.eq(&player_id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
-    assert_eq!(
-        remaining_modifiers, 0,
-        "Active modifier should be deleted with user"
-    );
+	// Verify active modifier was deleted
+	let remaining_modifiers = active_modifiers::table
+		.filter(active_modifiers::player_id.eq(&player_id))
+		.count()
+		.get_result::<i64>(&mut conn)
+		.unwrap();
+	assert_eq!(
+		remaining_modifiers, 0,
+		"Active modifier should be deleted with user"
+	);
 
-    // Create new data for the modifier cascade test
-    let player_id = create_test_user(&mut conn);
-    let modifier_id = create_test_modifier(&mut conn);
+	// Create new data for the modifier cascade test
+	let player_id = create_test_user(&mut conn);
+	let modifier_id = create_test_modifier(&mut conn);
 
-    let active_modifier = NewActiveModifier {
-        player_id,
-        modifier_id,
-        started_at: None,
-        expires_at: None,
-        source_type: ModifierSourceType::Event,
-        source_id: None,
-    };
+	let active_modifier = NewActiveModifier {
+		player_id,
+		modifier_id,
+		started_at: None,
+		expires_at: None,
+		source_type: ModifierSourceType::Event,
+		source_id: None,
+	};
 
-    diesel::insert_into(active_modifiers::table)
-        .values(&active_modifier)
-        .execute(&mut conn)
-        .expect("Failed to insert test active modifier");
+	diesel::insert_into(active_modifiers::table)
+		.values(&active_modifier)
+		.execute(&mut conn)
+		.expect("Failed to insert test active modifier");
 
-    // Test case 2: Cascade on modifier deletion
-    let delete_modifier_result =
-        diesel::delete(modifiers::table.filter(modifiers::id.eq(&modifier_id))).execute(&mut conn);
-    assert!(delete_modifier_result.is_ok(), "Failed to delete modifier");
+	// Test case 2: Cascade on modifier deletion
+	let delete_modifier_result =
+		diesel::delete(modifiers::table.filter(modifiers::id.eq(&modifier_id))).execute(&mut conn);
+	assert!(delete_modifier_result.is_ok(), "Failed to delete modifier");
 
-    // Verify active modifier was deleted
-    let remaining_modifiers = active_modifiers::table
-        .filter(active_modifiers::modifier_id.eq(&modifier_id))
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
-    assert_eq!(
-        remaining_modifiers, 0,
-        "Active modifier should be deleted with base modifier"
-    );
+	// Verify active modifier was deleted
+	let remaining_modifiers = active_modifiers::table
+		.filter(active_modifiers::modifier_id.eq(&modifier_id))
+		.count()
+		.get_result::<i64>(&mut conn)
+		.unwrap();
+	assert_eq!(
+		remaining_modifiers, 0,
+		"Active modifier should be deleted with base modifier"
+	);
 }
 
 // Helper function to create a test player
 fn create_test_user(conn: &mut PgConnection) -> Uuid {
-    let new_user = NewPlayer {
-        name: UserName::parse("test_user".to_string()).unwrap(),
-        pwd_hash: "test_hash".to_string(),
-        email: None,
-        faction: FactionCode::Human,
-    };
+	let new_user = NewPlayer {
+		name: UserName::parse("test_user".to_string()).unwrap(),
+		pwd_hash: "test_hash".to_string(),
+		email: None,
+		faction: FactionCode::Human,
+	};
 
-    let new_player: Player = diesel::insert_into(player::table)
-        .values(&new_user)
-        .get_result(conn)
-        .expect("Failed to create test player");
+	let new_player: Player = diesel::insert_into(player::table)
+		.values(&new_user)
+		.get_result(conn)
+		.expect("Failed to create test player");
 
-    new_player.id
+	new_player.id
 }
 
 // Helper function to create a test modifier
 fn create_test_modifier(conn: &mut PgConnection) -> Uuid {
-    let new_modifier = NewModifier {
-        name: format!("test_modifier_{}", Uuid::new_v4()),
-        description: "Test modifier".to_string(),
-        magnitude_kind: MagnitudeKind::Percentage,
-        magnitude: BigDecimal::from_str("0.15").unwrap(),
-        target_type: ModifierTarget::Resource,
-        target_resource: Some(ResourceType::Wood),
-        stacking_behaviour: None,
-        stacking_group: None,
-    };
+	let new_modifier = NewModifier {
+		name: format!("test_modifier_{}", Uuid::new_v4()),
+		description: "Test modifier".to_string(),
+		magnitude_kind: MagnitudeKind::Percentage,
+		magnitude: BigDecimal::from_str("0.15").unwrap(),
+		target_type: ModifierTarget::Resource,
+		target_resource: Some(ResourceType::Wood),
+		stacking_behaviour: None,
+		stacking_group: None,
+	};
 
-    diesel::insert_into(modifiers::table)
-        .values(&new_modifier)
-        .execute(conn)
-        .expect("Failed to create test modifier");
+	diesel::insert_into(modifiers::table)
+		.values(&new_modifier)
+		.execute(conn)
+		.expect("Failed to create test modifier");
 
-    modifiers::table
-        .select(modifiers::id)
-        .filter(modifiers::name.eq(&new_modifier.name))
-        .first(conn)
-        .expect("Failed to retrieve created modifier")
+	modifiers::table
+		.select(modifiers::id)
+		.filter(modifiers::name.eq(&new_modifier.name))
+		.first(conn)
+		.expect("Failed to retrieve created modifier")
 }

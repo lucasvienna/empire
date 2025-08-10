@@ -30,19 +30,19 @@ pub struct DatabaseConnection(pub DbConn);
 
 impl<S> FromRequestParts<S> for DatabaseConnection
 where
-    S: Send + Sync,
-    AppPool: FromRef<S>,
+	S: Send + Sync,
+	AppPool: FromRef<S>,
 {
-    type Rejection = (StatusCode, String);
+	type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let pool = AppPool::from_ref(state);
-        let conn = pool.get().map_err(|err| {
-            error!("Failed to get a database connection: {}", err);
-            (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-        })?;
-        trace!("Acquired a database connection.");
+	async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+		let pool = AppPool::from_ref(state);
+		let conn = pool.get().map_err(|err| {
+			error!("Failed to get a database connection: {}", err);
+			(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+		})?;
+		trace!("Acquired a database connection.");
 
-        Ok(Self(conn))
-    }
+		Ok(Self(conn))
+	}
 }

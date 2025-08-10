@@ -22,28 +22,28 @@ use crate::domain::player::resource::ResourceType;
 /// it modifies, and a value that quantifies the effect.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct FactionBonus {
-    /// The target of the bonus (e.g., "resource", "combat", "research")
-    pub target: ModifierTarget,
-    /// Specific resource type this bonus affects, if applicable
-    pub target_resource: Option<ResourceType>,
-    /// The numerical value of the bonus (percentage, flat amount, etc.)
-    pub value: f64,
-    /// The type of bonus application (e.g., multiplicative, flat, or percentual)
-    pub scaling: MagnitudeKind,
-    /// Human-readable description of what this bonus does
-    pub description: String,
+	/// The target of the bonus (e.g., "resource", "combat", "research")
+	pub target: ModifierTarget,
+	/// Specific resource type this bonus affects, if applicable
+	pub target_resource: Option<ResourceType>,
+	/// The numerical value of the bonus (percentage, flat amount, etc.)
+	pub value: f64,
+	/// The type of bonus application (e.g., multiplicative, flat, or percentual)
+	pub scaling: MagnitudeKind,
+	/// Human-readable description of what this bonus does
+	pub description: String,
 }
 
 impl From<Modifier> for FactionBonus {
-    fn from(modifier: Modifier) -> Self {
-        Self {
-            target: modifier.target_type,
-            target_resource: modifier.target_resource,
-            value: modifier.magnitude.to_f64().unwrap_or_default(),
-            scaling: modifier.magnitude_kind,
-            description: modifier.description,
-        }
-    }
+	fn from(modifier: Modifier) -> Self {
+		Self {
+			target: modifier.target_type,
+			target_resource: modifier.target_resource,
+			value: modifier.magnitude.to_f64().unwrap_or_default(),
+			scaling: modifier.magnitude_kind,
+			description: modifier.description,
+		}
+	}
 }
 
 /// Basic faction information for API responses.
@@ -59,22 +59,22 @@ impl From<Modifier> for FactionBonus {
 /// - Quick faction overview displays
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct FactionResponse {
-    /// Unique identifier for the faction
-    pub id: FactionKey,
-    /// Display name of the faction
-    pub name: String,
-    /// List of bonuses this faction provides
-    pub bonuses: Vec<FactionBonus>,
+	/// Unique identifier for the faction
+	pub id: FactionKey,
+	/// Display name of the faction
+	pub name: String,
+	/// List of bonuses this faction provides
+	pub bonuses: Vec<FactionBonus>,
 }
 
 impl From<Faction> for FactionResponse {
-    fn from(faction: Faction) -> Self {
-        Self {
-            id: faction.id,
-            name: faction.name,
-            bonuses: Default::default(), // has to be enriched after
-        }
-    }
+	fn from(faction: Faction) -> Self {
+		Self {
+			id: faction.id,
+			name: faction.name,
+			bonuses: Default::default(), // has to be enriched after
+		}
+	}
 }
 
 /// Complete faction information including lore and detailed descriptions.
@@ -88,26 +88,26 @@ impl From<Faction> for FactionResponse {
 /// and immersion for players making faction choices.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct FactionDetails {
-    /// Unique identifier for the faction
-    pub id: String,
-    /// Display name of the faction
-    pub name: String,
-    /// Detailed description of the faction's characteristics and playstyle
-    pub description: String,
-    /// Background story and narrative context for the faction
-    pub lore: String,
-    /// List of bonuses this faction provides
-    pub bonuses: Vec<FactionBonus>,
+	/// Unique identifier for the faction
+	pub id: String,
+	/// Display name of the faction
+	pub name: String,
+	/// Detailed description of the faction's characteristics and playstyle
+	pub description: String,
+	/// Background story and narrative context for the faction
+	pub lore: String,
+	/// List of bonuses this faction provides
+	pub bonuses: Vec<FactionBonus>,
 }
 
 impl From<Faction> for FactionDetails {
-    fn from(faction: Faction) -> Self {
-        Self {
-            id: faction.id.to_string(),
-            name: faction.name,
-            description: String::default(),
-            lore: String::default(),
-            bonuses: Vec::default(),
-        }
-    }
+	fn from(faction: Faction) -> Self {
+		Self {
+			id: faction.id.to_string(),
+			name: faction.name,
+			description: String::default(),
+			lore: String::default(),
+			bonuses: Vec::default(),
+		}
+	}
 }

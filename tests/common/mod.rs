@@ -34,14 +34,14 @@ use crate::common::helpers::*;
 /// that need to test application logic directly without network overhead.
 #[allow(dead_code)]
 pub struct TestHarness {
-    /// The initialized application instance with all dependencies
-    pub app: Arc<App>,
-    /// The configured Axum router ready for testing
-    pub router: Router,
-    /// Database connection pool for direct database access in tests
-    pub db_pool: DbPool,
-    /// Internal shared pointer to the connection pool.
-    app_pool: AppPool,
+	/// The initialized application instance with all dependencies
+	pub app: Arc<App>,
+	/// The configured Axum router ready for testing
+	pub router: Router,
+	/// Database connection pool for direct database access in tests
+	pub db_pool: DbPool,
+	/// Internal shared pointer to the connection pool.
+	app_pool: AppPool,
 }
 
 /// Running test server instance with network access.
@@ -51,120 +51,120 @@ pub struct TestHarness {
 /// underlying database pool for test setup/teardown operations.
 #[allow(dead_code)]
 pub struct TestApp {
-    /// The HTTP address where the server is listening (e.g., "http://localhost:8080")
-    pub address: String,
-    /// Database connection pool for test data management
-    pub db_pool: DbPool,
-    /// Internal shared pointer to the connection pool.
-    app_pool: AppPool,
+	/// The HTTP address where the server is listening (e.g., "http://localhost:8080")
+	pub address: String,
+	/// Database connection pool for test data management
+	pub db_pool: DbPool,
+	/// Internal shared pointer to the connection pool.
+	app_pool: AppPool,
 }
 
 impl TestHarness {
-    /// Initializes a test harness with a fresh application instance and isolated database.
-    ///
-    /// This function performs the following setup steps:
-    /// 1. Initializes tracing for test logging
-    /// 2. Loads application configuration
-    /// 3. Initializes JWT authentication keys
-    /// 4. Creates an isolated test database with migrations
-    /// 5. Sets up the application state with the test database
-    /// 6. Configures the router with all routes
-    ///
-    /// # Returns
-    /// A [`TestHarness`] containing the initialized application components.
-    ///
-    /// # Usage
-    /// Use this function when you need to test application logic without starting
-    /// an actual HTTP server. This is more efficient for unit and integration tests
-    /// that don't require network communication.
-    pub fn new() -> Self {
-        // Ensure tracing is initialized for test output
-        LazyLock::force(&TRACING);
+	/// Initializes a test harness with a fresh application instance and isolated database.
+	///
+	/// This function performs the following setup steps:
+	/// 1. Initializes tracing for test logging
+	/// 2. Loads application configuration
+	/// 3. Initializes JWT authentication keys
+	/// 4. Creates an isolated test database with migrations
+	/// 5. Sets up the application state with the test database
+	/// 6. Configures the router with all routes
+	///
+	/// # Returns
+	/// A [`TestHarness`] containing the initialized application components.
+	///
+	/// # Usage
+	/// Use this function when you need to test application logic without starting
+	/// an actual HTTP server. This is more efficient for unit and integration tests
+	/// that don't require network communication.
+	pub fn new() -> Self {
+		// Ensure tracing is initialized for test output
+		LazyLock::force(&TRACING);
 
-        let mut settings = get_settings().expect("Failed to read configuration");
-        init_keys(&settings.jwt.secret);
+		let mut settings = get_settings().expect("Failed to read configuration");
+		init_keys(&settings.jwt.secret);
 
-        // Create an isolated test database and update settings
-        let (db_pool, updated_db_settings) = create_isolated_test_database(&mut settings.database);
-        settings.database = updated_db_settings.clone();
+		// Create an isolated test database and update settings
+		let (db_pool, updated_db_settings) = create_isolated_test_database(&mut settings.database);
+		settings.database = updated_db_settings.clone();
 
-        // Initialize application components
-        let pool = Arc::new(db_pool.clone());
-        let app_pool = Arc::clone(&pool);
-        let app = Arc::new(App::with_pool(pool, settings));
+		// Initialize application components
+		let pool = Arc::new(db_pool.clone());
+		let app_pool = Arc::clone(&pool);
+		let app = Arc::new(App::with_pool(pool, settings));
 
-        Self {
-            app: Arc::clone(&app),
-            db_pool,
-            app_pool,
-            router: router::init(AppState(app)),
-        }
-    }
+		Self {
+			app: Arc::clone(&app),
+			db_pool,
+			app_pool,
+			router: router::init(AppState(app)),
+		}
+	}
 
-    /// Create a player with neutral faction. Uses internal DB functions.
-    pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
-        create_test_user(&self.app_pool, faction)
-    }
+	/// Create a player with neutral faction. Uses internal DB functions.
+	pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
+		create_test_user(&self.app_pool, faction)
+	}
 
-    pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
-        get_bearer(player_key)
-    }
+	pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
+		get_bearer(player_key)
+	}
 }
 
 impl TestApp {
-    /// Spawns a test server and returns a handle to the running instance.
-    ///
-    /// This function performs the following steps:
-    /// 1. Creates a test harness with all application components
-    /// 2. Binds the server to a random available port
-    /// 3. Starts the server in a background task
-    /// 4. Returns connection details for making HTTP requests
-    ///
-    /// # Returns
-    /// A [`TestApp`] containing the server address and database pool.
-    ///
-    /// # Panics
-    /// This function will panic if:
-    /// - Test harness initialization fails
-    /// - No available ports can be bound
-    /// - The server fails to start
-    ///
-    /// # Usage
-    /// Use this function when you need to test the full HTTP server functionality,
-    /// including middleware, routing, and request/response handling.
-    pub fn new() -> Self {
-        let harness = TestHarness::new();
-        let app_pool = Arc::clone(&harness.app_pool);
+	/// Spawns a test server and returns a handle to the running instance.
+	///
+	/// This function performs the following steps:
+	/// 1. Creates a test harness with all application components
+	/// 2. Binds the server to a random available port
+	/// 3. Starts the server in a background task
+	/// 4. Returns connection details for making HTTP requests
+	///
+	/// # Returns
+	/// A [`TestApp`] containing the server address and database pool.
+	///
+	/// # Panics
+	/// This function will panic if:
+	/// - Test harness initialization fails
+	/// - No available ports can be bound
+	/// - The server fails to start
+	///
+	/// # Usage
+	/// Use this function when you need to test the full HTTP server functionality,
+	/// including middleware, routing, and request/response handling.
+	pub fn new() -> Self {
+		let harness = TestHarness::new();
+		let app_pool = Arc::clone(&harness.app_pool);
 
-        // Bind to a random available port
-        let listener = new_random_tokio_tcp_listener().expect("Failed to bind to random port");
-        let port = listener
-            .local_addr()
-            .expect("Failed to get local address")
-            .port();
+		// Bind to a random available port
+		let listener = new_random_tokio_tcp_listener().expect("Failed to bind to random port");
+		let port = listener
+			.local_addr()
+			.expect("Failed to get local address")
+			.port();
 
-        // Start the server in a background task
-        tokio::spawn(async move {
-            axum::serve(listener, harness.router)
-                .await
-                .expect("Server failed to start");
-        });
+		// Start the server in a background task
+		tokio::spawn(async move {
+			axum::serve(listener, harness.router)
+				.await
+				.expect("Server failed to start");
+		});
 
-        Self {
-            address: format!("http://localhost:{port}"),
-            db_pool: harness.db_pool,
-            app_pool,
-        }
-    }
+		Self {
+			address: format!("http://localhost:{port}"),
+			db_pool: harness.db_pool,
+			app_pool,
+		}
+	}
 
-    /// Create a player with neutral faction. Uses internal DB functions.
-    pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
-        create_test_user(&self.app_pool, faction)
-    }
+	/// Create a player with neutral faction. Uses internal DB functions.
+	pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
+		create_test_user(&self.app_pool, faction)
+	}
 
-    pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
-        get_bearer(player_key)
-    }
+	pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
+		get_bearer(player_key)
+	}
 }
 
 /// Creates an isolated test database with a unique name and runs migrations.
@@ -191,41 +191,41 @@ impl TestApp {
 /// - Migrations fail to execute
 /// - Connection pool initialization failss.
 fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut DatabaseSettings) {
-    // Generate unique database name to avoid conflicts between concurrent tests
-    config.database_name = Uuid::new_v4().to_string();
+	// Generate unique database name to avoid conflicts between concurrent tests
+	config.database_name = Uuid::new_v4().to_string();
 
-    // Create connection settings for the PostgreSQL system database
-    let mut system_db_settings = config.clone();
-    system_db_settings.database_name = "postgres".to_string();
-    system_db_settings.username = "postgres".to_string();
-    system_db_settings.password = SecretString::new("password".into());
-    system_db_settings.pool_size = Some(1);
+	// Create connection settings for the PostgreSQL system database
+	let mut system_db_settings = config.clone();
+	system_db_settings.database_name = "postgres".to_string();
+	system_db_settings.username = "postgres".to_string();
+	system_db_settings.password = SecretString::new("password".into());
+	system_db_settings.pool_size = Some(1);
 
-    // Connect to the system database and create the test database
-    let mut system_conn =
-        PgConnection::establish(system_db_settings.connection_string().expose_secret())
-            .expect("Failed to connect to PostgreSQL system database");
+	// Connect to the system database and create the test database
+	let mut system_conn =
+		PgConnection::establish(system_db_settings.connection_string().expose_secret())
+			.expect("Failed to connect to PostgreSQL system database");
 
-    sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
-        .execute(&mut system_conn)
-        .expect("Failed to create test database");
+	sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+		.execute(&mut system_conn)
+		.expect("Failed to create test database");
 
-    // Switch to the newly created test database for permission setup
-    system_db_settings.database_name = config.database_name.clone();
-    let mut test_db_conn =
-        PgConnection::establish(system_db_settings.connection_string().expose_secret())
-            .expect("Failed to connect to test database");
+	// Switch to the newly created test database for permission setup
+	system_db_settings.database_name = config.database_name.clone();
+	let mut test_db_conn =
+		PgConnection::establish(system_db_settings.connection_string().expose_secret())
+			.expect("Failed to connect to test database");
 
-    // Grant comprehensive permissions to the application user
-    grant_database_permissions(&mut test_db_conn, &config.database_name, &config.username);
+	// Grant comprehensive permissions to the application user
+	grant_database_permissions(&mut test_db_conn, &config.database_name, &config.username);
 
-    // Connect with application credentials and run migrations
-    let mut app_conn = PgConnection::establish(config.connection_string().expose_secret())
-        .expect("Failed to connect to test database with application credentials");
+	// Connect with application credentials and run migrations
+	let mut app_conn = PgConnection::establish(config.connection_string().expose_secret())
+		.expect("Failed to connect to test database with application credentials");
 
-    run_pending(&mut app_conn).expect("Failed to run database migrations");
+	run_pending(&mut app_conn).expect("Failed to run database migrations");
 
-    (initialize_pool(config), config)
+	(initialize_pool(config), config)
 }
 
 /// Grants comprehensive database permissions to the specified user.
@@ -244,30 +244,30 @@ fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut
 /// # Panics
 /// Panics if any of the permission grants fail.
 fn grant_database_permissions(conn: &mut PgConnection, database_name: &str, username: &str) {
-    // Grant database-level permissions
-    sql_query(format!(r#"GRANT ALL ON DATABASE "{database_name}" TO "{username}";"#).as_str())
-        .execute(conn)
-        .expect("Failed to grant database privileges");
+	// Grant database-level permissions
+	sql_query(format!(r#"GRANT ALL ON DATABASE "{database_name}" TO "{username}";"#).as_str())
+		.execute(conn)
+		.expect("Failed to grant database privileges");
 
-    // Grant schema permissions for current operations
-    sql_query(format!(r#"GRANT USAGE, CREATE ON SCHEMA public TO "{username}";"#).as_str())
-        .execute(conn)
-        .expect("Failed to grant schema privileges");
+	// Grant schema permissions for current operations
+	sql_query(format!(r#"GRANT USAGE, CREATE ON SCHEMA public TO "{username}";"#).as_str())
+		.execute(conn)
+		.expect("Failed to grant schema privileges");
 
-    // Grant permissions on existing tables
-    sql_query(format!(r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{username}";"#).as_str())
-        .execute(conn)
-        .expect("Failed to grant table privileges");
+	// Grant permissions on existing tables
+	sql_query(format!(r#"GRANT ALL ON ALL TABLES IN SCHEMA public TO "{username}";"#).as_str())
+		.execute(conn)
+		.expect("Failed to grant table privileges");
 
-    // Set default permissions for future tables
-    sql_query(
-        format!(
-            r#"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{username}";"#
-        )
-        .as_str(),
-    )
-    .execute(conn)
-    .expect("Failed to set default table privileges");
+	// Set default permissions for future tables
+	sql_query(
+		format!(
+			r#"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "{username}";"#
+		)
+		.as_str(),
+	)
+	.execute(conn)
+	.expect("Failed to set default table privileges");
 }
 
 /// Global tracing initialization for tests, initialized lazily.
@@ -288,19 +288,19 @@ static TRACING: LazyLock<Result<()>> = LazyLock::new(configure_test_tracing);
 /// # Environment Variables
 /// - `TEST_LOG`: When set, enables verbose logging output during tests
 fn configure_test_tracing() -> Result<()> {
-    let subscriber =
-        registry().with(EnvFilter::from_default_env().add_directive(LevelFilter::TRACE.into()));
+	let subscriber =
+		registry().with(EnvFilter::from_default_env().add_directive(LevelFilter::TRACE.into()));
 
-    if env::var("TEST_LOG").is_ok() {
-        // Test mode with visible output
-        let subscriber_with_fmt = subscriber.with(fmt::Layer::new().with_test_writer());
-        tracing::subscriber::set_global_default(subscriber_with_fmt)
-            .expect("Failed to set global tracing subscriber");
-    } else {
-        // Silent mode for cleaner test output
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("Failed to set global tracing subscriber");
-    }
+	if env::var("TEST_LOG").is_ok() {
+		// Test mode with visible output
+		let subscriber_with_fmt = subscriber.with(fmt::Layer::new().with_test_writer());
+		tracing::subscriber::set_global_default(subscriber_with_fmt)
+			.expect("Failed to set global tracing subscriber");
+	} else {
+		// Silent mode for cleaner test output
+		tracing::subscriber::set_global_default(subscriber)
+			.expect("Failed to set global tracing subscriber");
+	}
 
-    Ok(())
+	Ok(())
 }

@@ -18,11 +18,11 @@ use crate::domain::app_state::{AppPool, AppState};
 /// * `S` - The shared state type that must implement `Send` + `Sync` for thread safety
 pub trait ApiService<S = AppState>: FromRef<S>
 where
-    S: Send + Sync,
+	S: Send + Sync,
 {
-    /// Creates a new instance of the service with the provided database pool.
-    ///
-    /// # Arguments
-    /// * `pool` - Reference to the application's database connection pool
-    fn new(pool: &AppPool) -> Self;
+	/// Creates a new instance of the service with the provided database pool.
+	///
+	/// # Arguments
+	/// * `pool` - Reference to the application's database connection pool
+	fn new(pool: &AppPool) -> Self;
 }
