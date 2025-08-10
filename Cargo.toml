@@ -62,7 +62,7 @@ ulid = { version = "1.2.1", features = ["serde", "postgres", "uuid"] }
 
 [dev-dependencies]
 claims = "0.8"
-fake = "4.3"
+fake = "4.4"
 quickcheck = "1.0.3"
 quickcheck_macros = "1"
 rand = "0.9"
