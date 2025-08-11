@@ -55,7 +55,7 @@ tower = { version = "0.5.2", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-uuid = { version = "1.17.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+uuid = { version = "1.18.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 unicode-segmentation = "1.12.0"
 validator = "0.20.0"
 ulid = { version = "1.2.1", features = ["serde", "postgres", "uuid"] }
