@@ -134,7 +134,7 @@ impl BuildingLevelRepository {
 		conn: &mut DbConn,
 		bld_id: &BuildingKey,
 	) -> Result<Vec<BuildingLevel>> {
-		debug!("Gggetting levels for building {}", bld_id);
+		debug!("Getting levels for building {}", bld_id);
 		let bld_levels = bl::table
 			.filter(bl::building_id.eq(bld_id))
 			.order(bl::level.asc())
