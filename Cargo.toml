@@ -74,7 +74,7 @@ members = [
 ]
 
 [workspace.dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 empire = { path = "." }
 tokio = { version = "1.47.1", features = ["full"] }
 tracing = "0.1.41"
