@@ -61,7 +61,7 @@ impl Keys {
 
 /// JWT claims struct holding essential token data.
 /// Fields follow JWT claim conventions: subject ID, expiration, issued-at.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
 	pub sub: Uuid,  // User identifier associated with the token
 	pub exp: usize, // Expiration time (timestamp)
