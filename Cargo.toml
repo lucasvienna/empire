@@ -23,13 +23,13 @@ name = "empire"
 [dependencies]
 anyhow = { workspace = true }
 argon2 = "0.5.3"
-axum = { version = "0.8.5", features = ["query", "macros", "tokio", "http2"] }
-axum-extra = { version = "0.10.2", features = ["cookie", "tracing", "typed-header", "erased-json"] }
+axum = { version = "0.8.6", features = ["query", "macros", "tokio", "http2"] }
+axum-extra = { version = "0.10.3", features = ["cookie", "tracing", "typed-header", "erased-json"] }
 axum-test = { version = "18.1.0", features = ["all"] }
 bigdecimal = { version = "0.4.8", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.42", features = ["serde"] }
-config = "0.15.17"
+config = "0.15.18"
 cookie = { version = "0.18.1", features = ["secure"] }
 data-encoding = "2.9.0"
 derive_more = { version = "2.0.1", features = ["full"] }
