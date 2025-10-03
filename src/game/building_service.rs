@@ -8,7 +8,6 @@ use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
 use crate::db::building_levels::BuildingLevelRepository;
-use crate::db::buildings::BuildingRepository;
 use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::db::resources::ResourcesRepository;
 use crate::db::Repository;
@@ -22,7 +21,6 @@ use crate::game::service::ApiService;
 
 pub struct BuildingService {
 	db_pool: AppPool,
-	bld_repo: BuildingRepository,
 	player_bld_repo: PlayerBuildingRepository,
 	bld_lvl_repo: BuildingLevelRepository,
 	res_repo: ResourcesRepository,
@@ -44,7 +42,6 @@ impl ApiService for BuildingService {
 	fn new(pool: &AppPool) -> Self {
 		BuildingService {
 			db_pool: Arc::clone(pool),
-			bld_repo: BuildingRepository::new(pool),
 			player_bld_repo: PlayerBuildingRepository::new(pool),
 			bld_lvl_repo: BuildingLevelRepository::new(pool),
 			res_repo: ResourcesRepository::new(pool),

@@ -117,7 +117,7 @@ pub async fn upgrade_building(
 
 ### Phase 3: Service Layer Migration
 
-**Objective**: Apply same pattern to service structs
+**Objective**: Apply the same pattern to service structs
 
 **Target Services**:
 
@@ -269,7 +269,7 @@ eliminating the need for connection-related error handling within individual fun
 
 **CPU Performance**:
 
-- Remove trait dispatch overhead (1-3 CPU cycles per call)
+- Remove trait dispatch overhead (1–3 CPU cycles per call)
 - **Eliminate repeated `pool.get()` calls** within request handlers
 - Enable aggressive function inlining optimizations
 - Reduce call stack depth and complexity
@@ -292,7 +292,7 @@ eliminating the need for connection-related error handling within individual fun
 
 **Latency Improvements**:
 
-- Expected 5-15% reduction in handler latency for database-heavy operations
+- Expected 5–15% reduction in handler latency for database-heavy operations
 - Reduced 95th percentile response times
 - Lower memory allocation rates per request
 
@@ -359,7 +359,7 @@ eliminating the need for connection-related error handling within individual fun
 
 **Goals**: Establish pattern and validate approach
 
-- [ ] **Day 1-2**: Convert `PlayerBuildingRepository` to function module with `&mut DbConn` parameters
+- [ ] **Day 1–2**: Convert `PlayerBuildingRepository` to function module with `&mut DbConn` parameters
 - [ ] **Day 3**: Update handlers to use `DatabaseConnection` extractor + converted functions
 - [ ] **Day 4**: Write migration script template emphasizing connection-first approach
 - [ ] **Day 5**: Establish benchmarking baseline comparing connection reuse vs. acquisition overhead
@@ -384,12 +384,12 @@ eliminating the need for connection-related error handling within individual fun
 **Deliverables**:
 
 - All repository structs converted to function modules
-- All handlers updated to new pattern
+- All handlers updated to the new pattern
 - Performance comparison report
 
 ### Week 3: Service Layer Migration
 
-**Goals**: Apply pattern to service layer
+**Goals**: Apply the pattern to service layer
 
 - [ ] **Day 1**: Convert `BuildingService` to `building_operations`
 - [ ] **Day 2**: Convert `ModifierService` to `modifier_operations`
