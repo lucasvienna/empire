@@ -9,8 +9,7 @@ use diesel::sql_types::Int8;
 use strum::IntoEnumIterator;
 use tracing::{debug, instrument, trace, warn};
 
-use crate::db::resources::ResourcesRepository;
-use crate::db::Repository;
+use crate::db::resources;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::modifier::ModifierTarget;
 use crate::domain::player::accumulator::{AccumulatorKey, PlayerAccumulator};
@@ -43,7 +42,6 @@ pub struct ResourceService {
 	modifiers: ModifierSystem,
 	modifier_service: ModifierService,
 	resource_scheduler: ProductionScheduler,
-	resources_repo: ResourcesRepository,
 }
 
 impl FromRef<AppState> for ResourceService {
@@ -60,7 +58,6 @@ impl ResourceService {
 			modifiers: mod_system.clone(),
 			modifier_service: ModifierService::new(pool, mod_system),
 			resource_scheduler: ProductionScheduler::new(queue),
-			resources_repo: ResourcesRepository::new(pool),
 		}
 	}
 
@@ -284,7 +281,8 @@ impl ResourceService {
 
 	/// Gets the timestamp of the last resource production for a player.
 	fn last_player_prod(&self, player_key: &PlayerKey) -> Result<DateTime<Utc>> {
-		let player_resource = self.resources_repo.get_by_player_id(player_key)?;
+		let mut conn = self.db_pool.get()?;
+		let player_resource = resources::get_by_player_id(&mut conn, player_key)?;
 		Ok(player_resource.produced_at)
 	}
 }

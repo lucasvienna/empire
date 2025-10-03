@@ -31,11 +31,15 @@ to improve performance by eliminating unnecessary struct overhead while maintain
 
 **Target Files**:
 
-- `src/db/player_buildings.rs`
+- `src/db/active_modifiers.rs`
 - `src/db/buildings.rs`
-- `src/db/players.rs`
-- `src/db/resources.rs`
+- `src/db/buildings_levels.rs`
+- `src/db/factions.rs`
 - `src/db/modifiers.rs`
+- `src/db/players.rs`
+- `src/db/player_buildings.rs`
+- `src/db/player_sessions.rs`
+- `src/db/resources.rs`
 
 **Transformation Pattern**:
 

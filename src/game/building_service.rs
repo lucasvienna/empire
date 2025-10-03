@@ -7,8 +7,7 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::resources::ResourcesRepository;
-use crate::db::{building_levels, player_buildings, Repository};
+use crate::db::{building_levels, player_buildings, resources};
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::BuildingKey;
@@ -19,7 +18,6 @@ use crate::game::service::ApiService;
 
 pub struct BuildingService {
 	db_pool: AppPool,
-	res_repo: ResourcesRepository,
 }
 
 impl fmt::Debug for BuildingService {
@@ -38,7 +36,6 @@ impl ApiService for BuildingService {
 	fn new(pool: &AppPool) -> Self {
 		BuildingService {
 			db_pool: Arc::clone(pool),
-			res_repo: ResourcesRepository::new(pool),
 		}
 	}
 }
@@ -87,7 +84,7 @@ impl BuildingService {
 		let res: Result<PlayerBuilding> = conn.transaction(|connection| {
 			info!("Initiating construction transaction");
 			// deduct resources
-			self.res_repo.deduct(
+			resources::deduct(
 				connection,
 				player_id,
 				&(
@@ -178,7 +175,7 @@ impl BuildingService {
 		let res: Result<PlayerBuilding> = conn.transaction(|connection| {
 			info!("Initiating upgrade transaction");
 			// deduct resources
-			self.res_repo.deduct(
+			resources::deduct(
 				connection,
 				&player_bld.player_id,
 				&(
@@ -265,7 +262,8 @@ impl BuildingService {
 			bld_lvl.req_stone.unwrap_or(0),
 			bld_lvl.req_gold.unwrap_or(0)
 		);
-		let res = self.res_repo.get_by_player_id(player_id)?;
+		let mut conn = self.db_pool.get()?;
+		let res = resources::get_by_player_id(&mut conn, player_id)?;
 		let has_enough_food = res.food >= bld_lvl.req_food.unwrap_or(0);
 		let has_enough_wood = res.wood >= bld_lvl.req_wood.unwrap_or(0);
 		let has_enough_stone = res.stone >= bld_lvl.req_stone.unwrap_or(0);
