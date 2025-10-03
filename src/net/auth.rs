@@ -14,7 +14,7 @@ use derive_more::Deref;
 use serde::Serialize;
 use tracing::{debug, error, instrument, trace, warn};
 
-use crate::auth::session_service;
+use crate::auth::session_operations;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::players;
 use crate::domain::auth::{decode_token, AuthenticatedUser, Claims};
@@ -64,7 +64,7 @@ pub async fn auth_middleware(
 	if let Some(token) = session_token {
 		let session_token = SessionToken(token.clone());
 
-		match session_service::validate_session_token(&mut conn, token.clone()) {
+		match session_operations::validate_token(&mut conn, token.clone()) {
 			Ok((session, player)) => {
 				let duration = session.expires_at - Utc::now();
 				let cookie = Cookie::build((SESSION_COOKIE_NAME, token.clone()))

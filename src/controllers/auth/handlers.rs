@@ -8,7 +8,7 @@ use cookie::{time, Cookie, SameSite};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use crate::auth::session_service;
+use crate::auth::session_operations;
 use crate::configuration::Settings;
 use crate::controllers::auth::models::{
 	LoginPayload, PlayerDto, PlayerDtoResponse, RegisterPayload, SessionDto,
@@ -119,11 +119,11 @@ pub(super) async fn login(
 	debug!("Password verified successfully for player {}", user.name);
 
 	trace!("Generating session token for player {}", user.id);
-	let session_token = session_service::generate_session_token();
+	let session_token = session_operations::gen_token();
 
 	debug!("Creating session for player {}", user.id);
-	let session = session_service::create_session(&mut conn, session_token.clone(), &user.id)
-		.map_err(|e| {
+	let session =
+		session_operations::create(&mut conn, session_token.clone(), &user.id).map_err(|e| {
 			error!("Failed to create session for player {}: {:?}", user.id, e);
 			AuthError::TokenCreation
 		})?;
@@ -163,7 +163,7 @@ pub(super) async fn logout(
 			.remove(Cookie::from(TOKEN_COOKIE_NAME));
 
 		trace!("Invalidating session {}", session.id);
-		session_service::invalidate_session(&mut conn, &session.id);
+		session_operations::invalidate(&mut conn, &session.id);
 		info!(
 			"Player logged out successfully, session {} invalidated",
 			session.id

@@ -25,7 +25,7 @@ use crate::{Error, ErrorKind, Result};
 /// # Returns
 /// A String containing the BASE32 encoded session token.
 #[instrument()]
-pub fn generate_session_token() -> String {
+pub fn gen_token() -> String {
 	debug!("Generating new session token");
 	let bytes: [u8; 32] = rand::random();
 	let token = BASE32_NOPAD_NOCASE.encode(&bytes);
@@ -43,13 +43,9 @@ pub fn generate_session_token() -> String {
 /// # Returns
 /// A new Session instance containing the session details
 #[instrument(skip(conn, token))]
-pub fn create_session(
-	conn: &mut DbConn,
-	token: String,
-	player_key: &PlayerKey,
-) -> Result<PlayerSession> {
+pub fn create(conn: &mut DbConn, token: String, player_key: &PlayerKey) -> Result<PlayerSession> {
 	debug!("Creating new session");
-	let session_id = encode_session_token(token);
+	let session_id = encode_token(token);
 	trace!("Encoded session ID: {}", session_id);
 
 	let expires_at = Utc::now() + Duration::days(30);
@@ -75,9 +71,9 @@ pub fn create_session(
 /// * `Ok(SessionPlayerTuple)` - If the token is valid, returns the session and player information
 /// * `Err` - If the token is invalid, or an error occurs during validation
 #[instrument(skip(conn, token))]
-pub fn validate_session_token(conn: &mut DbConn, token: String) -> Result<SessionPlayerTuple> {
+pub fn validate_token(conn: &mut DbConn, token: String) -> Result<SessionPlayerTuple> {
 	debug!("Starting session token validation");
-	let session_id = encode_session_token(token);
+	let session_id = encode_token(token);
 	trace!("Encoded session ID: {}", session_id);
 
 	let player_session = player_sessions::find_by_id(conn, &session_id)?;
@@ -122,7 +118,7 @@ pub fn validate_session_token(conn: &mut DbConn, token: String) -> Result<Sessio
 /// * `conn` - Database connection
 /// * `session_id` - The unique identifier of the session to invalidate
 #[instrument(skip(conn))]
-pub fn invalidate_session(conn: &mut DbConn, session_id: &SessionKey) {
+pub fn invalidate(conn: &mut DbConn, session_id: &SessionKey) {
 	debug!("Starting invalidate session: {}", session_id);
 	match player_sessions::delete(conn, session_id) {
 		Ok(count) => {
@@ -144,7 +140,7 @@ pub fn invalidate_session(conn: &mut DbConn, session_id: &SessionKey) {
 /// * `conn` - Database connection
 /// * `player_key` - The unique identifier of the player whose sessions should be invalidated
 #[instrument(skip(conn))]
-pub fn invalidate_all_sessions(conn: &mut DbConn, player_key: &PlayerKey) {
+pub fn invalidate_all(conn: &mut DbConn, player_key: &PlayerKey) {
 	debug!(
 		"Starting invalidate all sessions for player: {}",
 		player_key
@@ -167,7 +163,7 @@ pub fn invalidate_all_sessions(conn: &mut DbConn, player_key: &PlayerKey) {
 /// # Returns
 /// A String containing the hexadecimal representation of the hashed token
 #[instrument(skip_all)]
-fn encode_session_token(token: impl AsRef<[u8]>) -> String {
+fn encode_token(token: impl AsRef<[u8]>) -> String {
 	trace!("Encoding session token");
 	let mut hasher = Blake2s256::new();
 	Digest::update(&mut hasher, token);
