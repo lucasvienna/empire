@@ -39,7 +39,6 @@ define_sql_function! {
 /// and time-based accumulation of resources.
 pub struct ResourceService {
 	db_pool: AppPool,
-	modifiers: ModifierSystem,
 	modifier_service: ModifierService,
 	resource_scheduler: ProductionScheduler,
 }
@@ -54,8 +53,6 @@ impl ResourceService {
 	pub fn new(pool: &AppPool, queue: &Arc<JobQueue>, mod_system: &ModifierSystem) -> Self {
 		Self {
 			db_pool: Arc::clone(pool),
-			// Cloning `ModifierSystem` is inexpensive as it's composed of `Arc`s.
-			modifiers: mod_system.clone(),
 			modifier_service: ModifierService::new(pool, mod_system),
 			resource_scheduler: ProductionScheduler::new(queue),
 		}

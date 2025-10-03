@@ -1,7 +1,7 @@
 pub mod building_operations;
 pub mod exp;
 pub mod modifiers;
-pub mod player_service;
+pub mod player_operations;
 pub mod resources;
 pub mod service;
 

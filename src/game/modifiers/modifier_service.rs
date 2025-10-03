@@ -32,6 +32,8 @@ impl FromRef<AppState> for ModifierService {
 
 impl ModifierService {
 	pub fn new(pool: &AppPool, mod_system: &ModifierSystem) -> Self {
+		// we expose the cache and scheduler instead of saving the mod sys to
+		// drop one layer of indirection
 		Self {
 			pool: Arc::clone(pool),
 			cache: Arc::clone(&mod_system.cache),

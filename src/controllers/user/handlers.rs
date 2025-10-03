@@ -14,7 +14,7 @@ use crate::domain::app_state::AppState;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::NewPlayer;
-use crate::game::player_service::PlayerService;
+use crate::game::player_operations;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::Result;
 
@@ -107,11 +107,11 @@ pub(super) async fn create_user(
 	Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(srv, conn), fields(player_id = ?player_key))]
+#[instrument(skip(conn, scheduler), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
 pub(super) async fn update_user(
-	State(srv): State<PlayerService>,
 	DatabaseConnection(mut conn): DatabaseConnection,
+	State(scheduler): State<ProductionScheduler>,
 	Path(player_key): Path<player::PlayerKey>,
 	Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
@@ -125,7 +125,8 @@ pub(super) async fn update_user(
 	let password_changed = payload.password.is_some();
 	let faction_changed = payload.faction.is_some();
 
-	let updated_user = srv.update_player(&mut conn, player_key, payload)?;
+	let updated_user =
+		player_operations::update_player(&mut conn, &scheduler, player_key, payload)?;
 	let duration = start.elapsed();
 	info!(
 		player_id = %player_key,
