@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use axum::extract::{Request, State};
+use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
@@ -16,9 +16,7 @@ use tracing::{debug, error, instrument, trace, warn};
 
 use crate::auth::session_service;
 use crate::db::extractor::DatabaseConnection;
-use crate::db::players::PlayerRepository;
-use crate::db::Repository;
-use crate::domain::app_state::AppPool;
+use crate::db::players;
 use crate::domain::auth::{decode_token, AuthenticatedUser, Claims};
 
 pub const TOKEN_COOKIE_NAME: &str = "rstoken";
@@ -34,9 +32,8 @@ pub struct ErrorResponse {
 	pub message: String,
 }
 
-#[instrument(skip(pool, conn, cookie_jar, req, next))]
+#[instrument(skip(conn, cookie_jar, req, next))]
 pub async fn auth_middleware(
-	State(pool): State<AppPool>,
 	DatabaseConnection(mut conn): DatabaseConnection,
 	cookie_jar: CookieJar,
 	mut req: Request,
@@ -110,8 +107,7 @@ pub async fn auth_middleware(
 				}
 
 				let player_id = claims.sub;
-				let player_repo = PlayerRepository::new(&pool);
-				match player_repo.find_by_id(&player_id) {
+				match players::find_by_id(&mut conn, &player_id) {
 					Ok(Some(player)) => {
 						req.extensions_mut().insert(AuthenticatedUser(player));
 					}

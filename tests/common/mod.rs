@@ -13,6 +13,7 @@ use diesel::{sql_query, Connection, PgConnection, RunQueryDsl};
 use empire::configuration::{get_settings, DatabaseSettings};
 use empire::db::connection::{initialize_pool, DbPool};
 use empire::db::migrations::run_pending;
+use empire::db::DbConn;
 use empire::domain::app_state::{App, AppPool, AppState};
 use empire::domain::auth::init_keys;
 use empire::domain::factions::FactionCode;
@@ -103,11 +104,16 @@ impl TestHarness {
 
 	/// Create a player with neutral faction. Uses internal DB functions.
 	pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
-		create_test_user(&self.app_pool, faction)
+		let mut conn = self.get_conn();
+		create_test_user(&mut conn, faction)
 	}
 
 	pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
 		get_bearer(player_key)
+	}
+
+	pub fn get_conn(&self) -> DbConn {
+		self.db_pool.get().expect("Failed to get connection")
 	}
 }
 
@@ -159,11 +165,16 @@ impl TestApp {
 
 	/// Create a player with neutral faction. Uses internal DB functions.
 	pub fn create_test_user(&self, faction: Option<FactionCode>) -> Player {
-		create_test_user(&self.app_pool, faction)
+		let mut conn = self.get_conn();
+		create_test_user(&mut conn, faction)
 	}
 
 	pub fn create_bearer_token(&self, player_key: &PlayerKey) -> Authorization<Bearer> {
 		get_bearer(player_key)
+	}
+
+	pub fn get_conn(&self) -> DbConn {
+		self.db_pool.get().expect("Failed to get connection")
 	}
 }
 

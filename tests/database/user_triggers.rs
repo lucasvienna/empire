@@ -1,5 +1,4 @@
-use empire::db::players::PlayerRepository;
-use empire::db::{player_buildings, Repository};
+use empire::db::{player_buildings, players};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, UserName};
 
@@ -8,16 +7,18 @@ use crate::common::TestHarness;
 #[tokio::test]
 async fn test_user_triggers() {
 	let server = TestHarness::new();
-	let player_repo = PlayerRepository::new(&server.app.db_pool);
+	let mut conn = server.get_conn();
 
-	let new_player = player_repo
-		.create(NewPlayer {
+	let new_player = players::create(
+		&mut conn,
+		NewPlayer {
 			name: UserName::parse("test123".parse().unwrap()).unwrap(),
 			pwd_hash: "password1".to_string(),
 			email: None,
 			faction: FactionCode::Human,
-		})
-		.expect("Failed to create player");
+		},
+	)
+	.expect("Failed to create player");
 
 	assert_eq!(
 		new_player.faction,

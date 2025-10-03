@@ -6,19 +6,21 @@ use tracing::{debug, error, info, instrument};
 
 use crate::controllers::player::{JoinFactionPayload, PlayerProfileResponse};
 use crate::controllers::user::{UpdateUserPayload, UserBody};
+use crate::db::extractor::DatabaseConnection;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::game::player_service::PlayerService;
 
-#[instrument(skip(srv, player), fields(player_id = %player.id))]
+#[instrument(skip_all, fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn get_player_profile(
+	DatabaseConnection(mut conn): DatabaseConnection,
 	State(srv): State<PlayerService>,
 	player: Extension<AuthenticatedUser>,
 ) -> crate::Result<impl IntoResponse, StatusCode> {
 	debug!("Starting player profile retrieval");
 	let profile = srv
-		.get_player(&player.id)
+		.get_player(&mut conn, &player.id)
 		.map(PlayerProfileResponse::from)
 		.map_err(|err| {
 			error!("Failed to fetch user profile");
@@ -28,16 +30,17 @@ pub(super) async fn get_player_profile(
 	Ok(Json(profile))
 }
 
-#[instrument(skip(srv, player), fields(player_id = %player.id))]
+#[instrument(skip(conn, srv, player), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn update_player_profile(
+	DatabaseConnection(mut conn): DatabaseConnection,
 	State(srv): State<PlayerService>,
 	player: Extension<AuthenticatedUser>,
 	Json(payload): Json<UpdateUserPayload>,
 ) -> crate::Result<impl IntoResponse, StatusCode> {
 	debug!("Starting player profile update");
 	let profile = srv
-		.update_player(player.id, payload)
+		.update_player(&mut conn, player.id, payload)
 		.map(PlayerProfileResponse::from)
 		.map_err(|_| {
 			error!("Failed to update user profile");
@@ -47,16 +50,17 @@ pub(super) async fn update_player_profile(
 	Ok((StatusCode::ACCEPTED, Json(profile)))
 }
 
-#[instrument(skip(srv, player), fields(player_id = %player.id))]
+#[instrument(skip(conn, srv, player), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn join_faction(
+	DatabaseConnection(mut conn): DatabaseConnection,
 	State(srv): State<PlayerService>,
 	player: Extension<AuthenticatedUser>,
 	Json(payload): Json<JoinFactionPayload>,
 ) -> crate::Result<impl IntoResponse, StatusCode> {
 	debug!("Starting player faction join");
 	let body = srv
-		.update_player(player.id, payload.into())
+		.update_player(&mut conn, player.id, payload.into())
 		.map(UserBody::from)
 		.map_err(|_| {
 			error!("Failed to join faction");

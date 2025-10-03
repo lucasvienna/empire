@@ -8,9 +8,9 @@ use chrono::Utc;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::controllers::user::models::{NewUserPayload, UpdateUserPayload, UserBody, UserListBody};
-use crate::db::players::PlayerRepository;
-use crate::db::Repository;
-use crate::domain::app_state::{AppPool, AppState};
+use crate::db::extractor::DatabaseConnection;
+use crate::db::players;
+use crate::domain::app_state::AppState;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::NewPlayer;
@@ -19,15 +19,14 @@ use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::Result;
 
 // === CRUD HANDLERS === //
-#[instrument(skip(pool))]
+#[instrument(skip(conn))]
 #[debug_handler(state = AppState)]
 pub(super) async fn get_users(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 ) -> Result<Json<UserListBody>, StatusCode> {
 	debug!("Starting fetch all users");
-	let repo = PlayerRepository::new(&pool);
 
-	let result = repo.get_all().map_err(|err| {
+	let result = players::get_all(&mut conn).map_err(|err| {
 		error!("Failed to fetch users: {}", err);
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
@@ -40,16 +39,15 @@ pub(super) async fn get_users(
 	Ok(Json(response))
 }
 
-#[instrument(skip(pool), fields(player_id = ?player_id))]
+#[instrument(skip(conn), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn get_user_by_id(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	Path(player_id): Path<player::PlayerKey>,
 ) -> Result<Json<UserBody>, StatusCode> {
 	debug!("Starting fetch user by ID");
-	let repo = PlayerRepository::new(&pool);
 
-	let user = repo.get_by_id(&player_id).map_err(|err| {
+	let user = players::get_by_id(&mut conn, &player_id).map_err(|err| {
 		// TODO: differentiate between not found and other errors
 		error!(player_id = %player_id, "Failed to fetch player: {}", err);
 		StatusCode::NOT_FOUND
@@ -61,17 +59,16 @@ pub(super) async fn get_user_by_id(
 	Ok(Json(user.into()))
 }
 
-#[instrument(skip(pool, prod_scheduler), fields(username = ?payload.username, faction = ?payload.faction))]
+#[instrument(skip(conn, prod_scheduler), fields(username = ?payload.username, faction = ?payload.faction))]
 #[debug_handler(state = AppState)]
 pub(super) async fn create_user(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	State(prod_scheduler): State<ProductionScheduler>,
 	Json(payload): Json<NewUserPayload>,
 ) -> Result<(StatusCode, Json<UserBody>), StatusCode> {
 	// AIDEV-NOTE: Critical user creation path with production scheduling
 	debug!("Starting user creation");
 	let start = Instant::now();
-	let repo = PlayerRepository::new(&pool);
 
 	let new_user = match NewPlayer::try_from(payload) {
 		Ok(new_user) => new_user,
@@ -81,7 +78,7 @@ pub(super) async fn create_user(
 		}
 	};
 
-	let created_user = repo.create(new_user).map_err(|err| {
+	let created_user = players::create(&mut conn, new_user).map_err(|err| {
 		error!(error = %err, "Failed to insert player in database");
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
@@ -110,10 +107,11 @@ pub(super) async fn create_user(
 	Ok((StatusCode::CREATED, Json(created_user.into())))
 }
 
-#[instrument(skip(srv), fields(player_id = ?player_key))]
+#[instrument(skip(srv, conn), fields(player_id = ?player_key))]
 #[debug_handler(state = AppState)]
 pub(super) async fn update_user(
 	State(srv): State<PlayerService>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	Path(player_key): Path<player::PlayerKey>,
 	Json(payload): Json<UpdateUserPayload>,
 ) -> Result<impl IntoResponse, StatusCode> {
@@ -127,7 +125,7 @@ pub(super) async fn update_user(
 	let password_changed = payload.password.is_some();
 	let faction_changed = payload.faction.is_some();
 
-	let updated_user = srv.update_player(player_key, payload)?;
+	let updated_user = srv.update_player(&mut conn, player_key, payload)?;
 	let duration = start.elapsed();
 	info!(
 		player_id = %player_key,
@@ -144,23 +142,22 @@ pub(super) async fn update_user(
 	Ok((StatusCode::ACCEPTED, Json(UserBody::from(updated_user))))
 }
 
-#[instrument(skip(pool), fields(player_id = ?player_id))]
+#[instrument(skip(conn), fields(player_id = ?player_id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn delete_user(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	Path(player_id): Path<player::PlayerKey>,
 ) -> Result<StatusCode, StatusCode> {
 	debug!(player_id = %player_id, "Starting user deletion");
 	let start = Instant::now();
-	let repo = PlayerRepository::new(&pool);
 
 	// First check if user exists
-	if let Err(err) = repo.get_by_id(&player_id) {
+	if let Err(err) = players::get_by_id(&mut conn, &player_id) {
 		warn!(player_id = %player_id, error = %err, "Attempted to delete non-existent user");
 		return Err(StatusCode::NOT_FOUND);
 	}
 
-	let count = repo.delete(&player_id).map_err(|err| {
+	let count = players::delete(&mut conn, &player_id).map_err(|err| {
 		error!(player_id = %player_id, error = %err, "Failed to delete player from database");
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;

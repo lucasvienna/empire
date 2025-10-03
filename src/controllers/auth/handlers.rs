@@ -1,5 +1,4 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension, Json};
@@ -15,22 +14,20 @@ use crate::controllers::auth::models::{
 	LoginPayload, PlayerDto, PlayerDtoResponse, RegisterPayload, SessionDto,
 };
 use crate::db::extractor::DatabaseConnection;
-use crate::db::players::PlayerRepository;
-use crate::db::Repository;
-use crate::domain::app_state::{AppPool, AppState};
+use crate::db::players;
+use crate::domain::app_state::AppState;
 use crate::domain::auth::{AuthError, AuthenticatedUser};
 use crate::domain::player::session::PlayerSession;
 use crate::domain::player::NewPlayer;
 use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
 
-#[instrument(skip(pool, payload), fields(username = %payload.username))]
+#[instrument(skip(conn, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 pub(super) async fn register(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
 	trace!("Starting player registration process");
-	let repo = PlayerRepository::new(&pool);
 	let new_user = NewPlayer::try_from(payload).map_err(|err| {
 		error!("Failed to parse player during registration: {}", err);
 		let body = json!({ "status": "error", "message": err.to_string() });
@@ -39,7 +36,7 @@ pub(super) async fn register(
 
 	debug!("Player data parsed successfully");
 
-	match repo.exists_by_name(&new_user.name) {
+	match players::exists_by_name(&mut conn, &new_user.name) {
 		Ok(exists) => {
 			if exists {
 				warn!(
@@ -58,7 +55,7 @@ pub(super) async fn register(
 		}
 	}
 
-	let created_user = repo.create(new_user).map_err(|err| {
+	let created_user = players::create(&mut conn, new_user).map_err(|err| {
 		error!("Failed to insert player: {:#?}", err);
 		let body = json!({ "status": "error", "message": err.to_string() });
 		(StatusCode::INTERNAL_SERVER_ERROR, Json(body))
@@ -80,7 +77,6 @@ pub(super) async fn register(
 #[instrument(skip_all, fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 pub(super) async fn login(
-	State(pool): State<AppPool>,
 	DatabaseConnection(mut conn): DatabaseConnection,
 	jar: CookieJar,
 	settings: Settings,
@@ -91,8 +87,7 @@ pub(super) async fn login(
 	}
 
 	trace!("Beginning authentication for user: {}", payload.username);
-	let repo = PlayerRepository::new(&pool);
-	let user = repo.get_by_name(&payload.username).map_err(|err| {
+	let user = players::get_by_name(&mut conn, &payload.username).map_err(|err| {
 		warn!("User login failed - player not found: {}", err);
 		AuthError::WrongCredentials
 	})?;

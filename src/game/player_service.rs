@@ -5,8 +5,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::auth::utils::hash_password;
 use crate::controllers::user::UpdateUserPayload;
-use crate::db::players::PlayerRepository;
-use crate::db::Repository;
+use crate::db::{players, DbConn};
 use crate::domain::app_state::AppState;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
@@ -15,22 +14,24 @@ use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::{Error, ErrorKind, Result};
 
 pub struct PlayerService {
-	repo: PlayerRepository,
 	prod_scheduler: ProductionScheduler,
 }
 
 impl FromRef<AppState> for PlayerService {
 	fn from_ref(state: &AppState) -> Self {
 		Self {
-			repo: PlayerRepository::new(&state.db_pool),
 			prod_scheduler: ProductionScheduler::new(&state.job_queue),
 		}
 	}
 }
 
 impl PlayerService {
-	pub fn get_player(&self, player_key: &PlayerKey) -> Result<Player, StatusCode> {
-		self.repo.get_by_id(player_key).map_err(|err| {
+	pub fn get_player(
+		&self,
+		conn: &mut DbConn,
+		player_key: &PlayerKey,
+	) -> Result<Player, StatusCode> {
+		players::get_by_id(conn, player_key).map_err(|err| {
 			warn!(player_id = %player_key, error = %err, "Failed to get user");
 			StatusCode::NOT_FOUND
 		})
@@ -38,6 +39,7 @@ impl PlayerService {
 
 	pub fn update_player(
 		&self,
+		conn: &mut DbConn,
 		player_key: PlayerKey,
 		payload: UpdateUserPayload,
 	) -> Result<Player, StatusCode> {
@@ -50,14 +52,14 @@ impl PlayerService {
 				}
 			};
 
-		let user = self.repo.get_by_id(&player_key).map_err(|err| {
+		let user = players::get_by_id(conn, &player_key).map_err(|err| {
 			error!(player_id = %player_key, error = %err, "User not found for update");
 			StatusCode::NOT_FOUND
 		})?;
 
 		debug!(player_id = %player_key, "Found existing user, applying changes");
 
-		let updated_user = self.repo.update(&changeset).map_err(|err| {
+		let updated_user = players::update(conn, &changeset).map_err(|err| {
 			error!(player_id = %player_key, error = %err, "Failed to update player in database");
 			StatusCode::INTERNAL_SERVER_ERROR
 		})?;

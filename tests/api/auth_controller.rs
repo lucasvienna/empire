@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::body::Body;
 use axum::http;
 use axum::http::{Request, StatusCode};
@@ -9,9 +7,7 @@ use axum_extra::headers::Authorization;
 use claims::assert_gt;
 use empire::auth::utils::hash_password;
 use empire::controllers::auth::{LoginPayload, PlayerDtoResponse, RegisterPayload};
-use empire::db::players::PlayerRepository;
-use empire::db::Repository;
-use empire::domain::app_state::AppPool;
+use empire::db::{players, DbConn};
 use empire::domain::auth::{encode_token, Claims};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserEmail, UserName};
@@ -67,10 +63,8 @@ async fn login_fails_without_credentials() {
 #[tokio::test]
 async fn login_fails_with_wrong_credentials() {
 	let harness = TestHarness::new();
+	let user = create_test_user(&mut harness.get_conn());
 	let router = harness.router;
-	let pool = Arc::new(harness.db_pool);
-
-	let user = create_test_user(&pool);
 
 	let response = router
 		.oneshot(
@@ -98,10 +92,8 @@ async fn login_fails_with_wrong_credentials() {
 #[tokio::test]
 async fn login_succeeds_with_correct_credentials() {
 	let harness = TestHarness::new();
+	let user = create_test_user(&mut harness.get_conn());
 	let router = harness.router;
-	let pool = Arc::new(harness.db_pool);
-
-	let user = create_test_user(&pool);
 
 	let response = router
 		.oneshot(
@@ -130,10 +122,9 @@ async fn login_succeeds_with_correct_credentials() {
 #[tokio::test]
 async fn cannot_register_with_existing_username() {
 	let harness = TestHarness::new();
+	let user = create_test_user(&mut harness.get_conn());
 	let router = harness.router;
-	let pool = Arc::new(harness.db_pool);
 
-	let user = create_test_user(&pool);
 	let register = RegisterPayload {
 		username: user.name.clone(),
 		password: "1234".to_string(),
@@ -164,7 +155,7 @@ async fn cannot_register_with_existing_username() {
 #[tokio::test]
 async fn user_can_register_and_login() {
 	let server = TestApp::new();
-	let pool = Arc::new(server.db_pool);
+	let mut conn = server.get_conn();
 	let client = reqwest::Client::new();
 
 	let req = RegisterPayload {
@@ -182,7 +173,7 @@ async fn user_can_register_and_login() {
 
 	assert_eq!(response.status(), StatusCode::CREATED);
 
-	let new_user = get_user_by_name(&pool, "test1").unwrap();
+	let new_user = get_user_by_name(&mut conn, "test1").unwrap();
 	assert_eq!(
 		new_user.name.as_str(),
 		req.username.as_str(),
@@ -209,10 +200,9 @@ async fn user_can_register_and_login() {
 #[tokio::test]
 async fn logout_succeeds() {
 	let server = TestApp::new();
-	let pool = Arc::new(server.db_pool);
+	let user = create_test_user(&mut server.get_conn());
 	let client = reqwest::Client::new();
 
-	let user = create_test_user(&pool);
 	let req = LoginPayload {
 		username: user.name,
 		password: "1234".to_string(),
@@ -250,10 +240,9 @@ async fn logout_succeeds() {
 #[tokio::test]
 async fn session_fails_with_jwt() {
 	let server = TestApp::new();
-	let pool = Arc::new(server.db_pool);
+	let user = create_test_user(&mut server.get_conn());
 	let client = reqwest::Client::new();
 
-	let user = create_test_user(&pool);
 	let bearer = get_bearer(&user.id);
 	let response = client
 		.get(format!("{}/session", &server.address))
@@ -275,10 +264,9 @@ async fn session_fails_with_jwt() {
 #[tokio::test]
 async fn session_returns_valid_info() {
 	let server = TestApp::new();
-	let pool = Arc::new(server.db_pool);
+	let user = create_test_user(&mut server.get_conn());
 	let client = reqwest::Client::new();
 
-	let user = create_test_user(&pool);
 	let req = LoginPayload {
 		username: "test_user".to_string(),
 		password: "1234".to_string(),
@@ -312,21 +300,21 @@ async fn session_returns_valid_info() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(pool: &AppPool) -> Player {
-	let user_repo = PlayerRepository::new(pool);
-	user_repo
-		.create(NewPlayer {
+fn create_test_user(conn: &mut DbConn) -> Player {
+	players::create(
+		conn,
+		NewPlayer {
 			name: UserName::parse("test_user".to_string()).unwrap(),
 			pwd_hash: hash_password(b"1234").unwrap(),
 			email: Some(UserEmail::parse("test@example.com".to_string()).unwrap()),
 			faction: FactionCode::Human,
-		})
-		.expect("Failed to create user")
+		},
+	)
+	.expect("Failed to create user")
 }
 
-fn get_user_by_name(pool: &AppPool, name: &str) -> empire::Result<Player> {
-	let repo = PlayerRepository::new(pool);
-	repo.get_by_name(name)
+fn get_user_by_name(conn: &mut DbConn, name: &str) -> empire::Result<Player> {
+	players::get_by_name(conn, name)
 }
 
 fn get_bearer(player_id: &PlayerKey) -> Authorization<Bearer> {

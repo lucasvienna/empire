@@ -4,9 +4,7 @@ use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
 use empire::auth::utils::hash_password;
-use empire::db::players::PlayerRepository;
-use empire::db::Repository;
-use empire::domain::app_state::AppPool;
+use empire::db::{players, DbConn};
 use empire::domain::factions::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::player::{NewPlayer, Player, UserName};
@@ -20,7 +18,8 @@ async fn test_faction_modifier_on_create() {
 	let pool = Arc::new(harness.db_pool);
 
 	// Create a player with Human faction
-	let user = create_test_user(&pool, FactionCode::Human);
+	let mut conn = pool.get().expect("Failed to get connection from pool");
+	let user = create_test_user(&mut conn, FactionCode::Human);
 
 	// Verify active modifiers
 	let mut conn = pool.get().unwrap();
@@ -90,7 +89,8 @@ async fn test_faction_change() {
 	let pool = Arc::new(harness.db_pool);
 
 	// Create player with Human faction
-	let user = create_test_user(&pool, FactionCode::Human);
+	let mut conn = pool.get().expect("Failed to get connection from pool");
+	let user = create_test_user(&mut conn, FactionCode::Human);
 
 	let mut conn = pool.get().unwrap();
 	// Change faction to Orc
@@ -177,14 +177,15 @@ async fn test_faction_change() {
 }
 
 // Helper function to create test users
-fn create_test_user(pool: &AppPool, faction: FactionCode) -> Player {
-	let user_repo = PlayerRepository::new(pool);
-	user_repo
-		.create(NewPlayer {
+fn create_test_user(conn: &mut DbConn, faction: FactionCode) -> Player {
+	players::create(
+		conn,
+		NewPlayer {
 			name: UserName::parse("test_user".to_string()).unwrap(),
 			pwd_hash: hash_password(b"1234").unwrap(),
 			email: None,
 			faction,
-		})
-		.unwrap()
+		},
+	)
+	.unwrap()
 }

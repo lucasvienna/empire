@@ -2,9 +2,8 @@ use axum::extract::FromRef;
 use diesel::prelude::*;
 use diesel::update;
 use empire::auth::utils::hash_password;
-use empire::db::players::PlayerRepository;
-use empire::db::Repository;
-use empire::domain::app_state::{AppPool, AppState};
+use empire::db::{players, DbConn};
+use empire::domain::app_state::AppState;
 use empire::domain::factions::FactionCode;
 use empire::domain::player::accumulator::PlayerAccumulator;
 use empire::domain::player::{NewPlayer, Player, UserName};
@@ -18,7 +17,7 @@ async fn test_collect_resource() {
 	let TestHarness { app, db_pool, .. } = TestHarness::new();
 	let state = AppState(app);
 	let mut conn = db_pool.get().unwrap();
-	let user = create_test_user(&state.db_pool);
+	let user = create_test_user(&mut conn);
 	update(acc::table.filter(acc::player_id.eq(&user.id)))
 		.set((
 			acc::food.eq(1000),
@@ -62,13 +61,15 @@ async fn test_collect_resource() {
 }
 
 /// Create a player. Uses internal DB functions.
-fn create_test_user(pool: &AppPool) -> Player {
-	let repo = PlayerRepository::new(pool);
-	repo.create(NewPlayer {
-		name: UserName::parse("test_user".to_string()).unwrap(),
-		pwd_hash: hash_password(b"1234").unwrap(),
-		email: None,
-		faction: FactionCode::Human,
-	})
+fn create_test_user(conn: &mut DbConn) -> Player {
+	players::create(
+		conn,
+		NewPlayer {
+			name: UserName::parse("test_user".to_string()).unwrap(),
+			pwd_hash: hash_password(b"1234").unwrap(),
+			email: None,
+			faction: FactionCode::Human,
+		},
+	)
 	.expect("Failed to create player")
 }
