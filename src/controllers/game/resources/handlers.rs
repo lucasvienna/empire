@@ -6,15 +6,16 @@ use serde_json::json;
 use tracing::{debug, info, instrument, warn};
 
 use crate::controllers::game::index_controller::get_resources_data;
-use crate::domain::app_state::{AppPool, AppState};
+use crate::db::extractor::DatabaseConnection;
+use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::game::resources::resource_service::ResourceService;
 use crate::Result;
 
-#[instrument(skip(pool, srv))]
+#[instrument(skip(conn, srv))]
 #[debug_handler(state = AppState)]
 pub async fn collect_resources(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	State(srv): State<ResourceService>,
 	player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
@@ -24,7 +25,6 @@ pub async fn collect_resources(
 	match resources {
 		Ok(res) => {
 			info!("Collected resources: {}", res.id);
-			let mut conn = pool.get()?;
 			let res_state = get_resources_data(&mut conn, player_key)?;
 			let body = json!(res_state);
 			Ok((StatusCode::OK, Json(body)))

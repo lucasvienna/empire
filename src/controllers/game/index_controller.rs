@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension, Json};
 use bigdecimal::{BigDecimal, ToPrimitive};
@@ -11,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
+use crate::db::extractor::DatabaseConnection;
 use crate::db::DbConn;
-use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::domain::building::BuildingKey;
 use crate::domain::factions::FactionCode;
@@ -77,14 +77,13 @@ struct BuildingsState {
 	pub gold_per_hour: i64,
 }
 
-#[instrument(skip(pool), fields(player_id = %player.id))]
+#[instrument(skip(conn), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub async fn get_game(
-	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
 	let player_key = player.id;
-	let mut conn = pool.get()?;
 
 	let player_state = get_player_data(&mut conn, player_key)?;
 	let resources_state = get_resources_data(&mut conn, player_key)?;
