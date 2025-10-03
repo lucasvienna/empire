@@ -7,10 +7,9 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::building_levels;
 use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::db::resources::ResourcesRepository;
-use crate::db::Repository;
+use crate::db::{building_levels, Repository};
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::BuildingKey;

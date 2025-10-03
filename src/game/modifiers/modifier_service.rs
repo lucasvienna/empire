@@ -6,8 +6,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use tracing::{info, trace};
 
-use crate::db::modifiers::ModifiersRepository;
-use crate::db::{active_modifiers, Repository};
+use crate::db::{active_modifiers, modifiers};
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::full_modifier::FullModifier;
@@ -23,7 +22,6 @@ pub struct ModifierService {
 	pool: AppPool,
 	cache: Arc<ModifierCache>,
 	scheduler: Arc<ModifierScheduler>,
-	mod_repo: ModifiersRepository,
 }
 
 impl FromRef<AppState> for ModifierService {
@@ -38,7 +36,6 @@ impl ModifierService {
 			pool: Arc::clone(pool),
 			cache: Arc::clone(&mod_system.cache),
 			scheduler: Arc::clone(&mod_system.scheduler),
-			mod_repo: ModifiersRepository::new(pool),
 		}
 	}
 
@@ -50,7 +47,7 @@ impl ModifierService {
 		let active_mod = active_modifiers::create(&mut conn, new_modifier)?;
 
 		// Calculate new aggregate values for affected resources/targets
-		let modifier = self.mod_repo.get_by_id(&active_mod.modifier_id)?;
+		let modifier = modifiers::get_by_id(&mut conn, &active_mod.modifier_id)?;
 		let cache_key = self.create_cache_key(
 			&active_mod.player_id,
 			modifier.target_type,
