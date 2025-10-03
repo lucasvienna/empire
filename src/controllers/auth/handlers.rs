@@ -9,11 +9,12 @@ use cookie::{time, Cookie, SameSite};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use crate::auth::session_service::SessionService;
+use crate::auth::session_service;
 use crate::configuration::Settings;
 use crate::controllers::auth::models::{
 	LoginPayload, PlayerDto, PlayerDtoResponse, RegisterPayload, SessionDto,
 };
+use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
@@ -76,11 +77,11 @@ pub(super) async fn register(
 	Ok((StatusCode::CREATED, Json(body)))
 }
 
-#[instrument(skip(pool, session_service, jar, settings, payload), fields(username = %payload.username))]
+#[instrument(skip_all, fields(username = %payload.username))]
 #[debug_handler(state = AppState)]
 pub(super) async fn login(
 	State(pool): State<AppPool>,
-	State(session_service): State<SessionService>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	jar: CookieJar,
 	settings: Settings,
 	Json(payload): Json<LoginPayload>,
@@ -123,11 +124,10 @@ pub(super) async fn login(
 	debug!("Password verified successfully for player {}", user.name);
 
 	trace!("Generating session token for player {}", user.id);
-	let session_token = session_service.generate_session_token();
+	let session_token = session_service::generate_session_token();
 
 	debug!("Creating session for player {}", user.id);
-	let session = session_service
-		.create_session(session_token.clone(), &user.id)
+	let session = session_service::create_session(&mut conn, session_token.clone(), &user.id)
 		.map_err(|e| {
 			error!("Failed to create session for player {}: {:?}", user.id, e);
 			AuthError::TokenCreation
@@ -152,10 +152,10 @@ pub(super) async fn login(
 	Ok(jar.add(cookie))
 }
 
-#[instrument(skip(jar, srv, maybe_session))]
+#[instrument(skip(jar, conn, maybe_session))]
 #[debug_handler(state = AppState)]
 pub(super) async fn logout(
-	State(srv): State<SessionService>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	_player: Extension<AuthenticatedUser>,
 	maybe_session: Option<Extension<PlayerSession>>,
 	jar: CookieJar,
@@ -168,7 +168,7 @@ pub(super) async fn logout(
 			.remove(Cookie::from(TOKEN_COOKIE_NAME));
 
 		trace!("Invalidating session {}", session.id);
-		srv.invalidate_session(&session.id);
+		session_service::invalidate_session(&mut conn, &session.id);
 		info!(
 			"Player logged out successfully, session {} invalidated",
 			session.id
@@ -184,10 +184,9 @@ pub(super) async fn logout(
 	}
 }
 
-#[instrument(skip(jar, srv, maybe_token), fields(player_id = %player.id))]
+#[instrument(skip(jar, maybe_token), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn session(
-	State(srv): State<SessionService>,
 	player: Extension<AuthenticatedUser>,
 	maybe_session: Option<Extension<PlayerSession>>,
 	maybe_token: Option<Extension<SessionToken>>,

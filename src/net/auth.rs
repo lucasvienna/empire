@@ -14,7 +14,8 @@ use derive_more::Deref;
 use serde::Serialize;
 use tracing::{debug, error, instrument, trace, warn};
 
-use crate::auth::session_service::SessionService;
+use crate::auth::session_service;
+use crate::db::extractor::DatabaseConnection;
 use crate::db::players::PlayerRepository;
 use crate::db::Repository;
 use crate::domain::app_state::AppPool;
@@ -33,9 +34,10 @@ pub struct ErrorResponse {
 	pub message: String,
 }
 
-#[instrument(skip(pool, cookie_jar, req, next))]
+#[instrument(skip(pool, conn, cookie_jar, req, next))]
 pub async fn auth_middleware(
 	State(pool): State<AppPool>,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	cookie_jar: CookieJar,
 	mut req: Request,
 	next: Next,
@@ -63,10 +65,9 @@ pub async fn auth_middleware(
 
 	// try auth with session token
 	if let Some(token) = session_token {
-		let srv = SessionService::new(&pool);
 		let session_token = SessionToken(token.clone());
 
-		match srv.validate_session_token(token.clone()) {
+		match session_service::validate_session_token(&mut conn, token.clone()) {
 			Ok((session, player)) => {
 				let duration = session.expires_at - Utc::now();
 				let cookie = Cookie::build((SESSION_COOKIE_NAME, token.clone()))

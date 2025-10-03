@@ -353,65 +353,15 @@ eliminating the need for connection-related error handling within individual fun
 - Performance monitoring alerting
 - Gradual rollout with canary deployments
 
-## Implementation Timeline
-
-### Week 1: Foundation & Proof of Concept
-
-**Goals**: Establish pattern and validate approach
-
-- [ ] **Day 1–2**: Convert `PlayerBuildingRepository` to function module with `&mut DbConn` parameters
-- [ ] **Day 3**: Update handlers to use `DatabaseConnection` extractor + converted functions
-- [ ] **Day 4**: Write migration script template emphasizing connection-first approach
-- [ ] **Day 5**: Establish benchmarking baseline comparing connection reuse vs. acquisition overhead
-
-**Deliverables**:
-
-- Working function-based player buildings module with connection parameters
-- Updated handlers using `DatabaseConnection` extractor pattern
-- Performance measurements showing reduced connection acquisition overhead
-- Migration template for remaining repositories
-
-### Week 2: Core Repository Migration
-
-**Goals**: Complete all database layer conversions
-
-- [ ] **Day 1**: Convert `BuildingRepository`, `PlayerRepository`
-- [ ] **Day 2**: Convert `ResourceRepository`, `ModifierRepository`
-- [ ] **Day 3**: Convert `ActiveModifiersRepository`, remaining repositories
-- [ ] **Day 4**: Update all affected handlers
-- [ ] **Day 5**: Full test suite validation and performance analysis
-
-**Deliverables**:
-
-- All repository structs converted to function modules
-- All handlers updated to the new pattern
-- Performance comparison report
-
-### Week 3: Service Layer Migration
-
-**Goals**: Apply the pattern to service layer
-
-- [ ] **Day 1**: Convert `BuildingService` to `building_operations`
-- [ ] **Day 2**: Convert `ModifierService` to `modifier_operations`
-- [ ] **Day 3**: Convert remaining services (`ResourceService`, `SessionService`)
-- [ ] **Day 4**: Update handlers for service changes
-- [ ] **Day 5**: Integration testing across all endpoints
-
-**Deliverables**:
-
-- All service structs converted to function modules
-- Comprehensive integration test results
-- Updated API documentation
-
-### Week 4: Optimization & Documentation
+## Optimization & Documentation
 
 **Goals**: Polish and optimize the new architecture
 
-- [ ] **Day 1**: Code review and cleanup of converted modules
-- [ ] **Day 2**: Performance tuning based on profiling results
-- [ ] **Day 3**: Documentation updates and inline comments
-- [ ] **Day 4**: Final performance validation and benchmarking
-- [ ] **Day 5**: Prepare foundation for request context implementation
+- [ ] Code review and cleanup of converted modules
+- [ ] Performance tuning based on profiling results
+- [ ] Documentation updates and inline comments
+- [ ] Final performance validation and benchmarking
+- [ ] Prepare foundation for request context implementation
 
 **Deliverables**:
 
