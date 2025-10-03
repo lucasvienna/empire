@@ -6,7 +6,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use tracing::{info, trace};
 
-use crate::db::active_modifiers::ActiveModifiersRepository;
+use crate::db::active_modifiers;
 use crate::db::modifiers::ModifiersRepository;
 use crate::db::Repository;
 use crate::domain::app_state::{AppPool, AppState};
@@ -25,7 +25,6 @@ pub struct ModifierService {
 	cache: Arc<ModifierCache>,
 	scheduler: Arc<ModifierScheduler>,
 	mod_repo: ModifiersRepository,
-	active_mod_repo: ActiveModifiersRepository,
 }
 
 impl FromRef<AppState> for ModifierService {
@@ -41,14 +40,15 @@ impl ModifierService {
 			cache: Arc::clone(&mod_system.cache),
 			scheduler: Arc::clone(&mod_system.scheduler),
 			mod_repo: ModifiersRepository::new(pool),
-			active_mod_repo: ActiveModifiersRepository::new(pool),
 		}
 	}
 
 	/// Apply a new modifier to a player and update all relevant systems
 	pub async fn apply_modifier(&mut self, new_modifier: NewActiveModifier) -> Result<(), Error> {
+		let mut conn = self.pool.get()?;
+
 		// Store the modifier in the database
-		let active_mod = self.active_mod_repo.create(new_modifier)?;
+		let active_mod = active_modifiers::create(&mut conn, new_modifier)?;
 
 		// Calculate new aggregate values for affected resources/targets
 		let modifier = self.mod_repo.get_by_id(&active_mod.modifier_id)?;
@@ -89,7 +89,7 @@ impl ModifierService {
 	/// Get all active modifiers for a player
 	fn get_active_modifiers(&self, player_id: &PlayerKey) -> Result<Vec<ActiveModifier>, Error> {
 		let mut conn = self.pool.get()?;
-		self.active_mod_repo.get_by_player_id(&mut conn, player_id)
+		active_modifiers::get_by_player_id(&mut conn, player_id)
 	}
 
 	fn get_full_modifiers(&self, player_key: &PlayerKey) -> Result<Vec<FullModifier>, Error> {
