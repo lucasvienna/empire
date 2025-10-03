@@ -7,7 +7,7 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::building_levels::BuildingLevelRepository;
+use crate::db::building_levels;
 use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::db::resources::ResourcesRepository;
 use crate::db::Repository;
@@ -22,7 +22,6 @@ use crate::game::service::ApiService;
 pub struct BuildingService {
 	db_pool: AppPool,
 	player_bld_repo: PlayerBuildingRepository,
-	bld_lvl_repo: BuildingLevelRepository,
 	res_repo: ResourcesRepository,
 }
 
@@ -43,7 +42,6 @@ impl ApiService for BuildingService {
 		BuildingService {
 			db_pool: Arc::clone(pool),
 			player_bld_repo: PlayerBuildingRepository::new(pool),
-			bld_lvl_repo: BuildingLevelRepository::new(pool),
 			res_repo: ResourcesRepository::new(pool),
 		}
 	}
@@ -61,7 +59,7 @@ impl BuildingService {
 			bld_id, player_id
 		);
 		let mut conn = self.db_pool.get()?;
-		let bld_lvl = self.bld_lvl_repo.get_next_upgrade(&mut conn, bld_id, &0)?;
+		let bld_lvl = building_levels::get_next_upgrade(&mut conn, bld_id, &0)?;
 		trace!("Building level requirements: {:?}", bld_lvl);
 
 		// check for resources
@@ -154,7 +152,7 @@ impl BuildingService {
 			player_bld,
 			max_level
 		);
-		let bld_lvl = self.bld_lvl_repo.get_next_upgrade(
+		let bld_lvl = building_levels::get_next_upgrade(
 			&mut conn,
 			&player_bld.building_id,
 			&player_bld.level,

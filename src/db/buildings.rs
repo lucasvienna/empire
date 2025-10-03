@@ -2,7 +2,7 @@
 //!
 //! This module provides comprehensive CRUD operations for building management,
 //! including standard database operations for creating, reading, updating, and
-//! deleting building records. 
+//! deleting building records.
 
 use diesel::prelude::*;
 
