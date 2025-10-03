@@ -7,9 +7,8 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::player_buildings::PlayerBuildingRepository;
 use crate::db::resources::ResourcesRepository;
-use crate::db::{building_levels, Repository};
+use crate::db::{building_levels, player_buildings, Repository};
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::BuildingKey;
@@ -20,7 +19,6 @@ use crate::game::service::ApiService;
 
 pub struct BuildingService {
 	db_pool: AppPool,
-	player_bld_repo: PlayerBuildingRepository,
 	res_repo: ResourcesRepository,
 }
 
@@ -40,7 +38,6 @@ impl ApiService for BuildingService {
 	fn new(pool: &AppPool) -> Self {
 		BuildingService {
 			db_pool: Arc::clone(pool),
-			player_bld_repo: PlayerBuildingRepository::new(pool),
 			res_repo: ResourcesRepository::new(pool),
 		}
 	}
@@ -75,10 +72,7 @@ impl BuildingService {
 		}
 
 		// verify if the maximum number of buildings was reached
-		if !self
-			.player_bld_repo
-			.can_construct(&mut conn, player_id, bld_id)?
-		{
+		if !player_buildings::can_construct(&mut conn, player_id, bld_id)? {
 			trace!(
 				"Player {} has reached max buildings for building #{}",
 				player_id,
@@ -105,7 +99,7 @@ impl BuildingService {
 			)?;
 			trace!("Deducted resources");
 			// construct building
-			let player_bld = self.player_bld_repo.construct(
+			let player_bld = player_buildings::construct(
 				connection,
 				NewPlayerBuilding {
 					player_id: *player_id,
@@ -143,9 +137,8 @@ impl BuildingService {
 	pub fn upgrade_building(&self, player_bld_id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
 		debug!("Starting upgrade building: {}", player_bld_id);
 		let mut conn = self.db_pool.get()?;
-		let (player_bld, max_level) = self
-			.player_bld_repo
-			.get_upgrade_tuple(&mut conn, player_bld_id)?;
+		let (player_bld, max_level) =
+			player_buildings::get_upgrade_tuple(&mut conn, player_bld_id)?;
 		trace!(
 			"Player building details: {:?}, max level: {:?}",
 			player_bld,
@@ -197,7 +190,7 @@ impl BuildingService {
 			)?;
 			trace!("Deducted resources");
 			// upgrade building
-			let player_bld = self.player_bld_repo.set_upgrade_time(
+			let player_bld = player_buildings::set_upgrade_time(
 				connection,
 				player_bld_id,
 				Some(bld_lvl.upgrade_time.as_str()),
@@ -228,7 +221,7 @@ impl BuildingService {
 	pub fn confirm_upgrade(&self, id: &PlayerBuildingKey) -> Result<()> {
 		debug!("Starting confirm upgrade for building {}", id);
 		let mut conn = self.db_pool.get()?;
-		let player_bld = self.player_bld_repo.get_by_id(id)?;
+		let player_bld = player_buildings::get_by_id(&mut conn, id)?;
 		trace!("Player building details: {:?}", player_bld);
 		match player_bld.upgrade_time {
 			None => {
@@ -244,7 +237,7 @@ impl BuildingService {
 				})?;
 				if time <= Utc::now() {
 					debug!("Upgrade time has passed, incrementing building level");
-					self.player_bld_repo.inc_level(&mut conn, id)?;
+					player_buildings::inc_level(&mut conn, id)?;
 					info!("Successfully confirmed upgrade for building {}", id);
 					Ok(())
 				} else {
