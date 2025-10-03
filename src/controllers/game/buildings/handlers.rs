@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{debug_handler, Extension};
@@ -11,7 +11,7 @@ use crate::db::player_buildings;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::game::building_service::BuildingService;
+use crate::game::building_operations;
 use crate::Result;
 
 #[instrument(skip(conn, player))]
@@ -66,10 +66,9 @@ pub async fn get_building(
 	Ok(json!(game_bld))
 }
 
-#[instrument(skip(srv, conn, player))]
+#[instrument(skip(conn, player))]
 #[debug_handler(state = AppState)]
 pub async fn upgrade_building(
-	State(srv): State<BuildingService>,
 	DatabaseConnection(mut conn): DatabaseConnection,
 	player_bld_key: Path<PlayerBuildingKey>,
 	player: Extension<AuthenticatedUser>,
@@ -81,7 +80,7 @@ pub async fn upgrade_building(
 		building_key, player_key
 	);
 
-	let bld = srv.upgrade_building(&building_key)?;
+	let bld = building_operations::upgrade_building(&mut conn, &building_key)?;
 	trace!("Building upgrade details: {:?}", bld);
 
 	let upgrade_time = bld.upgrade_time.unwrap_or_default();
