@@ -1,10 +1,18 @@
+use std::collections::HashMap;
+
+use bigdecimal::{BigDecimal, ToPrimitive};
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::sql_types::Int8;
-use tracing::debug;
+use tracing::{debug, trace, warn};
 
-use crate::db::DbConn;
-use crate::domain::player::resource::PlayerResource;
+use crate::db::{resources, DbConn};
+use crate::domain::modifier::ModifierTarget;
+use crate::domain::player::accumulator::{AccumulatorKey, PlayerAccumulator};
+use crate::domain::player::resource::{PlayerResource, ResourceType};
 use crate::domain::player::PlayerKey;
+use crate::domain::resource_generation::ResourceGeneration;
+use crate::game::modifiers::modifier_operations;
 use crate::Result;
 
 // AIDEV-NOTE: These SQL functions are not standard in all SQL dialects,
@@ -78,4 +86,183 @@ pub fn collect_resources(conn: &mut DbConn, player_id: &PlayerKey) -> Result<Pla
 			.get_result(conn)
 			.map_err(Into::into)
 	})
+}
+
+/// Produces resources for a player based on their production rates and time elapsed since last production.
+///
+/// This function calculates the amount of resources to produce, applies production rates,
+/// and updates the player's accumulator with the produced resources, respecting storage caps.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `player_id` - The unique identifier of the player to produce resources for
+/// * `production_rates` - HashMap of production rates per hour for each resource type
+/// * `up_to_time` - Optional timestamp to produce up to (defaults to now)
+///
+/// # Returns
+/// The updated `PlayerAccumulator` state after production
+pub fn produce_resources(
+	conn: &mut DbConn,
+	player_id: &PlayerKey,
+	production_rates: &HashMap<ResourceType, BigDecimal>,
+	up_to_time: Option<DateTime<Utc>>,
+) -> Result<PlayerAccumulator> {
+	let target_time = up_to_time.unwrap_or_else(Utc::now);
+
+	// Get the last production time
+	let last_prod = resources::get_by_player_id(conn, player_id)?.produced_at;
+	let delta = target_time - last_prod;
+	let delta_hours = BigDecimal::from(delta.num_seconds()) / BigDecimal::from(3600);
+
+	debug!(
+		"Production Delta: {:.4}h, last produced at: {} for player: {}",
+		delta_hours, last_prod, player_id
+	);
+	debug!("Production Rates: {:?}", production_rates);
+
+	// Calculate production amounts
+	let prod_amounts: HashMap<ResourceType, i64> = production_rates
+		.iter()
+		.map(|(res_type, prod_rate)| {
+			let amount = prod_rate * &delta_hours;
+			let truncated = amount.to_i64().unwrap_or_default();
+			(*res_type, truncated)
+		})
+		.collect();
+
+	debug!(
+		"Producing resources for player {}: {:?}",
+		player_id, prod_amounts
+	);
+
+	// Add generated resources to the player's accumulator, respecting storage caps
+	conn.transaction(|conn| -> Result<PlayerAccumulator> {
+		use crate::custom_schema::resource_generation::dsl as rg;
+		use crate::schema::player_accumulator::dsl as pa;
+		use crate::schema::player_resource::dsl as pr;
+
+		trace!("Entering accumulator update transaction");
+
+		// Lock the player's accumulator row to prevent race conditions during the update
+		let acc_key: AccumulatorKey = pa::player_accumulator
+			.select(pa::id)
+			.filter(pa::player_id.eq(player_id))
+			.for_update()
+			.first(conn)?;
+		trace!("Found player accumulator: {:?}", acc_key);
+
+		let acc_caps: ResourceGeneration = rg::resource_generation.find(player_id).first(conn)?;
+
+		let get_prod = |res_type: ResourceType| *prod_amounts.get(&res_type).unwrap_or(&0);
+		let res = diesel::update(pa::player_accumulator)
+			.filter(pa::id.eq(&acc_key))
+			.set((
+				pa::food.eq(least(
+					pa::food + get_prod(ResourceType::Food),
+					acc_caps.food_acc_cap,
+				)),
+				pa::wood.eq(least(
+					pa::wood + get_prod(ResourceType::Wood),
+					acc_caps.wood_acc_cap,
+				)),
+				pa::stone.eq(least(
+					pa::stone + get_prod(ResourceType::Stone),
+					acc_caps.stone_acc_cap,
+				)),
+				pa::gold.eq(least(
+					pa::gold + get_prod(ResourceType::Gold),
+					acc_caps.gold_acc_cap,
+				)),
+			))
+			.returning(PlayerAccumulator::as_returning())
+			.get_result(conn)?;
+		debug!("New accumulator state: {:?}", res);
+
+		let updated_rows = diesel::update(pr::player_resource.filter(pr::player_id.eq(player_id)))
+			.set(pr::produced_at.eq(target_time))
+			.execute(conn)?;
+
+		if updated_rows != 1 {
+			warn!(
+				"Expected to update 1 `produced_at` timestamp, but updated {}. Player ID: {}",
+				updated_rows, player_id
+			);
+		}
+
+		Ok(res)
+	})
+}
+
+/// Produces resources up to the current time and then collects them in a single operation.
+///
+/// This ensures that when a player clicks "collect", they receive resources produced
+/// up to that exact moment, preventing stale values.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `player_id` - The unique identifier of the player
+/// * `production_rates` - HashMap of production rates per hour for each resource type
+///
+/// # Returns
+/// A tuple of (PlayerAccumulator after production, PlayerResource after collection)
+pub fn produce_and_collect_resources(
+	conn: &mut DbConn,
+	player_id: &PlayerKey,
+	production_rates: &HashMap<ResourceType, BigDecimal>,
+) -> Result<(PlayerAccumulator, PlayerResource)> {
+	// First produce resources up to now
+	let accumulator = produce_resources(conn, player_id, production_rates, None)?;
+
+	// Then collect the produced resources
+	let resources = collect_resources(conn, player_id)?;
+
+	Ok((accumulator, resources))
+}
+
+/// Get base resource generation rates for a player from the database
+pub fn get_base_rates(conn: &mut DbConn, player_key: &PlayerKey) -> Result<ResourceGeneration> {
+	use crate::custom_schema::resource_generation::dsl::{player_id, resource_generation};
+
+	resource_generation
+		.select(ResourceGeneration::as_select())
+		.filter(player_id.eq(player_key))
+		.first(conn)
+		.map_err(Into::into)
+}
+
+/// Calculate production rates with modifiers applied
+///
+/// This is a pure function that calculates rates without caching.
+pub fn calc_prod_rates(
+	conn: &mut DbConn,
+	player_id: &PlayerKey,
+) -> Result<HashMap<ResourceType, BigDecimal>> {
+	use strum::IntoEnumIterator;
+
+	// Get base rates from database
+	let base_rates = get_base_rates(conn, player_id)?;
+
+	// Calculate modifiers for each resource type
+	let mut production_rates = HashMap::new();
+	for res_type in ResourceType::iter() {
+		let multiplier = modifier_operations::calc_multiplier(
+			conn,
+			player_id,
+			ModifierTarget::Resource,
+			Some(res_type),
+		)?;
+
+		let base_rate = match res_type {
+			ResourceType::Population => base_rates.population,
+			ResourceType::Food => base_rates.food,
+			ResourceType::Wood => base_rates.wood,
+			ResourceType::Stone => base_rates.stone,
+			ResourceType::Gold => base_rates.gold,
+		};
+
+		let final_rate = BigDecimal::from(base_rate) * multiplier;
+		production_rates.insert(res_type, final_rate);
+	}
+
+	Ok(production_rates)
 }

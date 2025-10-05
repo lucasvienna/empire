@@ -26,8 +26,6 @@ use crate::Error;
 pub struct ResourceProcessor {
 	/// A unique ID for the processor instance
 	id: String,
-	/// A reference to the application's database connection pool
-	db_pool: AppPool,
 	/// A broadcast channel receiver for handling graceful shutdowns
 	shutdown_rx: Receiver<()>,
 	/// Modifier service instance
@@ -69,7 +67,6 @@ impl JobProcessor for ResourceProcessor {
 		debug!("Starting worker {}", id);
 		Self {
 			id,
-			db_pool: Arc::clone(&app_state.db_pool),
 			shutdown_rx,
 			srv,
 		}
