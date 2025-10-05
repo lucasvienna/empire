@@ -18,17 +18,14 @@ use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::modifiers::modifier_service::ModifierService;
 use crate::game::modifiers::modifier_system::ModifierSystem;
+use crate::game::resources::resource_operations::{self, least};
 use crate::game::resources::resource_scheduler::ProductionScheduler;
 use crate::job_queue::JobQueue;
 use crate::Result;
 
-// AIDEV-NOTE: These SQL functions are not standard in all SQL dialects,
-// but are supported by PostgreSQL. `define_sql_function!` makes them
+// AIDEV-NOTE: This SQL function is not standard in all SQL dialects,
+// but is supported by PostgreSQL. `define_sql_function!` makes it
 // available to Diesel's query builder.
-define_sql_function! {
-	#[sql_name = "LEAST"]
-	fn least(a: Int8, b: Int8) -> Int8
-}
 define_sql_function! {
 	#[sql_name = "GREATEST"]
 	fn greatest(a: Int8, b: Int8) -> Int8
@@ -169,63 +166,13 @@ impl ResourceService {
 
 	/// Collects resources for a player by transferring the maximum possible amount from their
 	/// resource accumulator to their resource storage, constrained by the storage capacity limits.
+	///
+	/// This method delegates to the resource_operations module to ensure consistent
+	/// collection logic across the application.
 	#[instrument(skip(self))]
 	pub fn collect_resources(&self, player_id: &PlayerKey) -> Result<PlayerResource> {
-		let mut connection = self.db_pool.get()?;
-
-		// This query calculates the exact amount of each resource that can be moved
-		// from the accumulator to the main storage without exceeding the storage caps.
-		// It uses `LEAST` to take the minimum of what's in the accumulator and the remaining capacity.
-		let (collectible_food, collectible_wood, collectible_stone, collectible_gold) = {
-			use crate::schema::player_accumulator::dsl as pa;
-			use crate::schema::player_resource::dsl as pr;
-
-			pa::player_accumulator
-				.inner_join(pr::player_resource.on(pa::player_id.eq(pr::player_id)))
-				.filter(pa::player_id.nullable().eq(player_id))
-				.select((
-					least(pa::food, pr::food_cap - pr::food),
-					least(pa::wood, pr::wood_cap - pr::wood),
-					least(pa::stone, pr::stone_cap - pr::stone),
-					least(pa::gold, pr::gold_cap - pr::gold),
-				))
-				.first::<(i64, i64, i64, i64)>(&mut connection)?
-		};
-
-		debug!(
-			"Collectible amounts: Food: {}, Wood: {}, Stone: {}, Gold: {}",
-			collectible_food, collectible_wood, collectible_stone, collectible_gold
-		);
-
-		// The resource transfer is performed in a transaction to ensure atomicity.
-		// First, we drain the calculated amounts from the accumulator.
-		// Second, we add those same amounts to the main resource storage.
-		connection.transaction(|conn| {
-			use crate::schema::player_accumulator::dsl as pa;
-			use crate::schema::player_resource::dsl as pr;
-
-			// Drain the accumulator
-			diesel::update(pa::player_accumulator.filter(pa::player_id.eq(player_id)))
-				.set((
-					pa::food.eq(pa::food - collectible_food),
-					pa::wood.eq(pa::wood - collectible_wood),
-					pa::stone.eq(pa::stone - collectible_stone),
-					pa::gold.eq(pa::gold - collectible_gold),
-				))
-				.execute(conn)?;
-
-			// Then, increase the main resource storage
-			diesel::update(pr::player_resource.filter(pr::player_id.eq(player_id)))
-				.set((
-					pr::food.eq(pr::food + collectible_food),
-					pr::wood.eq(pr::wood + collectible_wood),
-					pr::stone.eq(pr::stone + collectible_stone),
-					pr::gold.eq(pr::gold + collectible_gold),
-				))
-				.returning(PlayerResource::as_returning())
-				.get_result(conn)
-				.map_err(Into::into)
-		})
+		let mut conn = self.db_pool.get()?;
+		resource_operations::collect_resources(&mut conn, player_id)
 	}
 
 	/// Retrieves current resources rates for all resource types for a given player,
