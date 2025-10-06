@@ -13,7 +13,7 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, error, info, instrument, trace, warn};
 use ulid::Ulid;
 
-use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::app_state::AppState;
 use crate::domain::jobs::{Job, JobType};
 use crate::game::modifiers::modifier_scheduler::ModifierJobPayload;
 use crate::game::modifiers::modifier_service::ModifierService;
@@ -24,7 +24,7 @@ use crate::Error;
 /// A processor for handling modifier-related background jobs.
 ///
 /// The `ModifierProcessor` implements the `JobProcessor` trait and is responsible
-/// for processing various modifier-related tasks such as:
+/// for processing various modifier-related tasks, such as:
 /// - Expiring modifiers
 /// - Recalculating player resources
 /// - Updating modifier caches
@@ -33,8 +33,6 @@ use crate::Error;
 pub struct ModifierProcessor {
 	/// A unique ID for the processor instance
 	id: String,
-	/// A reference to the application's database connection pool
-	db_pool: AppPool,
 	/// A broadcast channel receiver for handling graceful shutdowns
 	shutdown_rx: broadcast::Receiver<()>,
 	/// Modifier service instance
@@ -84,7 +82,6 @@ impl JobProcessor for ModifierProcessor {
 		debug!("Starting worker {}", id);
 		Self {
 			id,
-			db_pool: Arc::clone(&app_state.db_pool),
 			shutdown_rx,
 			srv,
 		}
@@ -168,7 +165,6 @@ impl JobProcessor for ModifierProcessor {
 		);
 		let payload: ModifierJobPayload = serde_json::from_value(job.payload.clone())?;
 
-		// Now you can match on the payload enum variants and handle each case
 		match payload {
 			ModifierJobPayload::ExpireModifier {
 				modifier_id,

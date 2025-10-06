@@ -7,8 +7,10 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, instrument, trace, warn};
 use ulid::Ulid;
 
-use crate::domain::app_state::{AppPool, AppState};
+use crate::domain::app_state::AppState;
 use crate::domain::jobs::{Job, JobType};
+use crate::game::modifiers::modifier_service::ModifierService;
+use crate::game::resources::resource_operations;
 use crate::game::resources::resource_scheduler::ProductionJobPayload;
 use crate::game::resources::resource_service::ResourceService;
 use crate::job_queue::job_processor::JobProcessor;
@@ -28,8 +30,10 @@ pub struct ResourceProcessor {
 	id: String,
 	/// A broadcast channel receiver for handling graceful shutdowns
 	shutdown_rx: Receiver<()>,
+	/// Resource service instance
+	resource_srv: ResourceService,
 	/// Modifier service instance
-	srv: ResourceService,
+	modifier_srv: ModifierService,
 }
 
 impl ResourceProcessor {
@@ -52,7 +56,7 @@ impl JobProcessor for ResourceProcessor {
 	///
 	/// # Arguments
 	///
-	/// * `db_pool` - A reference to the application's database connection pool
+	/// * `app_state` - A reference to the application state
 	/// * `shutdown_rx` - A broadcast channel receiver for handling graceful shutdowns
 	///
 	/// # Returns
@@ -63,12 +67,14 @@ impl JobProcessor for ResourceProcessor {
 		Self: Sized,
 	{
 		let id = format!("resource-goblin-{}", Ulid::new());
-		let srv = ResourceService::from_ref(app_state);
+		let resource_srv = ResourceService::from_ref(app_state);
+		let modifier_srv = ModifierService::from_ref(app_state);
 		debug!("Starting worker {}", id);
 		Self {
 			id,
 			shutdown_rx,
-			srv,
+			resource_srv,
+			modifier_srv,
 		}
 	}
 
@@ -137,7 +143,8 @@ impl JobProcessor for ResourceProcessor {
 					"Processing produce resources job for player: {}",
 					players_id
 				);
-				match self.srv.produce_for_player(&players_id).await {
+				// Compose both services: get modifiers, get base rates, combine, then produce
+				match self.produce_resources_for_player(&players_id).await {
 					Ok(_) => {
 						info!("Successfully produced resources for player: {}", players_id);
 					}
@@ -156,7 +163,7 @@ impl JobProcessor for ResourceProcessor {
 					"Processing collect resources job for player: {}",
 					players_id
 				);
-				match self.srv.collect_resources(&players_id) {
+				match self.resource_srv.collect(&players_id) {
 					Ok(_) => {
 						info!(
 							"Successfully collected resources for player: {}",
@@ -176,6 +183,33 @@ impl JobProcessor for ResourceProcessor {
 		}
 
 		debug!("Completed process job: {}", job.id);
+		Ok(())
+	}
+}
+
+impl ResourceProcessor {
+	/// Orchestrates resource production by composing modifier and resource services
+	async fn produce_resources_for_player(
+		&self,
+		player_id: &crate::domain::player::PlayerKey,
+	) -> Result<(), Error> {
+		// Step 1: Fetch all resource modifiers (uses caching)
+		let modifiers = self
+			.modifier_srv
+			.get_modifier_multipliers(player_id)
+			.await?;
+
+		// Step 2: Get base rates from database
+		let base_rates = self.resource_srv.get_base_rates(player_id)?;
+
+		// Step 3: Combine base rates with modifiers to get production rates
+		let production_rates = resource_operations::apply_rate_modifiers(&base_rates, &modifiers);
+
+		// Step 4: Produce resources with the calculated rates
+		self.resource_srv
+			.produce(player_id, &production_rates)
+			.await?;
+
 		Ok(())
 	}
 }

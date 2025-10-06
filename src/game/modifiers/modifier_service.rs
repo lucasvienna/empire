@@ -1,15 +1,17 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::FromRef;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
+use strum::IntoEnumIterator;
 use tracing::{info, trace};
 
 use crate::db::{active_modifiers, modifiers};
 use crate::domain::app_state::{AppPool, AppState};
-use crate::domain::modifier::active_modifier::NewActiveModifier;
+use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::ModifierTarget;
-use crate::domain::player::resource::ResourceType;
+use crate::domain::player::resource::{ResourceModifiers, ResourceType};
 use crate::domain::player::PlayerKey;
 use crate::game::modifiers::modifier_cache::{CacheKey, ModifierCache};
 use crate::game::modifiers::modifier_operations;
@@ -41,7 +43,10 @@ impl ModifierService {
 	}
 
 	/// Apply a new modifier to a player and update all relevant systems
-	pub async fn apply_modifier(&mut self, new_modifier: NewActiveModifier) -> Result<(), Error> {
+	pub async fn apply_modifier(
+		&mut self,
+		new_modifier: NewActiveModifier,
+	) -> Result<ActiveModifier> {
 		let mut conn = self.pool.get()?;
 
 		// Store the modifier in the database
@@ -81,16 +86,48 @@ impl ModifierService {
 			"Applied modifier {} to player {}",
 			modifier.name, active_mod.player_id
 		);
-		Ok(())
+		Ok(active_mod)
 	}
 
-	/// Get the total modifier multiplier for a specific target and resource
-	pub async fn get_total_multiplier(
+	/// Get the total modifier multiplier for a specific target and resource, with caching.
+	///
+	/// This method uses a cache with smart invalidation to provide accurate modifier values
+	/// while optimizing for repeated lookups. The cache is automatically invalidated when
+	/// modifiers are applied or expire, ensuring values are always accurate.
+	///
+	/// # Caching Behavior
+	///
+	/// - **Cache hit**: Returns cached value immediately (fast path)
+	/// - **Cache miss**: Calculates fresh value from DB, caches it with TTL
+	/// - **Invalidation**: Automatic when modifiers change or expire
+	/// - **TTL**: Set to the nearest modifier expiration time
+	///
+	/// # Performance Characteristics
+	///
+	/// - **Cache hit**: Very fast (no DB access)
+	/// - **Cache miss**: Slower than `modifier_operations::calc_multiplier` (async overhead + DB query)
+	/// - **Overall**: Faster for repeated lookups, slower for one-off queries
+	///
+	/// # Comparison with `modifier_operations::calc_multiplier`
+	///
+	/// | Feature | This Method | `modifier_operations::calc_multiplier` |
+	/// |---------|-------------|---------------------------------------|
+	/// | Caching | ✓ Yes (auto-invalidated) | ✗ No |
+	/// | Async | ✓ Yes | ✗ No (sync) |
+	/// | Accuracy | Always accurate | Always accurate |
+	/// | Best For | Repeated lookups | Single lookups |
+	/// | Overhead | Async + cache check | Direct DB query |
+	///
+	/// # When to Use
+	///
+	/// - **Use this method** for background processors with repeated calculations (e.g., resource production every 2 minutes)
+	/// - **Use `modifier_operations::calc_multiplier`** for one-off queries in HTTP handlers
+	pub async fn get_or_calc_multiplier(
 		&self,
 		player_id: &PlayerKey,
 		target_type: ModifierTarget,
 		target_resource: Option<ResourceType>,
-	) -> Result<BigDecimal, Error> {
+	) -> Result<BigDecimal> {
 		let cache_key = CacheKey {
 			player_id: *player_id,
 			target_type,
@@ -119,6 +156,21 @@ impl ModifierService {
 			.await?;
 
 		Ok(total_multiplier)
+	}
+
+	/// Get all resource modifier multipliers for a player in a single batch operation
+	pub async fn get_modifier_multipliers(
+		&self,
+		player_id: &PlayerKey,
+	) -> Result<ResourceModifiers> {
+		let mut multipliers = HashMap::with_capacity(4);
+		for res_type in ResourceType::iter() {
+			let multiplier = self
+				.get_or_calc_multiplier(player_id, ModifierTarget::Resource, Some(res_type))
+				.await?;
+			multipliers.insert(res_type, multiplier);
+		}
+		Ok(multipliers)
 	}
 
 	/// Get the nearest expiration time for modifiers matching the criteria

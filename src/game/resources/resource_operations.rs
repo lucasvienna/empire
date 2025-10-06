@@ -9,7 +9,7 @@ use tracing::{debug, trace, warn};
 use crate::db::{resources, DbConn};
 use crate::domain::modifier::ModifierTarget;
 use crate::domain::player::accumulator::{AccumulatorKey, PlayerAccumulator};
-use crate::domain::player::resource::{PlayerResource, ResourceType};
+use crate::domain::player::resource::{PlayerResource, ResourceModifiers, ResourceType};
 use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::modifiers::modifier_operations;
@@ -31,7 +31,7 @@ define_sql_function! {
 /// * `player_id` - The unique identifier of the player to collect resources for
 ///
 /// # Returns
-/// The updated `PlayerResource` state after collecting
+/// The updated [`PlayerResource`] state after collecting
 pub fn collect_resources(conn: &mut DbConn, player_id: &PlayerKey) -> Result<PlayerResource> {
 	// This query calculates the exact amount of each resource that can be moved
 	// from the accumulator to the main storage without exceeding the storage caps.
@@ -100,7 +100,7 @@ pub fn collect_resources(conn: &mut DbConn, player_id: &PlayerKey) -> Result<Pla
 /// * `up_to_time` - Optional timestamp to produce up to (defaults to now)
 ///
 /// # Returns
-/// The updated `PlayerAccumulator` state after production
+/// The updated [`PlayerAccumulator`] state after production
 pub fn produce_resources(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
@@ -230,6 +230,28 @@ pub fn get_base_rates(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Resou
 		.map_err(Into::into)
 }
 
+/// Calculate production rates by applying pre-calculated modifiers to base rates
+pub fn apply_rate_modifiers(
+	base_rates: &ResourceGeneration,
+	modifiers: &ResourceModifiers,
+) -> HashMap<ResourceType, BigDecimal> {
+	modifiers
+		.iter()
+		.map(|(res_type, multiplier)| {
+			let base_rate = match res_type {
+				ResourceType::Population => base_rates.population,
+				ResourceType::Food => base_rates.food,
+				ResourceType::Wood => base_rates.wood,
+				ResourceType::Stone => base_rates.stone,
+				ResourceType::Gold => base_rates.gold,
+			};
+
+			let final_rate = BigDecimal::from(base_rate) * multiplier;
+			(*res_type, final_rate)
+		})
+		.collect()
+}
+
 /// Calculate production rates with modifiers applied
 ///
 /// This is a pure function that calculates rates without caching.
@@ -243,26 +265,28 @@ pub fn calc_prod_rates(
 	let base_rates = get_base_rates(conn, player_id)?;
 
 	// Calculate modifiers for each resource type
-	let mut production_rates = HashMap::new();
-	for res_type in ResourceType::iter() {
-		let multiplier = modifier_operations::calc_multiplier(
-			conn,
-			player_id,
-			ModifierTarget::Resource,
-			Some(res_type),
-		)?;
+	let production_rates: HashMap<ResourceType, BigDecimal> = ResourceType::iter()
+		.map(|res_type| {
+			let multiplier = modifier_operations::calc_multiplier(
+				conn,
+				player_id,
+				ModifierTarget::Resource,
+				Some(res_type),
+			)
+			.unwrap_or(BigDecimal::from(1));
 
-		let base_rate = match res_type {
-			ResourceType::Population => base_rates.population,
-			ResourceType::Food => base_rates.food,
-			ResourceType::Wood => base_rates.wood,
-			ResourceType::Stone => base_rates.stone,
-			ResourceType::Gold => base_rates.gold,
-		};
+			let base_rate = match res_type {
+				ResourceType::Population => base_rates.population,
+				ResourceType::Food => base_rates.food,
+				ResourceType::Wood => base_rates.wood,
+				ResourceType::Stone => base_rates.stone,
+				ResourceType::Gold => base_rates.gold,
+			};
 
-		let final_rate = BigDecimal::from(base_rate) * multiplier;
-		production_rates.insert(res_type, final_rate);
-	}
+			let final_rate = BigDecimal::from(base_rate) * multiplier;
+			(res_type, final_rate)
+		})
+		.collect();
 
 	Ok(production_rates)
 }

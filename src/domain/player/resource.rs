@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::str::from_utf8;
 
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
@@ -75,6 +77,9 @@ impl FromSql<crate::schema::sql_types::ResourceType, Pg> for ResourceType {
 		}
 	}
 }
+
+/// A mapping of resource types to their corresponding decimal modifier values.
+pub type ResourceModifiers = HashMap<ResourceType, BigDecimal>;
 
 #[derive(
 	Queryable, Selectable, Identifiable, Associations, Debug, Clone, PartialEq, Eq, PartialOrd, Ord,

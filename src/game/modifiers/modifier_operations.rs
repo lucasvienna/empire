@@ -102,7 +102,7 @@ pub fn calc_multiplier(
 		.filter(|m| m.target_type == target_type && m.target_resource == target_resource)
 		.collect();
 
-	Ok(calc_modifiers(&modifiers))
+	Ok(apply_stacking_rules(&modifiers))
 }
 
 /// Calculate the final modifier value for a collection of modifiers
@@ -113,7 +113,7 @@ pub fn calc_multiplier(
 /// - HighestOnly: Take the highest magnitude per stacking group
 ///
 /// The result is capped between 0.5 (50%) and 3.0 (300%)
-pub fn calc_modifiers(modifiers: &[FullModifier]) -> BigDecimal {
+fn apply_stacking_rules(modifiers: &[FullModifier]) -> BigDecimal {
 	let global_max_cap: BigDecimal = BigDecimal::from(3); // 300%
 	let global_min_floor: BigDecimal =
 		BigDecimal::try_from(0.5).expect("Failed to create a 0.5 numeric."); // 50%

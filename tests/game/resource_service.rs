@@ -39,9 +39,7 @@ async fn test_collect_resource() {
 		.expect("Failed to update resources");
 
 	let srv = ResourceService::from_ref(&state);
-	let res = srv
-		.collect_resources(&user.id)
-		.expect("Failed to collect resources");
+	let res = srv.collect(&user.id).expect("Failed to collect resources");
 
 	assert_eq!(res.food, 1000);
 	assert_eq!(res.wood, 950);
