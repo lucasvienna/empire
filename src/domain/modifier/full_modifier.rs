@@ -15,7 +15,7 @@ use crate::domain::player::resource::ResourceType;
 /// Represents a complete modifier instance that can be applied to player resources or attributes.
 /// This struct combines both the modifier definition and its active state information.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct FullModifier {
+pub struct AppliedModifier {
 	/// Unique identifier for the active modifier instance
 	pub id: ActiveModifierKey,
 	/// Reference to the base modifier definition
@@ -54,7 +54,7 @@ pub struct FullModifier {
 	pub updated_at: DateTime<Utc>,
 }
 
-impl FullModifier {
+impl AppliedModifier {
 	/// Extract stacking group from modifier source and target
 	/// Example: "faction_resource", "temporary_combat", etc.
 	pub fn get_stacking_group(&self) -> String {
@@ -67,8 +67,8 @@ impl FullModifier {
 }
 
 impl Modifier {
-	pub fn into_full(self, active: ActiveModifier) -> FullModifier {
-		FullModifier {
+	pub fn into_full(self, active: ActiveModifier) -> AppliedModifier {
+		AppliedModifier {
 			id: active.id,
 			modifier_id: self.id,
 			player_id: active.player_id,

@@ -55,7 +55,7 @@ use diesel::prelude::*;
 
 use crate::db::DbConn;
 use crate::domain::modifier::active_modifier::ActiveModifier;
-use crate::domain::modifier::full_modifier::FullModifier;
+use crate::domain::modifier::full_modifier::AppliedModifier;
 use crate::domain::modifier::{Modifier, ModifierTarget, StackingBehaviour};
 use crate::domain::player::resource::ResourceType;
 use crate::domain::player::PlayerKey;
@@ -73,7 +73,7 @@ pub fn get_active_mods(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Vec<
 }
 
 /// Get all active modifiers with their full modifier details for a player
-pub fn get_full_mods(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Vec<FullModifier>> {
+pub fn get_full_mods(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Vec<AppliedModifier>> {
 	use crate::schema::active_modifiers::dsl as am;
 	use crate::schema::modifiers::dsl as m;
 
@@ -97,7 +97,7 @@ pub fn calc_multiplier(
 	target_resource: Option<ResourceType>,
 ) -> Result<BigDecimal> {
 	let player_mods = get_full_mods(conn, player_id)?;
-	let modifiers: Vec<FullModifier> = player_mods
+	let modifiers: Vec<AppliedModifier> = player_mods
 		.into_iter()
 		.filter(|m| m.target_type == target_type && m.target_resource == target_resource)
 		.collect();
@@ -113,7 +113,7 @@ pub fn calc_multiplier(
 /// - HighestOnly: Take the highest magnitude per stacking group
 ///
 /// The result is capped between 0.5 (50%) and 3.0 (300%)
-fn apply_stacking_rules(modifiers: &[FullModifier]) -> BigDecimal {
+fn apply_stacking_rules(modifiers: &[AppliedModifier]) -> BigDecimal {
 	let global_max_cap: BigDecimal = BigDecimal::from(3); // 300%
 	let global_min_floor: BigDecimal =
 		BigDecimal::try_from(0.5).expect("Failed to create a 0.5 numeric."); // 50%
@@ -124,9 +124,9 @@ fn apply_stacking_rules(modifiers: &[FullModifier]) -> BigDecimal {
 	}
 
 	// Step 1: Group modifiers by their stacking behavior
-	let mut additive_mods: Vec<&FullModifier> = Vec::new();
-	let mut multiplicative_mods: Vec<&FullModifier> = Vec::new();
-	let mut highest_only_groups: HashMap<String, Vec<&FullModifier>> = HashMap::new();
+	let mut additive_mods: Vec<&AppliedModifier> = Vec::new();
+	let mut multiplicative_mods: Vec<&AppliedModifier> = Vec::new();
+	let mut highest_only_groups: HashMap<String, Vec<&AppliedModifier>> = HashMap::new();
 
 	for modifier in modifiers {
 		match modifier.stacking_behaviour {
