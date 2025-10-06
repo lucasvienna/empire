@@ -11,12 +11,13 @@ use crate::db::{active_modifiers, modifiers};
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::modifier::active_modifier::{ActiveModifier, NewActiveModifier};
 use crate::domain::modifier::ModifierTarget;
-use crate::domain::player::resource::{ResourceModifiers, ResourceType};
+use crate::domain::player::resource::ResourceType;
 use crate::domain::player::PlayerKey;
 use crate::game::modifiers::modifier_cache::{CacheKey, ModifierCache};
 use crate::game::modifiers::modifier_operations;
 use crate::game::modifiers::modifier_scheduler::ModifierScheduler;
 use crate::game::modifiers::modifier_system::ModifierSystem;
+use crate::game::resources::ResourceMultipliers;
 use crate::{Error, Result};
 
 pub struct ModifierService {
@@ -159,10 +160,10 @@ impl ModifierService {
 	}
 
 	/// Get all resource modifier multipliers for a player in a single batch operation
-	pub async fn get_modifier_multipliers(
+	pub async fn get_resource_multipliers(
 		&self,
 		player_id: &PlayerKey,
-	) -> Result<ResourceModifiers> {
+	) -> Result<ResourceMultipliers> {
 		let mut multipliers = HashMap::with_capacity(4);
 		for res_type in ResourceType::iter() {
 			let multiplier = self

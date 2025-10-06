@@ -1,19 +1,17 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::extract::FromRef;
-use bigdecimal::BigDecimal;
 use chrono::{Duration, Utc};
 use tracing::{instrument, warn};
 
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::jobs::JobKey;
 use crate::domain::player::accumulator::PlayerAccumulator;
-use crate::domain::player::resource::{PlayerResource, ResourceType};
+use crate::domain::player::resource::PlayerResource;
 use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
-use crate::game::resources::resource_operations;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
+use crate::game::resources::{resource_operations, ResourceProductionRates};
 use crate::job_queue::JobQueue;
 use crate::Result;
 
@@ -48,7 +46,7 @@ impl ResourceService {
 	pub async fn produce(
 		&self,
 		player_key: &PlayerKey,
-		production_rates: &HashMap<ResourceType, BigDecimal>,
+		production_rates: &ResourceProductionRates,
 	) -> Result<(PlayerAccumulator, JobKey)> {
 		// Delegate to operations module for production logic
 		let mut conn = self.pool.get()?;

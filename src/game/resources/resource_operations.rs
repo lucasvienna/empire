@@ -9,10 +9,13 @@ use tracing::{debug, trace, warn};
 use crate::db::{resources, DbConn};
 use crate::domain::modifier::ModifierTarget;
 use crate::domain::player::accumulator::{AccumulatorKey, PlayerAccumulator};
-use crate::domain::player::resource::{PlayerResource, ResourceModifiers, ResourceType};
+use crate::domain::player::resource::{PlayerResource, ResourceType};
 use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::modifiers::modifier_operations;
+use crate::game::resources::{
+	ResourceMultipliers, ResourceProductionRate, ResourceProductionRates,
+};
 use crate::Result;
 
 // AIDEV-NOTE: These SQL functions are not standard in all SQL dialects,
@@ -104,7 +107,7 @@ pub fn collect_resources(conn: &mut DbConn, player_id: &PlayerKey) -> Result<Pla
 pub fn produce_resources(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
-	production_rates: &HashMap<ResourceType, BigDecimal>,
+	production_rates: &ResourceProductionRates,
 	up_to_time: Option<DateTime<Utc>>,
 ) -> Result<PlayerAccumulator> {
 	let target_time = up_to_time.unwrap_or_else(Utc::now);
@@ -208,7 +211,7 @@ pub fn produce_resources(
 pub fn produce_and_collect_resources(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
-	production_rates: &HashMap<ResourceType, BigDecimal>,
+	production_rates: &ResourceProductionRates,
 ) -> Result<(PlayerAccumulator, PlayerResource)> {
 	// First produce resources up to now
 	let accumulator = produce_resources(conn, player_id, production_rates, None)?;
@@ -233,8 +236,8 @@ pub fn get_base_rates(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Resou
 /// Calculate production rates by applying pre-calculated modifiers to base rates
 pub fn apply_rate_modifiers(
 	base_rates: &ResourceGeneration,
-	modifiers: &ResourceModifiers,
-) -> HashMap<ResourceType, BigDecimal> {
+	modifiers: &ResourceMultipliers,
+) -> ResourceProductionRates {
 	modifiers
 		.iter()
 		.map(|(res_type, multiplier)| {
@@ -246,7 +249,7 @@ pub fn apply_rate_modifiers(
 				ResourceType::Gold => base_rates.gold,
 			};
 
-			let final_rate = BigDecimal::from(base_rate) * multiplier;
+			let final_rate = ResourceProductionRate::from(base_rate) * multiplier;
 			(*res_type, final_rate)
 		})
 		.collect()
@@ -258,14 +261,14 @@ pub fn apply_rate_modifiers(
 pub fn calc_prod_rates(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
-) -> Result<HashMap<ResourceType, BigDecimal>> {
+) -> Result<ResourceProductionRates> {
 	use strum::IntoEnumIterator;
 
-	// Get base rates from database
+	// Get base rates from the database
 	let base_rates = get_base_rates(conn, player_id)?;
 
 	// Calculate modifiers for each resource type
-	let production_rates: HashMap<ResourceType, BigDecimal> = ResourceType::iter()
+	let production_rates: ResourceProductionRates = ResourceType::iter()
 		.map(|res_type| {
 			let multiplier = modifier_operations::calc_multiplier(
 				conn,
@@ -283,7 +286,7 @@ pub fn calc_prod_rates(
 				ResourceType::Gold => base_rates.gold,
 			};
 
-			let final_rate = BigDecimal::from(base_rate) * multiplier;
+			let final_rate = ResourceProductionRate::from(base_rate) * multiplier;
 			(res_type, final_rate)
 		})
 		.collect();

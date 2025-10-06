@@ -196,7 +196,7 @@ impl ResourceProcessor {
 		// Step 1: Fetch all resource modifiers (uses caching)
 		let modifiers = self
 			.modifier_srv
-			.get_modifier_multipliers(player_id)
+			.get_resource_multipliers(player_id)
 			.await?;
 
 		// Step 2: Get base rates from database
