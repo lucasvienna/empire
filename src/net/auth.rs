@@ -32,7 +32,7 @@ pub struct ErrorResponse {
 	pub message: String,
 }
 
-#[instrument(skip(conn, cookie_jar, req, next))]
+#[instrument(skip_all)]
 pub async fn auth_middleware(
 	DatabaseConnection(mut conn): DatabaseConnection,
 	cookie_jar: CookieJar,

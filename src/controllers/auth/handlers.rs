@@ -179,7 +179,7 @@ pub(super) async fn logout(
 	}
 }
 
-#[instrument(skip(jar, maybe_token), fields(player_id = %player.id))]
+#[instrument(skip_all, fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
 pub(super) async fn session(
 	player: Extension<AuthenticatedUser>,
