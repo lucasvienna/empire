@@ -9,17 +9,17 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use tracing::{debug, error, info, instrument, trace, warn};
 use ulid::Ulid;
 
+use crate::Error;
 use crate::domain::app_state::AppState;
 use crate::domain::jobs::{Job, JobType};
 use crate::game::modifiers::modifier_scheduler::ModifierJobPayload;
 use crate::game::modifiers::modifier_service::ModifierService;
-use crate::job_queue::job_processor::JobProcessor;
 use crate::job_queue::JobQueue;
-use crate::Error;
+use crate::job_queue::job_processor::JobProcessor;
 
 /// A processor for handling modifier-related background jobs.
 ///

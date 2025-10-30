@@ -3,10 +3,11 @@ use std::time::Instant;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Json};
+use axum::{Json, debug_handler};
 use chrono::Utc;
 use tracing::{debug, error, info, instrument, trace, warn};
 
+use crate::Result;
 use crate::controllers::user::models::{NewUserPayload, UpdateUserPayload, UserBody, UserListBody};
 use crate::db::extractor::DatabaseConnection;
 use crate::db::players;
@@ -16,7 +17,6 @@ use crate::domain::player;
 use crate::domain::player::NewPlayer;
 use crate::game::player_operations;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
-use crate::Result;
 
 // === CRUD HANDLERS === //
 #[instrument(skip(conn))]

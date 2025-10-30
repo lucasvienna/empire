@@ -1,6 +1,6 @@
-use axum::http::{header, StatusCode};
-use diesel::prelude::*;
+use axum::http::{StatusCode, header};
 use diesel::RunQueryDsl;
+use diesel::prelude::*;
 use empire::domain::player::buildings::PlayerBuilding;
 use empire::schema::player_building;
 use serde_json::json;

@@ -4,16 +4,16 @@ use axum::extract::FromRef;
 use chrono::{Duration, Utc};
 use tracing::{instrument, warn};
 
+use crate::Result;
 use crate::domain::app_state::{AppPool, AppState};
 use crate::domain::jobs::JobKey;
+use crate::domain::player::PlayerKey;
 use crate::domain::player::accumulator::PlayerAccumulator;
 use crate::domain::player::resource::PlayerResource;
-use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::resources::resource_scheduler::ProductionScheduler;
-use crate::game::resources::{resource_operations, ResourceProductionRates};
+use crate::game::resources::{ResourceProductionRates, resource_operations};
 use crate::job_queue::JobQueue;
-use crate::Result;
 
 /// Service responsible for managing resources for players.
 /// Handles resource production and collection operations, with scheduling support.

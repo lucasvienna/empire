@@ -7,7 +7,7 @@ use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
-use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
+use diesel::{AsExpression, FromSqlRow, deserialize, serialize};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

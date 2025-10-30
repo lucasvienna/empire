@@ -7,13 +7,13 @@
 use diesel::prelude::*;
 use tracing::{debug, info, instrument, trace};
 
+use crate::Result;
 use crate::db::DbConn;
+use crate::domain::player::PlayerKey;
 use crate::domain::player::resource::{
 	NewPlayerResource, PlayerResource, PlayerResourceKey, UpdatePlayerResource,
 };
-use crate::domain::player::PlayerKey;
 use crate::schema::player_resource::dsl::*;
-use crate::Result;
 
 /// Retrieves all player resources from the database.
 ///

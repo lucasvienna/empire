@@ -1,8 +1,8 @@
 use std::env;
 
 use anyhow::Result;
-use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use secrecy::ExposeSecret;
 use tracing::{debug, error, info, instrument, trace};
 

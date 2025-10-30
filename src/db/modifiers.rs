@@ -6,10 +6,10 @@
 
 use diesel::prelude::*;
 
+use crate::Result;
 use crate::db::DbConn;
 use crate::domain::modifier::{Modifier, ModifierKey, NewModifier, UpdateModifier};
 use crate::schema::modifiers::dsl::*;
-use crate::Result;
 
 /// Retrieves all modifiers from the database.
 ///

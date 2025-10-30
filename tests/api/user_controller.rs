@@ -1,14 +1,14 @@
 use axum::body::Body;
-use axum::http::{header, Request, StatusCode};
+use axum::http::{Request, StatusCode, header};
 use axum_extra::headers;
-use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use empire::auth::utils::hash_password;
 use empire::controllers::auth::RegisterPayload;
 use empire::controllers::user::{NewUserPayload, UpdateUserPayload, UserBody, UserListBody};
-use empire::db::{players, DbConn};
-use empire::domain::auth::{encode_token, Claims};
+use empire::db::{DbConn, players};
+use empire::domain::auth::{Claims, encode_token};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::buildings::PlayerBuilding;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};

@@ -53,14 +53,14 @@ use std::collections::HashMap;
 use bigdecimal::BigDecimal;
 use diesel::prelude::*;
 
+use crate::Result;
 use crate::db::DbConn;
 use crate::domain::modifier::active_modifier::ActiveModifier;
 use crate::domain::modifier::full_modifier::AppliedModifier;
 use crate::domain::modifier::{Modifier, ModifierTarget, StackingBehaviour};
-use crate::domain::player::resource::ResourceType;
 use crate::domain::player::PlayerKey;
+use crate::domain::player::resource::ResourceType;
 use crate::game::resources::ResourceMultiplier;
-use crate::Result;
 
 /// Get all active modifiers for a player
 pub fn get_active_mods(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Vec<ActiveModifier>> {

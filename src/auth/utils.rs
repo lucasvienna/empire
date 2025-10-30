@@ -1,9 +1,9 @@
-use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
-use argon2::{password_hash, Argon2, PasswordHasher};
+use argon2::password_hash::rand_core::OsRng;
+use argon2::{Argon2, PasswordHasher, password_hash};
 
 use crate::configuration::JwtSettings;
-use crate::domain::auth::{encode_token, AuthError, Claims};
+use crate::domain::auth::{AuthError, Claims, encode_token};
 use crate::domain::player::Player;
 
 /// Hashes a password using the Argon2id algorithm with a randomly generated salt.

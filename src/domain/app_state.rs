@@ -16,7 +16,7 @@ use axum::extract::{FromRef, FromRequestParts, State};
 use derive_more::Deref;
 
 use crate::configuration::Settings;
-use crate::db::{connection, DbPool};
+use crate::db::{DbPool, connection};
 use crate::game::modifiers::modifier_system::ModifierSystem;
 use crate::job_queue::JobQueue;
 

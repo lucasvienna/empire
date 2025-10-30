@@ -1,15 +1,15 @@
 use std::convert::Infallible;
 
+use axum::Json;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
-use axum::Json;
 use axum_extra::extract::CookieJar;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::{Authorization, HeaderMapExt};
 use chrono::Utc;
-use cookie::{time, Cookie, SameSite};
+use cookie::{Cookie, SameSite, time};
 use derive_more::Deref;
 use serde::Serialize;
 use tracing::{debug, error, instrument, trace, warn};
@@ -17,7 +17,7 @@ use tracing::{debug, error, instrument, trace, warn};
 use crate::auth::session_operations;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::players;
-use crate::domain::auth::{decode_token, AuthenticatedUser, Claims};
+use crate::domain::auth::{AuthenticatedUser, Claims, decode_token};
 
 pub const TOKEN_COOKIE_NAME: &str = "rstoken";
 pub const SESSION_COOKIE_NAME: &str = "rsession";

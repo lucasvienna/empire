@@ -6,10 +6,10 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tracing::{debug, info, instrument, trace};
 
+use crate::Error;
 use crate::domain::app_state::AppState;
 use crate::domain::jobs::Job;
 use crate::job_queue::JobQueue;
-use crate::Error;
 
 /// A trait defining the behaviour of a job processor component that handles background tasks.
 ///

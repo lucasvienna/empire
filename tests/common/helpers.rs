@@ -1,9 +1,9 @@
 use axum_extra::headers;
-use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
 use empire::auth::utils::hash_password;
-use empire::db::{players, DbConn};
-use empire::domain::auth::{encode_token, Claims};
+use empire::db::{DbConn, players};
+use empire::domain::auth::{Claims, encode_token};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
 

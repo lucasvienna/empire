@@ -1,8 +1,8 @@
 use derive_more::Display;
+use diesel::AsExpression;
 use diesel::pg::Pg;
 use diesel::serialize::{Output, ToSql};
 use diesel::sql_types::Text;
-use diesel::AsExpression;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{ErrorKind, Result};

@@ -6,17 +6,17 @@ use diesel::prelude::*;
 use diesel::sql_types::Int8;
 use tracing::{debug, trace, warn};
 
-use crate::db::{resources, DbConn};
+use crate::Result;
+use crate::db::{DbConn, resources};
 use crate::domain::modifier::ModifierTarget;
+use crate::domain::player::PlayerKey;
 use crate::domain::player::accumulator::{AccumulatorKey, PlayerAccumulator};
 use crate::domain::player::resource::{PlayerResource, ResourceType};
-use crate::domain::player::PlayerKey;
 use crate::domain::resource_generation::ResourceGeneration;
 use crate::game::modifiers::modifier_operations;
 use crate::game::resources::{
 	ResourceMultipliers, ResourceProductionRate, ResourceProductionRates,
 };
-use crate::Result;
 
 // AIDEV-NOTE: These SQL functions are not standard in all SQL dialects,
 // but are supported by PostgreSQL. `define_sql_function!` makes them

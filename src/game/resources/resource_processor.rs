@@ -7,15 +7,15 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, instrument, trace, warn};
 use ulid::Ulid;
 
+use crate::Error;
 use crate::domain::app_state::AppState;
 use crate::domain::jobs::{Job, JobType};
 use crate::game::modifiers::modifier_service::ModifierService;
 use crate::game::resources::resource_operations;
 use crate::game::resources::resource_scheduler::ProductionJobPayload;
 use crate::game::resources::resource_service::ResourceService;
-use crate::job_queue::job_processor::JobProcessor;
 use crate::job_queue::JobQueue;
-use crate::Error;
+use crate::job_queue::job_processor::JobProcessor;
 
 /// A processor for handling resources-related background jobs.
 ///

@@ -1,15 +1,15 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Extension, Json};
+use axum::{Extension, Json, debug_handler};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
 
+use crate::Result;
 use crate::controllers::game::index_controller::get_resources_data;
 use crate::db::extractor::DatabaseConnection;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::game::resources::resource_operations;
-use crate::Result;
 
 #[instrument(skip(conn))]
 #[debug_handler(state = AppState)]

@@ -10,8 +10,8 @@ use serde::Deserialize;
 use serde_aux::prelude::deserialize_number_from_string;
 use tracing::{debug, instrument, trace};
 
-use crate::domain::app_state::AppState;
 use crate::Result;
+use crate::domain::app_state::AppState;
 
 #[derive(Deserialize, FromRef, Debug, Clone)]
 pub struct Settings {

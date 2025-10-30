@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Json};
+use axum::{Json, debug_handler};
 use chrono::TimeDelta;
 
 use crate::controllers::health::models::{

@@ -11,10 +11,10 @@ use chrono::{Duration, Utc};
 use data_encoding::BASE32_NOPAD_NOCASE;
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use crate::db::player_sessions::{self, SessionPlayerTuple};
 use crate::db::DbConn;
-use crate::domain::player::session::{NewPlayerSession, PlayerSession, SessionKey};
+use crate::db::player_sessions::{self, SessionPlayerTuple};
 use crate::domain::player::PlayerKey;
+use crate::domain::player::session::{NewPlayerSession, PlayerSession, SessionKey};
 use crate::{Error, ErrorKind, Result};
 
 /// Generates a new random session token.

@@ -1,5 +1,5 @@
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 
 use crate::controllers::game::buildings::buildings_routes;
 use crate::controllers::game::factions::factions_routes;

@@ -14,10 +14,10 @@ use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::resources::BuildingResource;
 use crate::domain::building::{Building, BuildingKey};
 use crate::domain::error::Result;
+use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::{
 	NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey, UpdatePlayerBuilding,
 };
-use crate::domain::player::PlayerKey;
 use crate::schema::{building, player_building};
 
 /// Retrieves all player buildings from the database.

@@ -3,11 +3,11 @@ use std::fmt::Debug;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::ErrorKind;
 use crate::auth::utils::hash_password;
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{NewPlayer, PlayerKey};
-use crate::ErrorKind;
 
 #[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {

@@ -1,5 +1,5 @@
-use axum::routing::post;
 use axum::Router;
+use axum::routing::post;
 
 use crate::domain::app_state::AppState;
 

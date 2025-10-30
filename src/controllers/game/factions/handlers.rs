@@ -4,16 +4,16 @@ use std::str::FromStr;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Json};
+use axum::{Json, debug_handler};
 use tracing::{debug, info, instrument};
 
-use crate::controllers::game::factions::models::{FactionDetails, FactionResponse};
+use crate::Result;
 use crate::controllers::game::factions::FactionBonus;
+use crate::controllers::game::factions::models::{FactionDetails, FactionResponse};
 use crate::db::extractor::DatabaseConnection;
 use crate::db::factions;
 use crate::domain::app_state::AppState;
 use crate::domain::factions::FactionKey;
-use crate::Result;
 
 /// GET `/game/factions`
 /// List all available factions with their bonuses

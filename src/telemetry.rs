@@ -1,11 +1,11 @@
-use std::fs::{create_dir_all, File};
+use std::fs::{File, create_dir_all};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
 use std::{env, io};
 
 use logs_wheel::LogFileInitializer;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, registry, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, registry};
 
 /// A static global variable, `TRACING_DIRECTIVES`, used to initialize and store
 /// log directives for configuring the Rust `tracing` system's behavior.

@@ -1,10 +1,10 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Extension, Json};
+use axum::{Extension, Json, debug_handler};
 use axum_extra::extract::CookieJar;
 use chrono::Utc;
-use cookie::{time, Cookie, SameSite};
+use cookie::{Cookie, SameSite, time};
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -17,9 +17,9 @@ use crate::db::extractor::DatabaseConnection;
 use crate::db::players;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::{AuthError, AuthenticatedUser};
-use crate::domain::player::session::PlayerSession;
 use crate::domain::player::NewPlayer;
-use crate::net::{SessionToken, SESSION_COOKIE_NAME, TOKEN_COOKIE_NAME};
+use crate::domain::player::session::PlayerSession;
+use crate::net::{SESSION_COOKIE_NAME, SessionToken, TOKEN_COOKIE_NAME};
 
 #[instrument(skip(conn, payload), fields(username = %payload.username))]
 #[debug_handler(state = AppState)]

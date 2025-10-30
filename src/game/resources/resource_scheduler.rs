@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, warn};
 
+use crate::Result;
 use crate::domain::app_state::AppState;
 use crate::domain::jobs::{JobKey, JobType};
 use crate::domain::player::PlayerKey;
 use crate::job_queue::{JobPriority, JobQueue, JobRequest};
-use crate::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ProductionJobPayload {

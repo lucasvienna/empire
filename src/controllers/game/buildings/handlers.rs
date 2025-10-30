@@ -1,10 +1,11 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{debug_handler, Extension};
+use axum::{Extension, debug_handler};
 use axum_extra::json;
 use tracing::{debug, info, instrument, trace};
 
+use crate::Result;
 use crate::controllers::game::buildings::models::GameBuilding;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::player_buildings;
@@ -12,7 +13,6 @@ use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::game::building_operations;
-use crate::Result;
 
 #[instrument(skip(conn, player))]
 #[debug_handler(state = AppState)]

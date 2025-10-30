@@ -4,7 +4,7 @@ use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
 use empire::auth::utils::hash_password;
-use empire::db::{players, DbConn};
+use empire::db::{DbConn, players};
 use empire::domain::factions::FactionCode;
 use empire::domain::modifier::modifier_history::ModifierActionType;
 use empire::domain::player::{NewPlayer, Player, UserName};
@@ -158,22 +158,28 @@ async fn test_faction_change() {
 	);
 
 	// First 3 entries should be initial Human modifiers being applied
-	assert!(history
-		.iter()
-		.take(3)
-		.all(|(_, action, _)| ModifierActionType::Applied.eq(action)));
+	assert!(
+		history
+			.iter()
+			.take(3)
+			.all(|(_, action, _)| ModifierActionType::Applied.eq(action))
+	);
 	// Next 3 entries should be Human modifiers being removed and Orc modifiers being applied
-	assert!(history
-		.iter()
-		.skip(3)
-		.take(3)
-		.all(|(_, action, _)| ModifierActionType::Removed.eq(action)));
+	assert!(
+		history
+			.iter()
+			.skip(3)
+			.take(3)
+			.all(|(_, action, _)| ModifierActionType::Removed.eq(action))
+	);
 	// Last 3 entries should be the new Orc modifiers being applied
-	assert!(history
-		.iter()
-		.skip(3)
-		.take(3)
-		.all(|(_, action, _)| ModifierActionType::Removed.eq(action)));
+	assert!(
+		history
+			.iter()
+			.skip(3)
+			.take(3)
+			.all(|(_, action, _)| ModifierActionType::Removed.eq(action))
+	);
 }
 
 // Helper function to create test users

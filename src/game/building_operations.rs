@@ -14,12 +14,12 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::{building_levels, player_buildings, resources, DbConn};
-use crate::domain::building::level::BuildingLevel;
+use crate::db::{DbConn, building_levels, player_buildings, resources};
 use crate::domain::building::BuildingKey;
+use crate::domain::building::level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
-use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
 use crate::domain::player::PlayerKey;
+use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
 
 /// Constructs a new building for a player.
 ///
@@ -63,8 +63,7 @@ pub fn construct_building(
 	if !has_enough_resources(conn, player_id, &bld_lvl)? {
 		trace!(
 			"Player {} doesn't have enough resources to build {}",
-			player_id,
-			bld_id
+			player_id, bld_id
 		);
 		return Err(Error::from((
 			ErrorKind::ConstructBuildingError,
@@ -76,8 +75,7 @@ pub fn construct_building(
 	if !player_buildings::can_construct(conn, player_id, bld_id)? {
 		trace!(
 			"Player {} has reached max buildings for building #{}",
-			player_id,
-			bld_id
+			player_id, bld_id
 		);
 		return Err(Error::from((
 			ErrorKind::ConstructBuildingError,
@@ -167,8 +165,7 @@ pub fn upgrade_building(
 	let (player_bld, max_level) = player_buildings::get_upgrade_tuple(conn, player_bld_id)?;
 	trace!(
 		"Player building details: {:?}, max level: {:?}",
-		player_bld,
-		max_level
+		player_bld, max_level
 	);
 	let bld_lvl =
 		building_levels::get_next_upgrade(conn, &player_bld.building_id, &player_bld.level)?;

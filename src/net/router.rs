@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use axum::body::Body;
 use axum::http::{HeaderName, Request};
-use axum::{middleware, Router};
+use axum::{Router, middleware};
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer as TowerCatchPanicLayer;
 use tower_http::compression::CompressionLayer as TowerCompressionLayer;

@@ -1,7 +1,7 @@
+use diesel::AsExpression;
 use diesel::pg::Pg;
 use diesel::serialize::{Output, ToSql};
 use diesel::sql_types::Text;
-use diesel::AsExpression;
 use validator::ValidateEmail;
 
 use crate::{ErrorKind, Result};
@@ -46,10 +46,10 @@ impl ToSql<Text, Pg> for UserEmail {
 #[cfg(test)]
 mod tests {
 	use claims::assert_err;
-	use fake::faker::internet::en::SafeEmail;
 	use fake::Fake;
-	use rand::rngs::StdRng;
+	use fake::faker::internet::en::SafeEmail;
 	use rand::SeedableRng;
+	use rand::rngs::StdRng;
 
 	use super::UserEmail;
 

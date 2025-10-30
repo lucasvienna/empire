@@ -1,5 +1,5 @@
 use std::io::Write;
-use std::str::{from_utf8, FromStr};
+use std::str::{FromStr, from_utf8};
 
 use chrono::{DateTime, Utc};
 use derive_more::Display;
@@ -7,7 +7,7 @@ use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
-use diesel::{deserialize, serialize, AsExpression, FromSqlRow};
+use diesel::{AsExpression, FromSqlRow, deserialize, serialize};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::faction;
@@ -34,8 +34,10 @@ pub type FactionKey = FactionCode;
 #[serde(rename_all = "lowercase")]
 /// Represents the available faction types in the game.
 /// Each variant corresponds to a distinct playable faction, except Neutral.
+#[derive(Default)]
 pub enum FactionCode {
 	/// The neutral faction, which is the default faction for new players.
+	#[default]
 	Neutral,
 	Human,
 	Orc,
@@ -69,12 +71,6 @@ impl FromStr for FactionCode {
 			"goblin" => Ok(FactionCode::Goblin),
 			other => Err(format!("Unrecognized enum variant: {other}")),
 		}
-	}
-}
-
-impl Default for FactionCode {
-	fn default() -> Self {
-		Self::Neutral
 	}
 }
 

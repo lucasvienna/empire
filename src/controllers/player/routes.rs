@@ -1,5 +1,5 @@
-use axum::routing::{get, post};
 use axum::Router;
+use axum::routing::{get, post};
 
 use crate::controllers::player::handlers::*;
 use crate::domain::app_state::AppState;

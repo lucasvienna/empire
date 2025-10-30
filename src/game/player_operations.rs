@@ -4,7 +4,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::auth::utils::hash_password;
 use crate::controllers::user::UpdateUserPayload;
-use crate::db::{players, DbConn};
+use crate::db::{DbConn, players};
 use crate::domain::factions::FactionCode;
 use crate::domain::player;
 use crate::domain::player::{Player, PlayerKey, UpdatePlayer};

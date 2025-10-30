@@ -4,12 +4,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::Error;
 use crate::domain::jobs::JobType;
-use crate::domain::player::resource::ResourceType;
 use crate::domain::player::PlayerKey;
+use crate::domain::player::resource::ResourceType;
 use crate::domain::{jobs, modifier};
 use crate::job_queue::{JobPriority, JobQueue};
-use crate::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ModifierJobPayload {

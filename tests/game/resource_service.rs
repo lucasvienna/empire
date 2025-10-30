@@ -2,7 +2,7 @@ use axum::extract::FromRef;
 use diesel::prelude::*;
 use diesel::update;
 use empire::auth::utils::hash_password;
-use empire::db::{players, DbConn};
+use empire::db::{DbConn, players};
 use empire::domain::app_state::AppState;
 use empire::domain::factions::FactionCode;
 use empire::domain::player::accumulator::PlayerAccumulator;

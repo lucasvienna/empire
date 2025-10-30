@@ -5,9 +5,9 @@ use tokio::time::Duration;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, instrument, trace, warn};
 
-use crate::job_queue::job_processor::JobProcessor;
-use crate::job_queue::JobQueue;
 use crate::Error;
+use crate::job_queue::JobQueue;
+use crate::job_queue::job_processor::JobProcessor;
 
 /// A pool of worker threads that process jobs from a [`JobQueue`].
 ///

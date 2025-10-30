@@ -6,13 +6,13 @@
 
 use diesel::prelude::*;
 
+use crate::Result;
 use crate::db::DbConn;
 use crate::domain::modifier::active_modifier::{
 	ActiveModifier, ActiveModifierKey, NewActiveModifier, UpdateActiveModifier,
 };
 use crate::domain::player::PlayerKey;
 use crate::schema::active_modifiers::dsl::*;
-use crate::Result;
 
 /// Retrieves all active modifiers from the database.
 ///

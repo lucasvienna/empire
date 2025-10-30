@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::db::player_buildings::FullBuilding;
-use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::domain::player::PlayerKey;
+use crate::domain::player::buildings::PlayerBuildingKey;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GameBuilding {

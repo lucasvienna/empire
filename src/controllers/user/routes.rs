@@ -1,5 +1,5 @@
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 
 use crate::controllers::user::handlers::{
 	create_user, delete_user, get_user_by_id, get_users, update_user,

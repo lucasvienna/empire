@@ -8,11 +8,11 @@
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
 
+use crate::Result;
 use crate::db::DbConn;
 use crate::domain::player::session::{NewPlayerSession, PlayerSession, SessionKey};
 use crate::domain::player::{Player, PlayerKey};
 use crate::schema::player_session::dsl::*;
-use crate::Result;
 
 pub type SessionPlayerTuple = (PlayerSession, Player);
 

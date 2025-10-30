@@ -9,10 +9,10 @@ use diesel::prelude::*;
 use tracing::debug;
 
 use crate::db::DbConn;
+use crate::domain::building::BuildingKey;
 use crate::domain::building::level::{
 	BuildingLevel, BuildingLevelKey, NewBuildingLevel, UpdateBuildingLevel,
 };
-use crate::domain::building::BuildingKey;
 use crate::domain::error::Result;
 // can't glob import the dsl because it conflicts with the debug! macro
 use crate::schema::building_level as bl;
