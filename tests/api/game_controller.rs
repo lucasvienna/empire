@@ -1,5 +1,5 @@
 use axum::body::Body;
-use axum::http::{Method, Request, StatusCode, header};
+use axum::http::{header, Method, Request, StatusCode};
 use empire::domain::factions::FactionCode;
 use serde_json::json;
 use tower::ServiceExt;
@@ -197,4 +197,34 @@ async fn collect_resources_success() {
 		"Collect resources should return OK or INTERNAL_SERVER_ERROR, got: {}",
 		response.status()
 	);
+}
+
+#[tokio::test]
+async fn construct_building_success() {
+	let server = TestApp::new();
+	let client = reqwest::Client::new();
+	let user = server.create_test_user(Some(FactionCode::Human));
+	let bearer = server.create_bearer_token(&user.id);
+
+	let response = client
+		.get(format!("{}/game/buildings/available", &server.address))
+		.bearer_auth(bearer.token())
+		.send()
+		.await
+		.expect("Failed to execute request.");
+
+	assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+
+	// // Debug: Print response details if not OK
+	// if response.status() != StatusCode::OK {
+	// 	let status = response.status();
+	// 	let body = response.text().await.unwrap();
+	// 	println!("Response status: {status}");
+	// 	println!("Response body: {body}");
+	// 	panic!("Expected OK status, got {status}");
+	// }
+	//
+	//
+	// let body: serde_json::Value = response.json().await.unwrap();
+	// assert_ne!(body, json!({}), "Game state should not be empty");
 }

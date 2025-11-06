@@ -29,7 +29,7 @@ pub struct BuildingLevel {
 	pub building_id: BuildingKey,
 	#[diesel(column_name = level)]
 	pub building_level: i32,
-	pub upgrade_time: String,
+	pub upgrade_seconds: i64,
 	pub req_food: Option<i64>,
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
@@ -45,7 +45,7 @@ pub struct NewBuildingLevel {
 	pub building_id: i32,
 	#[diesel(column_name = level)]
 	pub building_level: i32,
-	pub upgrade_time: String,
+	pub upgrade_seconds: i64,
 	pub req_food: Option<i64>,
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
@@ -57,7 +57,7 @@ pub struct NewBuildingLevel {
 #[diesel(table_name = building_level, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateBuildingLevel {
 	pub id: BuildingLevelKey,
-	pub upgrade_time: Option<String>,
+	pub upgrade_seconds: Option<i64>,
 	pub req_food: Option<i64>,
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,

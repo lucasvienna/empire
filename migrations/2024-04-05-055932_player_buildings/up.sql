@@ -1,12 +1,12 @@
 CREATE TABLE player_building
 (
-    id           UUID        NOT NULL DEFAULT generate_ulid(),
-    player_id    UUID        NOT NULL,
-    building_id  INTEGER     NOT NULL,
-    level        INTEGER     NOT NULL DEFAULT 0,
-    upgrade_time TEXT        NULL     DEFAULT NULL, -- RFC 3339
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id                  UUID        NOT NULL DEFAULT generate_ulid(),
+    player_id           UUID        NOT NULL,
+    building_id         INTEGER     NOT NULL,
+    level               INTEGER     NOT NULL DEFAULT 0,
+    upgrade_finishes_at TEXT        NULL     DEFAULT NULL, -- RFC 3339
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id),
     FOREIGN KEY (player_id) REFERENCES player (id) ON DELETE CASCADE,

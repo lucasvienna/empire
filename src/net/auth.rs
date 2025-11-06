@@ -1,10 +1,10 @@
 use std::convert::Infallible;
 
-use axum::Json;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
+use axum::{Json, debug_middleware};
 use axum_extra::extract::CookieJar;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::{Authorization, HeaderMapExt};
@@ -17,6 +17,7 @@ use tracing::{debug, error, instrument, trace, warn};
 use crate::auth::session_operations;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::players;
+use crate::domain::app_state::AppState;
 use crate::domain::auth::{AuthenticatedUser, Claims, decode_token};
 
 pub const TOKEN_COOKIE_NAME: &str = "rstoken";
@@ -33,6 +34,7 @@ pub struct ErrorResponse {
 }
 
 #[instrument(skip_all)]
+#[debug_middleware(state = AppState)]
 pub async fn auth_middleware(
 	DatabaseConnection(mut conn): DatabaseConnection,
 	cookie_jar: CookieJar,

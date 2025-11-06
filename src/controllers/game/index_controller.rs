@@ -65,7 +65,8 @@ struct BuildingsState {
 	pub level: i32,
 	pub max_level: i32,
 	pub max_count: i32,
-	pub upgrade_time: String,
+	pub upgrade_seconds: i64,
+	pub upgrade_finishes_at: Option<String>,
 	pub req_food: Option<i64>,
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
@@ -75,6 +76,7 @@ struct BuildingsState {
 	pub wood_per_hour: i64,
 	pub stone_per_hour: i64,
 	pub gold_per_hour: i64,
+	pub updated_at: DateTime<Utc>,
 }
 
 #[instrument(skip(conn), fields(player_id = %player.id))]
@@ -270,7 +272,8 @@ fn get_player_buildings_data(
 			b::name,
 			b::max_level,
 			b::max_count,
-			bl::upgrade_time,
+			bl::upgrade_seconds,
+			pb::upgrade_finishes_at,
 			bl::req_food,
 			bl::req_wood,
 			bl::req_stone,
@@ -280,6 +283,7 @@ fn get_player_buildings_data(
 			br::wood,  // Assuming br.wood maps to wood_per_hour
 			br::stone, // Assuming br.stone maps to stone_per_hour
 			br::gold,  // Assuming br.gold maps to gold_per_hour
+			pb::updated_at,
 		))
 		.load::<(
 			PlayerBuildingKey,
@@ -288,7 +292,8 @@ fn get_player_buildings_data(
 			String,
 			i32,
 			i32, // from building
-			String,
+			i64, // in seconds
+			Option<String>,
 			Option<i64>,
 			Option<i64>,
 			Option<i64>,
@@ -297,6 +302,7 @@ fn get_player_buildings_data(
 			i64,
 			i64,
 			i64, // from building_resource (production per hour)
+			DateTime<Utc>,
 		)>(conn)?;
 
 	Ok(results
@@ -309,16 +315,18 @@ fn get_player_buildings_data(
 				name: row.3,
 				max_level: row.4,
 				max_count: row.5,
-				upgrade_time: row.6,
-				req_food: row.7,
-				req_wood: row.8,
-				req_stone: row.9,
-				req_gold: row.10,
+				upgrade_seconds: row.6,
+				upgrade_finishes_at: row.7,
+				req_food: row.8,
+				req_wood: row.9,
+				req_stone: row.10,
+				req_gold: row.11,
 				population_per_hour: 0, // Placeholder, assuming 'population' from br::building_resource if it exists and maps here
-				food_per_hour: row.11,
-				wood_per_hour: row.12,
-				stone_per_hour: row.13,
-				gold_per_hour: row.14,
+				food_per_hour: row.12,
+				wood_per_hour: row.13,
+				stone_per_hour: row.14,
+				gold_per_hour: row.15,
+				updated_at: row.16,
 			}
 		})
 		.collect())

@@ -76,7 +76,7 @@ diesel::table! {
 		id -> Uuid,
 		building_id -> Int4,
 		level -> Int4,
-		upgrade_time -> Text,
+		upgrade_seconds -> Int8,
 		req_food -> Nullable<Int8>,
 		req_wood -> Nullable<Int8>,
 		req_stone -> Nullable<Int8>,
@@ -222,7 +222,7 @@ diesel::table! {
 		player_id -> Uuid,
 		building_id -> Int4,
 		level -> Int4,
-		upgrade_time -> Nullable<Text>,
+		upgrade_finishes_at -> Nullable<Text>,
 		created_at -> Timestamptz,
 		updated_at -> Timestamptz,
 	}

@@ -17,7 +17,7 @@ pub struct PlayerBuilding {
 	pub player_id: PlayerKey,
 	pub building_id: i32,
 	pub level: i32,
-	pub upgrade_time: Option<String>,
+	pub upgrade_finishes_at: Option<String>,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 }
@@ -28,7 +28,7 @@ pub struct NewPlayerBuilding {
 	pub player_id: PlayerKey,
 	pub building_id: i32,
 	pub level: Option<i32>,
-	pub upgrade_time: Option<String>,
+	pub upgrade_finishes_at: Option<String>,
 }
 
 #[derive(Identifiable, AsChangeset, Debug, Clone, PartialEq, Eq, Hash)]
@@ -36,5 +36,5 @@ pub struct NewPlayerBuilding {
 pub struct UpdatePlayerBuilding {
 	pub id: PlayerBuildingKey,
 	pub level: Option<i32>,
-	pub upgrade_time: Option<String>,
+	pub upgrade_finishes_at: Option<String>,
 }

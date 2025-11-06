@@ -8,18 +8,19 @@
 //! All operations maintain transactional integrity and provide comprehensive validation
 //! of resource requirements, building constraints, and timing requirements.
 
-use std::str::FromStr;
+use std::ops::Add;
 
 use chrono::prelude::*;
+use chrono::TimeDelta;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::{DbConn, building_levels, player_buildings, resources};
-use crate::domain::building::BuildingKey;
+use crate::db::{building_levels, player_buildings, resources, DbConn};
 use crate::domain::building::level::BuildingLevel;
+use crate::domain::building::BuildingKey;
 use crate::domain::error::{Error, ErrorKind, Result};
-use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
+use crate::domain::player::PlayerKey;
 
 /// Constructs a new building for a player.
 ///
@@ -98,13 +99,14 @@ pub fn construct_building(
 		)?;
 		trace!("Deducted resources");
 		// construct building
+		let upgrade_eta = Utc::now().add(TimeDelta::seconds(bld_lvl.upgrade_seconds));
 		let player_bld = player_buildings::construct(
 			connection,
 			NewPlayerBuilding {
 				player_id: *player_id,
 				building_id: *bld_id,
 				level: Some(0),
-				upgrade_time: Some(bld_lvl.upgrade_time),
+				upgrade_finishes_at: Some(upgrade_eta.to_rfc3339()),
 			},
 		)?;
 		trace!("New player building details: {:#?}", player_bld);
@@ -210,10 +212,11 @@ pub fn upgrade_building(
 		)?;
 		trace!("Deducted resources");
 		// upgrade building
-		let player_bld = player_buildings::set_upgrade_time(
+		let upgrade_eta = Utc::now().add(TimeDelta::seconds(bld_lvl.upgrade_seconds));
+		let player_bld = player_buildings::set_upgrade_eta(
 			connection,
 			player_bld_id,
-			Some(bld_lvl.upgrade_time.as_str()),
+			Some(&upgrade_eta.to_rfc3339()),
 		)?;
 		debug!("Building upgrade started: {:?}", player_bld);
 		Ok(player_bld)
@@ -263,11 +266,11 @@ pub fn upgrade_building(
 /// - Premature confirmation ("Upgrade time has not passed")
 /// - Invalid time format ("Invalid time format")
 #[instrument(skip(conn))]
-pub fn confirm_upgrade(conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<()> {
+pub fn confirm_upgrade(conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<PlayerBuilding> {
 	debug!("Starting confirm upgrade for building {}", id);
 	let player_bld = player_buildings::get_by_id(conn, id)?;
 	trace!("Player building details: {:?}", player_bld);
-	match player_bld.upgrade_time {
+	match player_bld.upgrade_finishes_at {
 		None => {
 			debug!("Building {} is not in upgrading state", id);
 			Err(Error::from((
@@ -275,20 +278,21 @@ pub fn confirm_upgrade(conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<()> 
 				"Building is not upgrading",
 			)))
 		}
-		Some(t) => {
-			let time = DateTime::<Utc>::from_str(t.as_str()).map_err(|_| {
+		Some(eta) => {
+			let upgrade_finishes_at = DateTime::parse_from_rfc3339(&eta).map_err(|_| {
 				Error::from((ErrorKind::ConfirmUpgradeError, "Invalid time format"))
 			})?;
-			if time <= Utc::now() {
+			if Utc::now() >= upgrade_finishes_at.to_utc() {
 				debug!("Upgrade time has passed, incrementing building level");
-				player_buildings::inc_level(conn, id)?;
+				let bld = player_buildings::inc_level(conn, id)?;
 				info!("Successfully confirmed upgrade for building {}", id);
-				Ok(())
+				trace!(?bld, "Updated player building details");
+				Ok(bld)
 			} else {
 				debug!(
-					"Upgrade time has not passed yet: current={}, upgrade_time={}",
+					"Upgrade time has not passed yet: current={}, finishes_at={}",
 					Utc::now(),
-					time
+					upgrade_finishes_at
 				);
 				Err(Error::from((
 					ErrorKind::ConfirmUpgradeError,

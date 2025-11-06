@@ -121,7 +121,6 @@ pub(super) async fn login(
 	trace!("Generating session token for player {}", user.id);
 	let session_token = session_operations::gen_token();
 
-	debug!("Creating session for player {}", user.id);
 	let session =
 		session_operations::create(&mut conn, session_token.clone(), &user.id).map_err(|e| {
 			error!("Failed to create session for player {}: {:?}", user.id, e);

@@ -184,7 +184,7 @@ manage, and expand their empires.
 #### POST /game/buildings/construct
 
 - **Purpose**: Construct new building
-- **Body**: `{ "building_type_id": 1 }`
+- **Body**: `{ "building_id": 1 }`
 - **Response**: New building information
 - **Rationale**: Building construction is separate from upgrades and may have placement limits
 

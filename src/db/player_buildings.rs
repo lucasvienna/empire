@@ -14,10 +14,10 @@ use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::resources::BuildingResource;
 use crate::domain::building::{Building, BuildingKey};
 use crate::domain::error::Result;
-use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::{
 	NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey, UpdatePlayerBuilding,
 };
+use crate::domain::player::PlayerKey;
 use crate::schema::{building, player_building};
 
 /// Retrieves all player buildings from the database.
@@ -299,22 +299,22 @@ pub fn get_upgrade_tuple(
 	Ok(upgrade_tuple)
 }
 
-/// Sets or clears the upgrade time for a player's building.
+/// Sets or clears the upgrade completion time for a player's building.
 ///
 /// # Arguments
 /// * `conn` - Database connection
 /// * `player_building_key` - The unique identifier of the player's building
-/// * `upgrade_time` - The upgrade completion time as string, or None to clear it
+/// * `upgrade_eta` - The upgrade completion time as string, or None to clear it
 ///
 /// # Returns
 /// Updated PlayerBuilding instance
-pub fn set_upgrade_time(
+pub fn set_upgrade_eta(
 	conn: &mut DbConn,
 	player_building_key: &PlayerBuildingKey,
-	upgrade_time: Option<&str>,
+	upgrade_eta: Option<&str>,
 ) -> Result<PlayerBuilding> {
 	let building = diesel::update(player_building::table.find(player_building_key))
-		.set(player_building::upgrade_time.eq(upgrade_time))
+		.set(player_building::upgrade_finishes_at.eq(upgrade_eta))
 		.returning(PlayerBuilding::as_returning())
 		.get_result(conn)?;
 	Ok(building)
@@ -332,7 +332,7 @@ pub fn inc_level(conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<PlayerBuil
 	let building = diesel::update(player_building::table.find(id))
 		.set((
 			player_building::level.eq(player_building::level + 1),
-			player_building::upgrade_time.eq(None::<String>),
+			player_building::upgrade_finishes_at.eq(None::<String>),
 		))
 		.returning(PlayerBuilding::as_returning())
 		.get_result(conn)?;
