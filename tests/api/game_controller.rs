@@ -1,5 +1,5 @@
 use axum::body::Body;
-use axum::http::{header, Method, Request, StatusCode};
+use axum::http::{Method, Request, StatusCode, header};
 use empire::domain::factions::FactionCode;
 use serde_json::json;
 use tower::ServiceExt;

@@ -10,17 +10,17 @@
 
 use std::ops::Add;
 
-use chrono::prelude::*;
 use chrono::TimeDelta;
+use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::{building_levels, player_buildings, resources, DbConn};
-use crate::domain::building::level::BuildingLevel;
+use crate::db::{DbConn, building_levels, player_buildings, resources};
 use crate::domain::building::BuildingKey;
+use crate::domain::building::level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
-use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
 use crate::domain::player::PlayerKey;
+use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
 
 /// Constructs a new building for a player.
 ///
