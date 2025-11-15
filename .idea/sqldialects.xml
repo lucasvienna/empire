@@ -3,6 +3,9 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/migrations/00000000000000_diesel_initial_setup/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2023-01-01-202715_ulid/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-03-01-054010_buildings/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-03-01-054010_buildings/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2024-03-02-054020_building_levels/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-03-02-054020_building_levels/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-03-03-054030_building_resources/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2024-04-01-055918_players/up.sql" dialect="PostgreSQL" />
@@ -13,6 +16,8 @@
     <file url="file://$PROJECT_DIR$/migrations/2024-05-01-074658_resource_generation/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/seeds/001_building_levels.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/seeds/002_building_resources.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>

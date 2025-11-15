@@ -236,6 +236,9 @@ fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut
 
 	run_pending(&mut app_conn).expect("Failed to run database migrations");
 
+	// Run database seeds after migrations
+	empire::db::seeds::run(&mut app_conn).expect("Failed to run database seeds");
+
 	(initialize_pool(config), config)
 }
 

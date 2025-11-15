@@ -21,3 +21,6 @@ fi
 
 export DATABASE_URL=postgres://${APP_USER}:${APP_USER_PWD}@localhost:${DB_PORT}/${APP_DB_NAME}
 diesel database reset
+
+# Run database seeds
+cargo run --bin seed

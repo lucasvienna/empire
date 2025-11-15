@@ -57,19 +57,19 @@ use crate::domain::error::GameError;
 
 // For application-level functions
 async fn process_game_data() -> Result<GameData> {
-    let raw_data = fetch_data().await
-        .context("Failed to fetch game data")?;
+	let raw_data = fetch_data().await
+		.context("Failed to fetch game data")?;
 
-    parse_game_data(raw_data)
-        .context("Failed to parse game data")
+	parse_game_data(raw_data)
+		.context("Failed to parse game data")
 }
 
 // For domain-specific errors
 fn validate_building_placement(building: &Building) -> Result<(), GameError> {
-    if !building.is_valid_position() {
-        return Err(GameError::InvalidBuildingPlacement);
-    }
-    Ok(())
+	if !building.is_valid_position() {
+		return Err(GameError::InvalidBuildingPlacement);
+	}
+	Ok(())
 }
 ```
 
@@ -129,7 +129,7 @@ Example:
 ```rust
 // AIDEV-NOTE: Performance hotpath - avoid allocations in game loop
 async fn update_all_buildings(buildings: &mut [Building]) -> Result<()> {
-    // ... implementation
+	// ... implementation
 }
 
 // AIDEV-TODO: Consider using a more efficient data structure for large player counts
@@ -192,14 +192,14 @@ refactor: extract common game loop logic [AI]
 ```rust
 // Use RAII and Drop trait for cleanup
 struct GameSession {
-    db_conn: DbConnection,
-    // ... other resources
+	db_conn: DbConnection,
+	// ... other resources
 }
 
 impl Drop for GameSession {
-    fn drop(&mut self) {
-        // Cleanup happens automatically
-    }
+	fn drop(&mut self) {
+		// Cleanup happens automatically
+	}
 }
 ```
 
@@ -208,10 +208,10 @@ impl Drop for GameSession {
 ```rust
 // Use async/.await consistently
 async fn process_player_action(action: PlayerAction) -> Result<GameState> {
-    let validation = validate_action(&action).await?;
-    let new_state = apply_action(validation).await?;
-    save_state(&new_state).await?;
-    Ok(new_state)
+	let validation = validate_action(&action).await?;
+	let new_state = apply_action(validation).await?;
+	save_state(&new_state).await?;
+	Ok(new_state)
 }
 ```
 
@@ -221,8 +221,8 @@ async fn process_player_action(action: PlayerAction) -> Result<GameState> {
 // Use config crate for environment-based configuration
 #[derive(Debug, Deserialize)]
 struct DatabaseConfig {
-    url: String,
-    max_connections: u32,
+	url: String,
+	max_connections: u32,
 }
 ```
 

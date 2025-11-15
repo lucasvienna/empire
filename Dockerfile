@@ -1,6 +1,6 @@
 FROM lukemathwalker/cargo-chef:latest-rust-1.91.1 AS chef
 WORKDIR /app
-RUN apt update && apt install lld clang -y
+RUN apt-get update && apt-get install lld clang -y
 
 FROM chef AS planner
 COPY . .
@@ -25,10 +25,10 @@ WORKDIR /app
 # Install ca-certificates - it is needed to verify TLS certificates
 # when establishing HTTPS connections
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends openssl ca-certificates libpq-dev \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends openssl ca-certificates libpq-dev \
+  && apt-get autoremove -y \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
 
 # We need the configuration files at runtime!
 COPY config config

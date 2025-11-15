@@ -58,3 +58,7 @@ fi
 
 export DATABASE_URL=postgres://${APP_DATABASE__USERNAME}:${APP_DATABASE__PASSWORD}@localhost:${APP_DATABASE__PORT}/${APP_DATABASE__DATABASE_NAME}
 diesel setup
+
+# Run database seeds
+>&2 echo "Running database seeds..."
+cargo run --bin seed

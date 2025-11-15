@@ -10,5 +10,6 @@ pub mod player_buildings;
 pub mod player_sessions;
 pub mod players;
 pub mod resources;
+pub mod seeds;
 
 pub use connection::{DbConn, DbPool};

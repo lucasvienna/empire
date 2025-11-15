@@ -13,12 +13,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `cargo run` - Build and run the application
 
 ### Database Commands
-- `./scripts/init_db.sh` - Initialize PostgreSQL database with Docker
-- `./scripts/test_db.sh` - Set up test database
+- `./scripts/init_db.sh` - Initialize PostgreSQL database with Docker (runs migrations + seeds)
+- `./scripts/test_db.sh` - Set up test database (runs migrations + seeds)
 - `./scripts/pq_clean.sh` - Clean up test databases (removes UUID-named databases)
-- `diesel setup` - Set up database schema
+- `diesel setup` - Set up database schema (migrations only, no seeds)
 - `diesel migration run` - Apply pending migrations
 - `diesel database reset` - Reset database and reapply all migrations
+- `cargo run --bin seed` - Run database seeds (populates reference data)
 
 ### Testing Commands
 - `cargo test --bin empire` - Run binary tests
@@ -51,6 +52,12 @@ Empire is a Rust-based backend server for a base-building multiplayer game using
 - Schema auto-generated in `src/schema.rs`
 - Uses Diesel ORM with connection pooling
 - Docker setup for development environment
+- **Seeding Strategy**: Hybrid approach separating schema from data
+  - **Migrations** (`migrations/`): Schema structure + critical reference data (factions, core building definitions)
+  - **Seeds** (`seeds/`): Extended configuration data (building levels, resources, future items/tech trees)
+  - Seeds are SQL files executed in alphabetical order by `empire::db::seeds::run()`
+  - All seeds are idempotent using unique constraints + `ON CONFLICT DO NOTHING`
+  - Seeds run automatically in tests via `tests/common/mod.rs`
 
 ## Project Conventions
 
@@ -80,11 +87,17 @@ Empire is a Rust-based backend server for a base-building multiplayer game using
 - `config/` - Environment-specific configuration files
 
 ## Development Workflow
-1. Use `./scripts/init_db.sh` to set up database
+1. Use `./scripts/init_db.sh` to set up database (runs migrations + seeds automatically)
 2. Run `cargo test` to verify setup
 3. Use `cargo fmt` and `cargo clippy` before committing
 4. Follow tracing guidelines for logging
 5. Add migrations for schema changes using Diesel CLI
+6. Add reference data to `seeds/` directory (see `seeds/README.md` for conventions)
+   - Use numeric prefixes to control execution order (e.g., `003_items.sql`)
+   - Add unique constraints to tables in migrations
+   - Make seeds idempotent with `ON CONFLICT DO NOTHING`
+   - Commit seed files to version control for game balance tracking
+   - Seeds automatically run in tests - no additional setup needed
 
 ## Testing
 - Unit tests in `#[cfg(test)]` modules within source files
