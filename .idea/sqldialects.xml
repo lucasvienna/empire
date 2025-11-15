@@ -17,7 +17,9 @@
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/seeds/001_building_levels.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/seeds/002_building_resources.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/seeds/002_production_building_levels.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/seeds/003_research_building_levels.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/seeds/100_building_resources.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>
