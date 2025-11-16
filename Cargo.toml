@@ -6,6 +6,7 @@ readme = "README.md"
 publish = false
 
 [package]
+default-run = "empire"
 name = "empire"
 version.workspace = true
 edition.workspace = true
@@ -29,11 +30,11 @@ anyhow = { workspace = true }
 argon2 = "0.5.3"
 axum = { version = "0.8.7", features = ["query", "macros", "tokio", "http2"] }
 axum-extra = { version = "0.12.2", features = [
-    "cookie",
-    "tracing",
-    "typed-header",
-    "erased-json",
-    "with-rejection"
+  "cookie",
+  "tracing",
+  "typed-header",
+  "erased-json",
+  "with-rejection",
 ] }
 axum-test = { version = "18.2.1", features = ["all"] }
 bigdecimal = { version = "0.4.9", features = ["std", "serde", "serde_json"] }
@@ -66,11 +67,11 @@ tower-http = { version = "0.6.6", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { version = "1.18.1", features = [
-    "v4",
-    "v7",
-    "fast-rng",
-    "macro-diagnostics",
-    "serde",
+  "v4",
+  "v7",
+  "fast-rng",
+  "macro-diagnostics",
+  "serde",
 ] }
 unicode-segmentation = "1.12.0"
 validator = "0.20.0"

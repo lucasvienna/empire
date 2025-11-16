@@ -65,6 +65,8 @@ pub(super) async fn register(
 		"Created player successfully"
 	);
 
+	// TODO: start a session for the newly registered player
+
 	let body = json!({ "status": "success", "message": "Player registered successfully" });
 	info!(
 		player_id = created_user.id.to_string(),
