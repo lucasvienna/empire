@@ -1,6 +1,6 @@
 # AGENTS.md - Empire
 
-*Last updated 2025-06-15*
+*Last updated 2025-11-16*
 
 > **Purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT, etc.) and every human
 > who edits this repository.  
@@ -38,7 +38,33 @@ making assumptions.
 
 ---
 
-## 3. Rust Coding Standards
+## 3. Essential Commands
+
+### Development Commands
+- `cargo build` - Build the project
+- `cargo test` - Run all tests
+- `cargo test <test_name>` - Run specific test
+- `cargo fmt` - Format code using rustfmt
+- `cargo clippy` - Run linter
+- `cargo run` - Build and run the application
+
+### Database Commands
+- `./scripts/init_db.sh` - Initialize PostgreSQL database with Docker (runs migrations + seeds)
+- `./scripts/test_db.sh` - Set up test database (runs migrations + seeds)
+- `./scripts/pq_clean.sh` - Clean up test databases (removes UUID-named databases)
+- `diesel setup` - Set up database schema (migrations only, no seeds)
+- `diesel migration run` - Apply pending migrations
+- `diesel database reset` - Reset database and reapply all migrations
+- `cargo run --bin seed` - Run database seeds (populates reference data)
+
+### Testing Commands
+- `cargo test --bin empire` - Run binary tests
+- `cargo test --lib` - Run library tests
+- `cargo test tests::` - Run integration tests
+
+---
+
+## 4. Rust Coding Standards
 
 * **Rust Version**: 1.87+, use stable features unless explicitly requiring nightly
 * **Formatting**: Use `cargo fmt` with project's `rustfmt.toml` configuration
@@ -47,7 +73,10 @@ making assumptions.
 * **Error Handling**: Prefer `Result<T, E>` and `?` operator. Use `anyhow` for application errors, custom error types
   for domain errors
 * **Documentation**: Use `///` for public APIs, `//` for implementation details
-* **Testing**: Use `#[cfg(test)]` modules for unit tests, separate integration tests in `tests/` directory
+* **Testing**: Use `#[cfg(test)]` modules for unit tests within source files, separate integration tests in `tests/`
+  directory. Use `axum-test` for API endpoint testing
+* **Tracing**: Use `#[instrument]` macro for tracing in public methods. Skip sensitive parameters
+  with `#[instrument(skip(password))]`. Follow consistent logging levels per `docs/tracing_guidelines.md`
 
 **Error Handling Patterns**:
 
@@ -75,7 +104,7 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 
 ---
 
-## 4. Project Layout & Core Components
+## 5. Project Layout & Core Components
 
 | Directory     | Description                                        |
 |---------------|----------------------------------------------------|
@@ -87,6 +116,16 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 | `src/`        | Main source code root                              |
 | `tests/`      | Integration tests                                  |
 
+### Core Modules
+
+- **domain/**: Business logic and data models (Player, Building, Resource, Modifier, Job)
+- **game/**: Game-specific logic including resource processing, building services, and modifier systems
+- **controllers/**: REST API endpoints organized by feature (auth, game, health, player, user)
+- **db/**: Database models and connection handling using Diesel ORM
+- **net/**: Networking layer with Axum web framework
+- **auth/**: Authentication and session management
+- **job_queue/**: Async task processing system
+
 **Key Domain Models**:
 
 - **Player**: The users aka players of the game
@@ -95,18 +134,37 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 - **Modifier**: A numeric unit that affects other systems
 - **Job**: An async task to be executed at a given point in time
 
-**Dependencies**:
+**Key Technologies & Dependencies**:
 
 - **axum**: Web framework for REST API
-- **diesel**: ORM for PostgreSQL interactions
+- **diesel**: ORM for PostgreSQL interactions with connection pooling
 - **tokio**: Async runtime
-- **serde**: Serialization/deserialization
+- **serde**: JSON serialization/deserialization
 - **anyhow**: Error handling
-- **uuid**: Unique identifiers
+- **uuid/ulid**: Unique identifiers
+- **tracing**: Structured logging and telemetry
+
+### Database
+
+- PostgreSQL with migrations in `migrations/` directory
+- Schema auto-generated in `src/schema.rs`
+- Uses Diesel ORM with connection pooling
+- Docker setup for development environment
+
+**Seeding Strategy**: Hybrid approach separating schema from data
+
+- **Migrations** (`migrations/`): Schema structure + critical reference data (factions, core building definitions)
+- **Seeds** (`seeds/`): Extended configuration data (building levels, resources, future items/tech trees)
+  - Seeds are SQL files executed in alphabetical order by `empire::db::seeds::run()`
+  - All seeds are idempotent using unique constraints + `ON CONFLICT DO NOTHING`
+  - Seeds run automatically in tests via `tests/common/mod.rs`
+  - Use numeric prefixes to control execution order (e.g., `003_items.sql`)
+  - Add unique constraints to tables in migrations
+  - Commit seed files to version control for game balance tracking
 
 ---
 
-## 5. Anchor Comments
+## 6. Anchor Comments
 
 Add specially formatted comments throughout the codebase for inline knowledge that can be easily `grep`ped.
 
@@ -138,7 +196,7 @@ type PlayerMap = std::collections::HashMap<PlayerId, Player>;
 
 ---
 
-## 6. Commit Discipline
+## 7. Commit Discipline
 
 * **Granular commits**: One logical change per commit
 * **Tag AI-generated commits**: e.g., `feat: optimize resource calculation [AI]`
@@ -156,7 +214,7 @@ refactor: extract common game loop logic [AI]
 
 ---
 
-## 7. Key File & Pattern References
+## 8. Key File & Pattern References
 
 **API Route Definitions**:
 
@@ -185,7 +243,7 @@ refactor: extract common game loop logic [AI]
 
 ---
 
-## 8. Common Rust Patterns in This Project
+## 9. Common Rust Patterns in This Project
 
 **Resource Management**:
 
@@ -228,7 +286,7 @@ struct DatabaseConfig {
 
 ---
 
-## 9. Directory-Specific AGENTS.md Files
+## 10. Directory-Specific AGENTS.md Files
 
 * **Always check for `AGENTS.md` files in specific directories** before working on code within them
 * If a directory's `AGENTS.md` is outdated or incorrect, **update it**
@@ -237,7 +295,7 @@ struct DatabaseConfig {
 
 ---
 
-## 10. Common Pitfalls
+## 11. Common Pitfalls
 
 * **Ownership Issues**: Forgetting to consider Rust's ownership model when designing APIs
 * **Async Context**: Not properly handling async contexts and potential blocking operations
@@ -248,7 +306,7 @@ struct DatabaseConfig {
 
 ---
 
-## 11. Domain-Specific Terminology
+## 12. Domain-Specific Terminology
 
 * **Player**: A user account that owns buildings and resources in the game
 * **Building**: A structure that produces resources or provides game benefits
@@ -259,7 +317,18 @@ struct DatabaseConfig {
 
 ---
 
-## 12. AI Assistant Workflow
+## 13. Development Workflow
+
+### Setup Steps
+
+1. Use `./scripts/init_db.sh` to set up database (runs migrations + seeds automatically)
+2. Run `cargo test` to verify setup
+3. Use `cargo fmt` and `cargo clippy` before committing
+4. Follow tracing guidelines for logging
+5. Add migrations for schema changes using Diesel CLI
+6. Add reference data to `seeds/` directory (see `seeds/README.md` for conventions)
+
+### AI Assistant Workflow
 
 When responding to user instructions, follow this process:
 
@@ -275,7 +344,7 @@ When responding to user instructions, follow this process:
 
 ---
 
-## 13. Files to NOT Modify
+## 14. Files to NOT Modify
 
 These files control which files should be ignored by AI tools:
 
