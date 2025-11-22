@@ -1,6 +1,6 @@
 CREATE TABLE player_building
 (
-    id                  UUID        NOT NULL DEFAULT generate_ulid(),
+    id                  UUID        NOT NULL DEFAULT uuidv7(),
     player_id           UUID        NOT NULL,
     building_id         INTEGER     NOT NULL,
     level               INTEGER     NOT NULL DEFAULT 0,

@@ -1,6 +1,6 @@
 CREATE TABLE building_resource
 (
-    id             UUID        NOT NULL DEFAULT generate_ulid(),
+    id             UUID        NOT NULL DEFAULT uuidv7(),
     building_id    INTEGER     NOT NULL,
     building_level INTEGER     NOT NULL,
     -- These are all in resources per hour

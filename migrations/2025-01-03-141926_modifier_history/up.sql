@@ -7,8 +7,8 @@ CREATE TYPE modifier_action_type AS ENUM (
 
 CREATE TABLE IF NOT EXISTS modifier_history
 (
-    id             UUID                 NOT NULL DEFAULT generate_ulid(),
-    player_id        UUID                 NOT NULL,
+    id             UUID                 NOT NULL DEFAULT uuidv7(),
+    player_id      UUID                 NOT NULL,
     modifier_id    UUID                 NOT NULL,
     action_type    modifier_action_type NOT NULL,
     occurred_at    TIMESTAMPTZ          NOT NULL DEFAULT now(),

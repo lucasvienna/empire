@@ -28,7 +28,7 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
   --detach \
   --restart=always \
   --name "${CONTAINER_NAME}" \
-  postgres \
+  postgres:18 \
   -c log_statement=all \
   -c log_min_duration_statement=0 \
   -c log_min_messages=info \

@@ -3,7 +3,7 @@ CREATE TYPE job_type AS ENUM ('modifier', 'building', 'resource');
 
 CREATE TABLE IF NOT EXISTS job
 (
-    id              UUID        NOT NULL DEFAULT generate_ulid(),
+    id              UUID        NOT NULL DEFAULT uuidv7(),
     job_type        job_type    NOT NULL,
     status          job_status  NOT NULL DEFAULT 'pending',
     payload         JSONB       NOT NULL,

@@ -2,8 +2,8 @@ CREATE TYPE modifier_source_type AS ENUM ('faction', 'item', 'skill', 'research'
 
 CREATE TABLE IF NOT EXISTS active_modifiers
 (
-    id          UUID                 NOT NULL DEFAULT generate_ulid(),
-    player_id     UUID                 NOT NULL,
+    id          UUID                 NOT NULL DEFAULT uuidv7(),
+    player_id   UUID                 NOT NULL,
     modifier_id UUID                 NOT NULL,
     started_at  TIMESTAMPTZ          NOT NULL DEFAULT now(),
     expires_at  TIMESTAMPTZ          NULL,

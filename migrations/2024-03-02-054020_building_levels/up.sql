@@ -1,6 +1,6 @@
 CREATE TABLE building_level
 (
-    id              UUID        NOT NULL DEFAULT generate_ulid(),
+    id              UUID        NOT NULL DEFAULT uuidv7(),
     building_id     INTEGER     NOT NULL,
     level           INTEGER     NOT NULL,
     upgrade_seconds BIGINT      NOT NULL,

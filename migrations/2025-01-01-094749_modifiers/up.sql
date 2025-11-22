@@ -4,7 +4,7 @@ CREATE TYPE stacking_behaviour AS ENUM ('additive', 'multiplicative', 'highest')
 
 CREATE TABLE IF NOT EXISTS modifiers
 (
-    id                 UUID               NOT NULL DEFAULT generate_ulid(),
+    id                 UUID               NOT NULL DEFAULT uuidv7(),
     name               TEXT               NOT NULL,                      -- unique identifier for the modifier
     description        TEXT               NOT NULL,                      -- how to interpret the magnitude
     magnitude          NUMERIC(10, 4)     NOT NULL,                      -- value of the modifier

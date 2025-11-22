@@ -2,7 +2,7 @@ CREATE TYPE resource_type AS ENUM ('population', 'food', 'wood', 'stone', 'gold'
 
 CREATE TABLE player_resource
 (
-    id           UUID        NOT NULL DEFAULT generate_ulid(),
+    id           UUID        NOT NULL DEFAULT uuidv7(),
     player_id    UUID UNIQUE NOT NULL,
     food         BIGINT      NOT NULL DEFAULT 100,
     wood         BIGINT      NOT NULL DEFAULT 100,

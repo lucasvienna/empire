@@ -1,6 +1,6 @@
 CREATE TABLE player
 (
-    id         UUID         NOT NULL DEFAULT generate_ulid(),
+    id         UUID         NOT NULL DEFAULT uuidv7(),
     name       TEXT UNIQUE  NOT NULL,
     pwd_hash   TEXT         NOT NULL,
     email      VARCHAR(254) NULL,

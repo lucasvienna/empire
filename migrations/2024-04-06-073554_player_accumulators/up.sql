@@ -1,6 +1,6 @@
 CREATE TABLE player_accumulator
 (
-    id         UUID        NOT NULL DEFAULT generate_ulid(),
+    id         UUID        NOT NULL DEFAULT uuidv7(),
     player_id  UUID UNIQUE NOT NULL,
     food       BIGINT      NOT NULL DEFAULT 0,
     wood       BIGINT      NOT NULL DEFAULT 0,

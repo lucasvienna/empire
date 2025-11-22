@@ -30,17 +30,17 @@ anyhow = { workspace = true }
 argon2 = "0.5.3"
 axum = { version = "0.8.7", features = ["query", "macros", "tokio", "http2"] }
 axum-extra = { version = "0.12.2", features = [
-  "cookie",
-  "tracing",
-  "typed-header",
-  "erased-json",
-  "with-rejection",
+    "cookie",
+    "tracing",
+    "typed-header",
+    "erased-json",
+    "with-rejection",
 ] }
 axum-test = { version = "18.2.1", features = ["all"] }
 bigdecimal = { version = "0.4.9", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.42", features = ["serde"] }
-config = "0.15.19"
+config = { version = "0.15.19", default-features = false, features = ["yaml", "toml", "convert-case", "async"] }
 cookie = { version = "0.18.1", features = ["secure"] }
 data-encoding = "2.9.0"
 derive_more = { version = "2.0.1", features = ["full"] }
@@ -67,11 +67,11 @@ tower-http = { version = "0.6.6", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { version = "1.18.1", features = [
-  "v4",
-  "v7",
-  "fast-rng",
-  "macro-diagnostics",
-  "serde",
+    "v4",
+    "v7",
+    "fast-rng",
+    "macro-diagnostics",
+    "serde",
 ] }
 unicode-segmentation = "1.12.0"
 validator = "0.20.0"
