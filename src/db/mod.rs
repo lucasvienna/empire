@@ -1,5 +1,6 @@
 pub mod active_modifiers;
 pub mod building_levels;
+pub mod building_requirements;
 pub mod buildings;
 pub mod connection;
 pub mod extractor;

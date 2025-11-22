@@ -87,6 +87,19 @@ diesel::table! {
 }
 
 diesel::table! {
+	building_requirement (id) {
+		id -> Uuid,
+		building_level_id -> Uuid,
+		required_building_id -> Nullable<Int4>,
+		required_building_level -> Nullable<Int4>,
+		required_tech_id -> Nullable<Uuid>,
+		required_tech_level -> Nullable<Int4>,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
+diesel::table! {
 	building_resource (id) {
 		id -> Uuid,
 		building_id -> Int4,
@@ -259,6 +272,8 @@ diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> player (player_id));
 diesel::joinable!(building -> faction (faction));
 diesel::joinable!(building_level -> building (building_id));
+diesel::joinable!(building_requirement -> building (required_building_id));
+diesel::joinable!(building_requirement -> building_level (building_level_id));
 diesel::joinable!(building_resource -> building (building_id));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> player (player_id));
@@ -273,6 +288,7 @@ diesel::allow_tables_to_appear_in_same_query!(
 	active_modifiers,
 	building,
 	building_level,
+	building_requirement,
 	building_resource,
 	faction,
 	job,

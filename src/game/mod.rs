@@ -1,4 +1,4 @@
-pub mod building_operations;
+pub mod buildings;
 pub mod exp;
 pub mod modifiers;
 pub mod player_operations;

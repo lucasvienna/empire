@@ -2,10 +2,12 @@
 //! Buildings are structures that can be constructed by factions and have various levels and counts.
 
 pub mod level;
+pub mod requirement;
 pub mod resources;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use serde::Serialize;
 
 use crate::domain::factions::FactionKey;
 use crate::schema::building;
@@ -14,7 +16,7 @@ use crate::schema::building;
 pub type BuildingKey = i32;
 
 /// Represents a building type that can be constructed in the game
-#[derive(Queryable, Selectable, Identifiable, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Queryable, Selectable, Identifiable, Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[diesel(table_name = building, check_for_backend(diesel::pg::Pg))]
 pub struct Building {
 	pub id: BuildingKey,

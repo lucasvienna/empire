@@ -113,6 +113,29 @@ pub fn get_by_building_id(conn: &mut DbConn, bld_id: &BuildingKey) -> Result<Vec
 	Ok(bld_levels)
 }
 
+/// Retrieves a specific building level.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `bld_id` - The unique identifier of the building
+/// * `bld_level` - The level of the building to retrieve
+///
+/// # Returns
+/// A Result containing a vector of BuildingLevel entities ordered by level
+pub fn get_by_bld_and_level(
+	conn: &mut DbConn,
+	bld_id: &BuildingKey,
+	bld_level: i32,
+) -> Result<BuildingLevel> {
+	debug!("Getting level {} for building {}", bld_level, bld_id,);
+	let bld_level = bl::table
+		.filter(bl::building_id.eq(bld_id).and(bl::level.eq(bld_level)))
+		.select(BuildingLevel::as_select())
+		.get_result(conn)?;
+	debug!("Level: {:?}", bld_level);
+	Ok(bld_level)
+}
+
 /// Retrieves the next upgrade level for a building.
 ///
 /// # Arguments

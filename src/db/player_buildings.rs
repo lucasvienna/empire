@@ -6,6 +6,9 @@
 //! It handles the relationship between players and their buildings, including level
 //! progression and resource management.
 
+use std::collections::HashMap;
+
+use diesel::dsl::{count, max};
 use diesel::prelude::*;
 use tracing::info;
 
@@ -14,10 +17,12 @@ use crate::domain::building::level::BuildingLevel;
 use crate::domain::building::resources::BuildingResource;
 use crate::domain::building::{Building, BuildingKey};
 use crate::domain::error::Result;
-use crate::domain::player::PlayerKey;
+use crate::domain::factions::FactionCode;
 use crate::domain::player::buildings::{
 	NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey, UpdatePlayerBuilding,
 };
+use crate::domain::player::{Player, PlayerKey};
+use crate::game::buildings::requirement_operations::AvailabilityData;
 use crate::schema::{building, player_building};
 
 /// Retrieves all player buildings from the database.
@@ -337,4 +342,65 @@ pub fn inc_level(conn: &mut DbConn, id: &PlayerBuildingKey) -> Result<PlayerBuil
 		.returning(PlayerBuilding::as_returning())
 		.get_result(conn)?;
 	Ok(building)
+}
+
+/// Retrieves building counts and maximum levels for all buildings available to a player.
+///
+/// This function returns a map containing counts and maximum levels of buildings for a given player,
+/// filtered by the player's faction. It includes both faction-specific buildings and neutral buildings
+/// that are available to all factions.
+///
+/// # Arguments
+///
+/// * `conn` - Database connection
+/// * `player` - Reference to the Player entity whose building information is being queried
+///
+/// # Returns
+///
+/// Returns a Result containing a `HashMap` where:
+/// * Key is the BuildingKey (unique identifier for each building type)
+/// * Value is a tuple containing:
+///   * First element (`i64`): Count of how many instances of this building the player has
+///   * Second element (`Option<i32>`): Maximum level achieved across all instances of this building,
+///     or None if the player has no instances of this building
+///
+/// The HashMap includes entries for all buildings available to the player's faction, even if they
+/// haven't built any instances of some building types (in which case the count will be 0 and the
+/// level will be `None`).
+pub fn get_player_bld_counts_levels(
+	conn: &mut DbConn,
+	player: &Player,
+) -> Result<(
+	HashMap<BuildingKey, Building>,
+	HashMap<BuildingKey, AvailabilityData>,
+)> {
+	let building_counts: Vec<(Building, i64, Option<i32>)> = building::table
+		.filter(
+			building::faction
+				.eq(&player.faction)
+				.or(building::faction.eq(FactionCode::Neutral)),
+		)
+		.left_join(
+			player_building::table.on(building::id
+				.eq(player_building::building_id)
+				.and(player_building::player_id.eq(&player.id))),
+		)
+		.group_by(building::id)
+		.select((
+			Building::as_select(),
+			count(player_building::id).assume_not_null(),
+			max(player_building::level).nullable(),
+		))
+		.load(conn)?;
+
+	let mut buildings: HashMap<BuildingKey, Building> = HashMap::new();
+	let player_building_levels = building_counts.into_iter().fold(
+		HashMap::new(),
+		|mut map, (building, count, max_level)| {
+			map.insert(building.id, (count, building.max_count, max_level));
+			buildings.insert(building.id, building);
+			map
+		},
+	);
+	Ok((buildings, player_building_levels))
 }

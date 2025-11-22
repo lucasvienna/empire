@@ -5,14 +5,17 @@ use axum::{Extension, Json, debug_handler};
 use axum_extra::json;
 use tracing::{debug, info, instrument, trace};
 
+use crate::Result;
 use crate::controllers::game::buildings::models::{ConstructBuildingRequest, GameBuilding};
+use crate::db::building_requirements::get_construction_reqs;
 use crate::db::extractor::DatabaseConnection;
 use crate::db::player_buildings;
+use crate::db::player_buildings::get_player_bld_counts_levels;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::game::building_operations;
-use crate::{Result, not_implemented};
+use crate::game::buildings::building_operations;
+use crate::game::buildings::requirement_operations::gen_avail_list;
 
 #[instrument(skip(conn, player))]
 #[debug_handler(state = AppState)]
@@ -66,18 +69,27 @@ pub async fn get_player_building(
 	Ok(json!(game_bld))
 }
 
+/// Returns the full building catalog with availability metadata.
 #[instrument(skip_all)]
 #[debug_handler(state = AppState)]
 pub async fn get_available_buildings(
-	DatabaseConnection(conn): DatabaseConnection,
+	DatabaseConnection(mut conn): DatabaseConnection,
 	player: Extension<AuthenticatedUser>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse> {
 	// Requirements
-	// - Player faction == building faction
+	// - Player faction == building faction (or neutral)
 	// - Current amount < maximum building count
-	// - Current level >= minimum building level <-- do we even have levels? keep level? player level? XP?
+	// - Prerequisites fulfilled (Keep level, tech tree node, etc)
 
-	not_implemented!()
+	debug!(
+		"Getting available buildings for faction: {}",
+		&player.faction
+	);
+	let (blds, bld_data) = get_player_bld_counts_levels(&mut conn, &player)?;
+	let reqs = get_construction_reqs(&mut conn, &player.faction)?;
+	let avail = gen_avail_list(blds, bld_data, reqs);
+
+	Ok(Json(avail))
 }
 
 #[instrument(skip_all)]
