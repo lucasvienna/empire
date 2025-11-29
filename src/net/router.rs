@@ -12,7 +12,7 @@
 use std::time::Duration;
 
 use axum::body::Body;
-use axum::http::{HeaderName, Request};
+use axum::http::{HeaderName, Request, StatusCode};
 use axum::{Router, middleware};
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer as TowerCatchPanicLayer;
@@ -85,7 +85,10 @@ pub fn init(state: AppState) -> Router {
 		.layer(TowerCatchPanicLayer::new())
 		.layer(TowerCorsLayer::permissive())
 		.layer(TowerCompressionLayer::new())
-		.layer(TimeoutLayer::new(Duration::from_secs(10)))
+		.layer(TimeoutLayer::with_status_code(
+			StatusCode::REQUEST_TIMEOUT,
+			Duration::from_secs(10),
+		))
 		.layer(PropagateRequestIdLayer::new(x_request_id));
 
 	let protected_routes = Router::new()
