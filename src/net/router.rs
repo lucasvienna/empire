@@ -12,7 +12,7 @@
 use std::time::Duration;
 
 use axum::body::Body;
-use axum::http::{HeaderName, Request, StatusCode};
+use axum::http::{HeaderName, Request, StatusCode, Uri};
 use axum::{Router, middleware};
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer as TowerCatchPanicLayer;
@@ -105,6 +105,11 @@ pub fn init(state: AppState) -> Router {
 		.merge(health_routes())
 		.merge(auth_routes())
 		.merge(protected_routes)
+		.fallback(fallback)
 		.layer(middleware)
 		.with_state(state)
+}
+
+async fn fallback(uri: Uri) -> (StatusCode, String) {
+	(StatusCode::NOT_FOUND, format!("No route for {uri}"))
 }
