@@ -8,6 +8,7 @@
 //! - Invalidating individual or all sessions for a player
 use blake2::{Blake2s256, Digest};
 use chrono::{Duration, Utc};
+use cookie::{Cookie, SameSite, time};
 use data_encoding::BASE32_NOPAD_NOCASE;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -15,6 +16,7 @@ use crate::db::DbConn;
 use crate::db::player_sessions::{self, SessionPlayerTuple};
 use crate::domain::player::PlayerKey;
 use crate::domain::player::session::{NewPlayerSession, PlayerSession, SessionKey};
+use crate::net::SESSION_COOKIE_NAME;
 use crate::{Error, ErrorKind, Result};
 
 /// Generates a new random session token.
@@ -31,6 +33,37 @@ pub fn gen_token() -> String {
 	let token = BASE32_NOPAD_NOCASE.encode(&bytes);
 	trace!("Generated token of length {}", token.len());
 	token
+}
+
+/// Generates a secure HTTP cookie for a player session.
+///
+/// # Parameters
+/// - `session`: A reference to the `PlayerSession` struct, which contains session details such
+///   as the player's ID and session expiration time. The function uses this to determine the
+///   cookie's `max_age`.
+/// - `token`: A string slice containing the session token, which serves as the value for the
+///   cookie.
+///
+/// # Returns
+/// A `Cookie` object configured with the following properties:
+/// - Name: Derived from the constant `SESSION_COOKIE_NAME`.
+/// - Value: The provided session token.
+/// - Secure: `true`, ensuring the cookie is sent over HTTPS connections only.
+/// - HttpOnly: `true`, making the cookie inaccessible to JavaScript.
+/// - SameSite: `Strict`, preventing the cookie from being sent along with cross-origin requests.
+/// - Path: Set to "/".
+/// - Max-Age: Calculated as the remaining time until the session expires, ensuring the cookie is
+///   invalidated when the session expires.
+#[instrument(skip_all, fields(player_id = %session.player_id,session_id = %session.id))]
+pub fn gen_cookie(session: &PlayerSession, token: &str) -> Cookie<'static> {
+	let max_age = session.expires_at - Utc::now();
+	Cookie::build((SESSION_COOKIE_NAME, token.to_string()))
+		.secure(true)
+		.http_only(true)
+		.same_site(SameSite::Strict)
+		.path("/")
+		.max_age(time::Duration::seconds(max_age.num_seconds()))
+		.build()
 }
 
 /// Creates a new session for a player. The session is associated with the provided token.

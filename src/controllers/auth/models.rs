@@ -75,6 +75,17 @@ pub struct PlayerDto {
 	pub faction: String,
 }
 
+impl From<player::Player> for PlayerDto {
+	fn from(player: player::Player) -> Self {
+		Self {
+			id: player.id,
+			name: player.name.to_string(),
+			email: player.email.map(|email| email.to_string()),
+			faction: player.faction.to_string(),
+		}
+	}
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct SessionDto {
 	pub token: String,

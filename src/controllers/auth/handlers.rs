@@ -3,8 +3,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json, debug_handler};
 use axum_extra::extract::CookieJar;
-use chrono::Utc;
-use cookie::{Cookie, SameSite, time};
+use cookie::Cookie;
 use serde_json::json;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -25,6 +24,7 @@ use crate::net::{SESSION_COOKIE_NAME, SessionToken, TOKEN_COOKIE_NAME};
 #[debug_handler(state = AppState)]
 pub(super) async fn register(
 	DatabaseConnection(mut conn): DatabaseConnection,
+	jar: CookieJar,
 	Json(payload): Json<RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
 	trace!("Starting player registration process");
@@ -65,15 +65,29 @@ pub(super) async fn register(
 		"Created player successfully"
 	);
 
-	// TODO: start a session for the newly registered player
+	let session_token = session_operations::gen_token();
+	let session = session_operations::create(&mut conn, session_token.clone(), &created_user.id)
+		.map_err(|e| {
+			error!(
+				"Failed to create session for player {}: {:?}",
+				&created_user.id, e
+			);
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "message": "Failed to create session" })),
+			)
+		})?;
+	let cookie = session_operations::gen_cookie(&session, &session_token);
 
-	let body = json!({ "status": "success", "message": "Player registered successfully" });
 	info!(
 		player_id = created_user.id.to_string(),
 		"Player registration completed successfully"
 	);
 
-	Ok((StatusCode::CREATED, Json(body)))
+	let user = PlayerDto::from(created_user);
+	let body =
+		json!({ "status": "success", "message": "Player registered successfully", "user": user });
+	Ok((StatusCode::CREATED, jar.add(cookie), Json(body)))
 }
 
 #[instrument(skip_all, fields(username = %payload.username))]
@@ -136,14 +150,7 @@ pub(super) async fn login(
 		"Player successfully logged in"
 	);
 
-	let max_age = session.expires_at - Utc::now();
-	let cookie = Cookie::build((SESSION_COOKIE_NAME, session_token))
-		.secure(true)
-		.http_only(true)
-		.same_site(SameSite::Strict)
-		.path("/")
-		.max_age(time::Duration::seconds(max_age.num_seconds()))
-		.build();
+	let cookie = session_operations::gen_cookie(&session, &session_token);
 
 	Ok(jar.add(cookie))
 }
@@ -203,7 +210,7 @@ pub(super) async fn session(
 
 		debug!(
 			"Session info retrieved successfully for player {}",
-			player.id
+			player_dto.id
 		);
 		Ok((
 			jar,
