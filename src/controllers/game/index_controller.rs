@@ -45,6 +45,10 @@ pub struct ResourcesState {
 	pub wood_cap: i64,
 	pub stone_cap: i64,
 	pub gold_cap: i64,
+	pub food_rate: i64,
+	pub wood_rate: i64,
+	pub stone_rate: i64,
+	pub gold_rate: i64,
 	pub food_acc: i64,
 	pub wood_acc: i64,
 	pub stone_acc: i64,
@@ -174,8 +178,18 @@ pub fn get_resources_data(
 			(i64, i64, i64, i64),
 		)>(conn)?;
 
-	let (_, _, _, _, _, _, food_acc_cap_val, wood_acc_cap_val, stone_acc_cap_val, gold_acc_cap_val) =
-		res_gen_view(conn, &current_player_id)?;
+	let (
+		_, // player id
+		_, // population rate
+		food_rate,
+		wood_rate,
+		stone_rate,
+		gold_rate,
+		food_acc_cap_val,
+		wood_acc_cap_val,
+		stone_acc_cap_val,
+		gold_acc_cap_val,
+	) = res_gen_view(conn, &current_player_id)?;
 
 	Ok(ResourcesState {
 		food: pr_data.0,
@@ -186,6 +200,10 @@ pub fn get_resources_data(
 		wood_cap: pr_data.5,
 		stone_cap: pr_data.6,
 		gold_cap: pr_data.7,
+		food_rate: food_rate.to_i64().unwrap_or_default(),
+		wood_rate: wood_rate.to_i64().unwrap_or_default(),
+		stone_rate: stone_rate.to_i64().unwrap_or_default(),
+		gold_rate: gold_rate.to_i64().unwrap_or_default(),
 		produced_at: pr_data.8,
 		collected_at: pr_data.9,
 		food_acc: pa_data.0,
