@@ -1,5 +1,5 @@
 use axum::body::Body;
-use axum::http::{Method, Request, StatusCode, header};
+use axum::http::{header, Method, Request, StatusCode};
 use empire::domain::factions::FactionCode;
 use serde_json::json;
 use tower::ServiceExt;
@@ -66,8 +66,8 @@ async fn join_faction_requires_authentication() {
 	let response = router
 		.oneshot(
 			Request::builder()
-				.uri("/game/join_faction")
-				.method(Method::POST)
+				.uri("/player/faction")
+				.method(Method::PUT)
 				.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 				.body(Body::from(json!({"faction": "Human"}).to_string()))
 				.unwrap(),
@@ -200,7 +200,7 @@ async fn collect_resources_success() {
 }
 
 #[tokio::test]
-async fn construct_building_success() {
+async fn get_available_buildings() {
 	let server = TestApp::new();
 	let client = reqwest::Client::new();
 	let user = server.create_test_user(Some(FactionCode::Human));
@@ -213,18 +213,79 @@ async fn construct_building_success() {
 		.await
 		.expect("Failed to execute request.");
 
-	assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+	assert_eq!(response.status(), StatusCode::OK);
 
-	// // Debug: Print response details if not OK
-	// if response.status() != StatusCode::OK {
-	// 	let status = response.status();
-	// 	let body = response.text().await.unwrap();
-	// 	println!("Response status: {status}");
-	// 	println!("Response body: {body}");
-	// 	panic!("Expected OK status, got {status}");
-	// }
-	//
-	//
-	// let body: serde_json::Value = response.json().await.unwrap();
-	// assert_ne!(body, json!({}), "Game state should not be empty");
+	let buildings: Vec<serde_json::Value> = response.json().await.unwrap();
+
+	// Human player should see Human buildings (17) + Neutral buildings (3) = 20 total
+	assert_eq!(
+		buildings.len(),
+		20,
+		"Human player should see all Human and Neutral faction buildings"
+	);
+
+	// Verify each building has the expected shape
+	for bld in &buildings {
+		assert!(
+			bld.get("building").is_some(),
+			"Should have building definition"
+		);
+		assert!(bld.get("buildable").is_some(), "Should have buildable flag");
+		assert!(
+			bld.get("current_count").is_some(),
+			"Should have current_count"
+		);
+		assert!(bld.get("max_count").is_some(), "Should have max_count");
+		assert!(bld.get("locks").is_some(), "Should have locks array");
+	}
+
+	// Verify faction buildings are present
+	let building_names: Vec<&str> = buildings
+		.iter()
+		.filter_map(|b| b.get("building")?.get("name")?.as_str())
+		.collect();
+
+	assert!(
+		building_names.contains(&"Keep"),
+		"Should include Keep (Human main building)"
+	);
+	assert!(
+		building_names.contains(&"Farm"),
+		"Should include Farm (starter building)"
+	);
+	assert!(
+		building_names.contains(&"Guild Hall"),
+		"Should include neutral Guild Hall"
+	);
+
+	// Verify the main building (Keep) is buildable for a new player
+	let keep = buildings
+		.iter()
+		.find(|b| {
+			b.get("building")
+				.and_then(|bld| bld.get("name"))
+				.and_then(|n| n.as_str())
+				== Some("Keep")
+		})
+		.expect("Should have Keep building");
+
+	// New player has starter buildings already, so Keep current_count should be 1
+	// and since max_count is 1, it should not be buildable (MaxCountReached)
+	assert_eq!(
+		keep.get("current_count").and_then(|c| c.as_i64()),
+		Some(1),
+		"New player should have 1 Keep (starter building)"
+	);
+	assert_eq!(
+		keep.get("buildable").and_then(|b| b.as_bool()),
+		Some(false),
+		"Keep should not be buildable (max count reached)"
+	);
+
+	// Verify locks show MaxCountReached for Keep
+	let keep_locks = keep.get("locks").and_then(|l| l.as_array()).unwrap();
+	assert!(
+		keep_locks.iter().any(|lock| lock == "MaxCountReached"),
+		"Keep should have MaxCountReached lock"
+	);
 }
