@@ -6,10 +6,10 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, Utc};
 use diesel::QueryResult;
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
+use super::models::{BuildingsState, GameState, PlayerState, ResourcesState};
 use crate::Result;
 use crate::db::DbConn;
 use crate::db::extractor::DatabaseConnection;
@@ -21,71 +21,9 @@ use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::schema::player_building::dsl::player_building;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct GameState {
-	player: PlayerState,
-	resources: ResourcesState,
-	buildings: HashMap<BuildingKey, Vec<BuildingsState>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct PlayerState {
-	pub id: PlayerKey,
-	pub name: String,
-	pub faction: FactionCode,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ResourcesState {
-	pub food: i64,
-	pub wood: i64,
-	pub stone: i64,
-	pub gold: i64,
-	pub food_cap: i64,
-	pub wood_cap: i64,
-	pub stone_cap: i64,
-	pub gold_cap: i64,
-	pub food_rate: i64,
-	pub wood_rate: i64,
-	pub stone_rate: i64,
-	pub gold_rate: i64,
-	pub food_acc: i64,
-	pub wood_acc: i64,
-	pub stone_acc: i64,
-	pub gold_acc: i64,
-	pub food_acc_cap: i64,
-	pub wood_acc_cap: i64,
-	pub stone_acc_cap: i64,
-	pub gold_acc_cap: i64,
-	pub produced_at: DateTime<Utc>,
-	pub collected_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct BuildingsState {
-	pub id: PlayerBuildingKey,
-	pub building_id: BuildingKey,
-	pub name: String,
-	pub level: i32,
-	pub max_level: i32,
-	pub max_count: i32,
-	pub upgrade_seconds: i64,
-	pub upgrade_finishes_at: Option<String>,
-	pub req_food: Option<i64>,
-	pub req_wood: Option<i64>,
-	pub req_stone: Option<i64>,
-	pub req_gold: Option<i64>,
-	pub population_per_hour: i64,
-	pub food_per_hour: i64,
-	pub wood_per_hour: i64,
-	pub stone_per_hour: i64,
-	pub gold_per_hour: i64,
-	pub updated_at: DateTime<Utc>,
-}
-
 #[instrument(skip(conn), fields(player_id = %player.id))]
 #[debug_handler(state = AppState)]
-pub async fn get_game(
+pub(super) async fn get_game(
 	DatabaseConnection(mut conn): DatabaseConnection,
 	player: Extension<AuthenticatedUser>,
 ) -> Result<impl IntoResponse> {
