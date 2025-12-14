@@ -1,6 +1,7 @@
 pub mod accumulator;
 pub mod buildings;
 pub mod resource;
+pub mod resource_snapshot;
 pub mod session;
 mod user_email;
 mod user_name;

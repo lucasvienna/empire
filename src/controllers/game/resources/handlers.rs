@@ -5,7 +5,7 @@ use serde_json::json;
 use tracing::{debug, info, instrument, warn};
 
 use crate::Result;
-use crate::controllers::game::index::get_resources_data;
+use crate::controllers::game::index::ResourcesState;
 use crate::db::extractor::DatabaseConnection;
 use crate::domain::app_state::AppState;
 use crate::domain::auth::AuthenticatedUser;
@@ -33,7 +33,8 @@ pub async fn collect_resources(
 	match result {
 		Ok((_accumulator, res)) => {
 			info!("Produced and collected resources: {}", res.id);
-			let res_state = get_resources_data(&mut conn, player_key)?;
+			let snapshot = resource_operations::get_resource_snapshot(&mut conn, &player_key)?;
+			let res_state = ResourcesState::from(snapshot);
 			let body = json!(res_state);
 			Ok((StatusCode::OK, Json(body)))
 		}

@@ -293,3 +293,146 @@ pub fn calc_prod_rates(
 
 	Ok(production_rates)
 }
+
+// ---------------------------------------------------------------------------
+// Resource Snapshot
+// ---------------------------------------------------------------------------
+
+use uuid::Uuid;
+
+use crate::domain::player::resource_snapshot::PlayerResourceSnapshot;
+
+type ResourceGenerationView = (
+	Uuid,       // player_id
+	BigDecimal, // population
+	BigDecimal, // food
+	BigDecimal, // wood
+	BigDecimal, // stone
+	BigDecimal, // gold
+	BigDecimal, // food acc cap
+	BigDecimal, // wood acc cap
+	BigDecimal, // stone acc cap
+	BigDecimal, // gold acc cap
+);
+
+/// Queries the aggregated resource generation rates from building_resource.
+///
+/// This is essentially a materialized view that sums production rates and
+/// accumulator caps across all of a player's buildings at their current levels.
+fn res_gen_view(conn: &mut DbConn, player_key: &PlayerKey) -> Result<ResourceGenerationView> {
+	use diesel::dsl::sum;
+
+	use crate::schema::{building_resource as br, player_building as pb};
+
+	let result = pb::table
+		.left_join(
+			br::table.on(pb::building_id
+				.eq(br::building_id)
+				.and(pb::level.eq(br::building_level))),
+		)
+		.group_by(pb::player_id)
+		.filter(pb::player_id.eq(player_key))
+		.select((
+			pb::player_id,
+			sum(br::population).assume_not_null(),
+			sum(br::food).assume_not_null(),
+			sum(br::wood).assume_not_null(),
+			sum(br::stone).assume_not_null(),
+			sum(br::gold).assume_not_null(),
+			sum(br::food_acc_cap).assume_not_null(),
+			sum(br::wood_acc_cap).assume_not_null(),
+			sum(br::stone_acc_cap).assume_not_null(),
+			sum(br::gold_acc_cap).assume_not_null(),
+		))
+		.first::<ResourceGenerationView>(conn)?;
+
+	Ok(result)
+}
+
+/// Returns an aggregated snapshot of a player's current resource state.
+///
+/// Combines data from:
+/// - `player_resource` (current storage amounts and caps, timestamps)
+/// - `player_accumulator` (accumulated resources awaiting collection)
+/// - Building-derived production rates and accumulator caps
+pub fn get_resource_snapshot(
+	conn: &mut DbConn,
+	player_key: &PlayerKey,
+) -> Result<PlayerResourceSnapshot> {
+	use crate::schema::player_accumulator::dsl as pa;
+	use crate::schema::player_resource::dsl as pr;
+
+	let (pr_data, pa_data) = pr::player_resource
+		.inner_join(pa::player_accumulator.on(pr::player_id.eq(pa::player_id)))
+		.filter(pr::player_id.eq(player_key))
+		.select((
+			// player_resource fields
+			(
+				pr::food,
+				pr::wood,
+				pr::stone,
+				pr::gold,
+				pr::food_cap,
+				pr::wood_cap,
+				pr::stone_cap,
+				pr::gold_cap,
+				pr::produced_at,
+				pr::collected_at,
+			),
+			// player_accumulator fields
+			(pa::food, pa::wood, pa::stone, pa::gold),
+		))
+		.first::<(
+			(
+				i64,
+				i64,
+				i64,
+				i64,
+				i64,
+				i64,
+				i64,
+				i64,
+				DateTime<Utc>,
+				DateTime<Utc>,
+			),
+			(i64, i64, i64, i64),
+		)>(conn)?;
+
+	let (
+		_, // player id
+		_, // population rate
+		food_rate,
+		wood_rate,
+		stone_rate,
+		gold_rate,
+		food_acc_cap_val,
+		wood_acc_cap_val,
+		stone_acc_cap_val,
+		gold_acc_cap_val,
+	) = res_gen_view(conn, player_key)?;
+
+	Ok(PlayerResourceSnapshot {
+		food: pr_data.0,
+		wood: pr_data.1,
+		stone: pr_data.2,
+		gold: pr_data.3,
+		food_cap: pr_data.4,
+		wood_cap: pr_data.5,
+		stone_cap: pr_data.6,
+		gold_cap: pr_data.7,
+		food_rate: food_rate.to_i64().unwrap_or_default(),
+		wood_rate: wood_rate.to_i64().unwrap_or_default(),
+		stone_rate: stone_rate.to_i64().unwrap_or_default(),
+		gold_rate: gold_rate.to_i64().unwrap_or_default(),
+		produced_at: pr_data.8,
+		collected_at: pr_data.9,
+		food_acc: pa_data.0,
+		wood_acc: pa_data.1,
+		stone_acc: pa_data.2,
+		gold_acc: pa_data.3,
+		food_acc_cap: food_acc_cap_val.to_i64().unwrap_or_default(),
+		wood_acc_cap: wood_acc_cap_val.to_i64().unwrap_or_default(),
+		stone_acc_cap: stone_acc_cap_val.to_i64().unwrap_or_default(),
+		gold_acc_cap: gold_acc_cap_val.to_i64().unwrap_or_default(),
+	})
+}
