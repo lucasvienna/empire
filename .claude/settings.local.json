@@ -1,13 +1,14 @@
 {
   "permissions": {
     "allow": [
+      "WebSearch",
       "Bash(cat:*)",
       "Bash(cargo build:*)",
       "Bash(cargo check:*)",
       "Bash(cargo clippy:*)",
       "Bash(cargo test)",
       "Bash(cargo test:*)",
-      "WebSearch"
+      "Bash(gh issue list:*)"
     ],
     "deny": [],
     "ask": []
