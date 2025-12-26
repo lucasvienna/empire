@@ -174,3 +174,75 @@ fn parse_req_lock(
 			.map(|node_id| BuildingLock::TechNodeRequired { node_id })
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use std::collections::HashMap;
+
+	use chrono::Utc;
+
+	use crate::domain::building::requirement::BuildingRequirement;
+	use crate::domain::building::Building;
+	use crate::domain::factions::FactionCode;
+
+	use super::{gen_avail_data, gen_avail_list, BuildingLock};
+
+	fn make_test_building(id: i32, max_count: i32) -> Building {
+		Building {
+			id,
+			name: format!("Test Building {}", id),
+			max_level: 10,
+			max_count,
+			faction: FactionCode::Neutral,
+			starter: false,
+			created_at: Utc::now(),
+			updated_at: Utc::now(),
+		}
+	}
+
+	#[test]
+	fn test_gen_avail_data_buildable_when_no_locks() {
+		let building = make_test_building(1, 5);
+		let data = (0, 5, None); // count=0, max_count=5, no max_level yet
+		let requirements: Vec<BuildingRequirement> = vec![];
+
+		let availability = gen_avail_data(building.clone(), data, requirements);
+
+		assert!(availability.buildable);
+		assert!(availability.locks.is_empty());
+		assert_eq!(availability.current_count, 0);
+		assert_eq!(availability.max_count, 5);
+		assert_eq!(availability.building.id, building.id);
+	}
+
+	#[test]
+	fn test_gen_avail_list_mixed_availability() {
+		// Building 1: buildable (count 0, max 5, no requirements)
+		let bld1 = make_test_building(1, 5);
+		// Building 2: locked due to max count reached (count 3, max 3)
+		let bld2 = make_test_building(2, 3);
+
+		let mut buildings = HashMap::new();
+		buildings.insert(1, bld1);
+		buildings.insert(2, bld2);
+
+		let mut bld_data = HashMap::new();
+		bld_data.insert(1, (0_i64, 5_i32, None)); // buildable
+		bld_data.insert(2, (3_i64, 3_i32, Some(3))); // at max count
+
+		let requirements: HashMap<i32, Vec<BuildingRequirement>> = HashMap::new();
+
+		let availability_list = gen_avail_list(buildings, bld_data, requirements);
+
+		assert_eq!(availability_list.len(), 2);
+
+		let bld1_avail = availability_list.iter().find(|a| a.building.id == 1).unwrap();
+		assert!(bld1_avail.buildable);
+		assert!(bld1_avail.locks.is_empty());
+
+		let bld2_avail = availability_list.iter().find(|a| a.building.id == 2).unwrap();
+		assert!(!bld2_avail.buildable);
+		assert_eq!(bld2_avail.locks.len(), 1);
+		assert_eq!(bld2_avail.locks[0], BuildingLock::MaxCountReached);
+	}
+}
