@@ -404,3 +404,43 @@ pub fn get_player_bld_counts_levels(
 	);
 	Ok((buildings, player_building_levels))
 }
+
+/// Retrieves building count and maximum level for a specific building type owned by a player.
+///
+/// This is a single-building variant of [`get_player_bld_counts_levels`] that queries
+/// availability data for one specific building type rather than all buildings.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `player` - Reference to the Player entity whose building information is being queried
+/// * `bld_key` - The unique identifier of the building type to query
+///
+/// # Returns
+/// A [`Result`] containing an [`AvailabilityData`] tuple where:
+/// * First element (`i64`): Count of how many instances of this building the player has
+/// * Second element (`i32`): Maximum count allowed for this building type
+/// * Third element (`Option<i32>`): Maximum level achieved across all instances,
+///   or `None` if the player has no instances of this building
+pub fn get_player_bld_count_level(
+	conn: &mut DbConn,
+	player_key: &PlayerKey,
+	bld_key: &BuildingKey,
+) -> Result<(Building, AvailabilityData)> {
+	let (bld, bld_count, max_count, max_lvl): (Building, i64, i32, Option<i32>) = building::table
+		.filter(building::id.eq(bld_key))
+		.left_join(
+			player_building::table.on(building::id
+				.eq(player_building::building_id)
+				.and(player_building::player_id.eq(&player_key))),
+		)
+		.group_by(building::id)
+		.select((
+			Building::as_select(),
+			count(player_building::id).assume_not_null(),
+			building::max_count,
+			max(player_building::level).nullable(),
+		))
+		.first(conn)?;
+
+	Ok((bld, (bld_count, max_count, max_lvl)))
+}
