@@ -11,7 +11,7 @@ async fn test_get_for_level() {
 
 	// bld_id 2 = Warehouse
 	let levels = get_by_building_id(&mut conn, &2).expect("Failed to get building levels");
-	assert!(levels.len() > 0);
+	assert!(!levels.is_empty());
 	let level = &levels[2]; // should be level 2 of Warehouse
 	assert_eq!(level.building_level, 2);
 

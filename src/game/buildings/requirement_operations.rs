@@ -16,15 +16,15 @@ use crate::domain::building::{Building, BuildingKey};
 #[derive(Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct BuildingAvailability {
 	/// The building definition
-	building: Building,
+	pub building: Building,
 	/// Whether the building can currently be constructed
-	buildable: bool,
+	pub buildable: bool,
 	/// Number of instances of this building currently owned
-	current_count: i64,
+	pub current_count: i64,
 	/// Maximum number of instances allowed
-	max_count: i32,
+	pub max_count: i32,
 	/// List of restrictions preventing construction
-	locks: Vec<BuildingLock>,
+	pub locks: Vec<BuildingLock>,
 }
 
 /// Represents different types of restrictions that can prevent a building from being constructed
@@ -56,6 +56,44 @@ type MaxBuildingCount = i32;
 type MaxBuildingLevel = i32;
 /// Tuple containing current count, maximum count and maximum level for a building
 pub type AvailabilityData = (BuildingCount, MaxBuildingCount, Option<MaxBuildingLevel>);
+
+/// Generates availability status for a single building based on its current count and requirements
+///
+/// # Arguments
+/// * `building` - The building definition
+/// * `data` - Tuple containing current count, maximum count, and optional maximum level
+/// * `requirements` - List of building requirements for this building
+///
+/// # Returns
+/// [BuildingAvailability] containing the availability status for the building
+pub fn gen_avail_data(
+	building: Building,
+	data: AvailabilityData,
+	requirements: Vec<BuildingRequirement>,
+) -> BuildingAvailability {
+	let (owned_count, max_count, max_level) = data;
+	let mut locks: Vec<BuildingLock> = vec![];
+
+	// Check if max count is reached
+	if owned_count >= (max_count as i64) {
+		locks.push(BuildingLock::MaxCountReached);
+	}
+
+	// Check requirement locks
+	locks.extend(
+		requirements
+			.iter()
+			.filter_map(|req| parse_req_lock(&building.id, req, max_level.unwrap_or_default())),
+	);
+
+	BuildingAvailability {
+		building,
+		buildable: locks.is_empty(),
+		current_count: owned_count,
+		max_count,
+		locks,
+	}
+}
 
 /// Generates an availability map for buildings based on their current counts and requirements
 ///

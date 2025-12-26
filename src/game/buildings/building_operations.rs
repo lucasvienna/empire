@@ -15,12 +15,13 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::{DbConn, building_levels, player_buildings, resources};
+use crate::db::{DbConn, building_levels, building_requirements, player_buildings, resources};
 use crate::domain::building::BuildingKey;
 use crate::domain::building::level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
 use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
+use crate::game::buildings::requirement_operations;
 
 /// Constructs a new building for a player.
 ///
@@ -60,6 +61,22 @@ pub fn construct_building(
 	let bld_lvl = building_levels::get_next_upgrade(conn, bld_id, &0)?;
 	trace!("Building level requirements: {:?}", bld_lvl);
 
+	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
+	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
+	let bld_avail = requirement_operations::gen_avail_data(bld, avail_data, reqs);
+	trace!("Building availability: {:?}", bld_avail);
+
+	if !bld_avail.buildable {
+		trace!(
+			"Cannot construct building, availability locks present: {:?}",
+			bld_avail.locks
+		);
+		return Err(Error::from((
+			ErrorKind::ConstructBuildingError,
+			"Building has locks, cannot construct",
+		)));
+	}
+
 	// check for resources
 	if !has_enough_resources(conn, player_id, &bld_lvl)? {
 		trace!(
@@ -69,18 +86,6 @@ pub fn construct_building(
 		return Err(Error::from((
 			ErrorKind::ConstructBuildingError,
 			"Not enough resources",
-		)));
-	}
-
-	// verify if the maximum number of buildings was reached
-	if !player_buildings::can_construct(conn, player_id, bld_id)? {
-		trace!(
-			"Player {} has reached max buildings for building #{}",
-			player_id, bld_id
-		);
-		return Err(Error::from((
-			ErrorKind::ConstructBuildingError,
-			"Max buildings reached",
 		)));
 	}
 
