@@ -285,7 +285,9 @@ async fn get_available_buildings() {
 	// Verify locks show MaxCountReached for Keep
 	let keep_locks = keep.get("locks").and_then(|l| l.as_array()).unwrap();
 	assert!(
-		keep_locks.iter().any(|lock| lock == "MaxCountReached"),
+		keep_locks
+			.iter()
+			.any(|lock| lock.get("kind").and_then(|k| k.as_str()) == Some("MaxCountReached")),
 		"Keep should have MaxCountReached lock"
 	);
 }
