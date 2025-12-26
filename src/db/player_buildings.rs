@@ -416,11 +416,13 @@ pub fn get_player_bld_counts_levels(
 /// * `bld_key` - The unique identifier of the building type to query
 ///
 /// # Returns
-/// A [`Result`] containing an [`AvailabilityData`] tuple where:
-/// * First element (`i64`): Count of how many instances of this building the player has
-/// * Second element (`i32`): Maximum count allowed for this building type
-/// * Third element (`Option<i32>`): Maximum level achieved across all instances,
-///   or `None` if the player has no instances of this building
+/// A [`Result`] containing a tuple `(Building, AvailabilityData)` where:
+/// * First element (`Building`): The building definition associated with `bld_key`
+/// * Second element ([`AvailabilityData`]): A tuple with:
+///   * First element (`i64`): Count of how many instances of this building the player has
+///   * Second element (`i32`): Maximum count allowed for this building type
+///   * Third element (`Option<i32>`): Maximum level achieved across all instances,
+///     or `None` if the player has no instances of this building
 pub fn get_player_bld_count_level(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,

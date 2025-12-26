@@ -428,17 +428,17 @@ pub fn get_resource_snapshot(
 			.unwrap_or_default(),
 		wood_rate: prod_rates
 			.get(&ResourceType::Wood)
-			.expect("Food production rate was not present")
+			.expect("Wood production rate was not present")
 			.to_i64()
 			.unwrap_or_default(),
 		stone_rate: prod_rates
 			.get(&ResourceType::Stone)
-			.expect("Food production rate was not present")
+			.expect("Stone production rate was not present")
 			.to_i64()
 			.unwrap_or_default(),
 		gold_rate: prod_rates
 			.get(&ResourceType::Gold)
-			.expect("Food production rate was not present")
+			.expect("Gold production rate was not present")
 			.to_i64()
 			.unwrap_or_default(),
 		produced_at: pr_data.8,
