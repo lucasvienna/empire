@@ -185,9 +185,8 @@ pub fn get_construction_reqs(
 				.eq(faction_key)
 				.or(bld::faction.eq(FactionCode::Neutral)),
 		)
-		.inner_join(bld_level::table)
+		.inner_join(bld_level::table.inner_join(building_requirement))
 		.filter(bld_level::level.eq(1))
-		.inner_join(building_requirement)
 		.select((bld::id, BuildingRequirement::as_select()))
 		.load::<(BuildingKey, BuildingRequirement)>(conn)?;
 

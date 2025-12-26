@@ -24,16 +24,16 @@
 
 - [x] **Building Prerequisites System**
   - [x] Create `building_requirement` table (required_building_id, required_level, required_tech_id)
-  - [ ] Implement prerequisite validation in `construct_building()`
+  - [x] Implement prerequisite validation in `construct_building()`
   - [ ] Implement prerequisite validation for tech tree nodes
   - [x] Add prerequisite data to seed files
 - [x] **Available Buildings API** (`get_available_buildings` currently stubbed)
   - [x] Show all buildings with availability status (buildable vs locked)
   - [x] Include reason for locked state (max count, missing prereqs, faction mismatch)
   - [x] Filter by player's faction
-- [ ] **Building → Production Rate Verification**
-  - [ ] Confirm building levels affect resource generation rates
-  - [ ] Document rate calculation in code comments
+- [x] **Building → Production Rate Verification**
+  - [x] Confirm building levels affect resource generation rates
+  - [x] Document rate calculation in code comments
 
 **Design Decisions**:
 
