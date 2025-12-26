@@ -73,7 +73,8 @@ pub fn construct_building(
 		);
 		return Err(Error::from((
 			ErrorKind::ConstructBuildingError,
-			"Building has locks, cannot construct",
+			"Building has locks",
+			format!("{:?}", bld_avail.locks),
 		)));
 	}
 
@@ -134,6 +135,7 @@ pub fn construct_building(
 			Err(Error::from((
 				ErrorKind::ConstructBuildingError,
 				"Failed to construct building",
+				format!("{:?}", e),
 			)))
 		}
 	}
@@ -193,6 +195,7 @@ pub fn upgrade_building(
 		return Err(Error::from((
 			ErrorKind::UpgradeBuildingError,
 			"Building has locks",
+			format!("{:?}", bld_avail.locks),
 		)));
 	}
 
