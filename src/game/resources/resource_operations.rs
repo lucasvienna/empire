@@ -401,15 +401,16 @@ pub fn get_resource_snapshot(
 	let (
 		_, // player id
 		_, // population rate
-		food_rate,
-		wood_rate,
-		stone_rate,
-		gold_rate,
+		_,
+		_,
+		_,
+		_,
 		food_acc_cap_val,
 		wood_acc_cap_val,
 		stone_acc_cap_val,
 		gold_acc_cap_val,
 	) = res_gen_view(conn, player_key)?;
+	let prod_rates = calc_prod_rates(conn, player_key)?;
 
 	Ok(PlayerResourceSnapshot {
 		food: pr_data.0,
@@ -420,10 +421,26 @@ pub fn get_resource_snapshot(
 		wood_cap: pr_data.5,
 		stone_cap: pr_data.6,
 		gold_cap: pr_data.7,
-		food_rate: food_rate.to_i64().unwrap_or_default(),
-		wood_rate: wood_rate.to_i64().unwrap_or_default(),
-		stone_rate: stone_rate.to_i64().unwrap_or_default(),
-		gold_rate: gold_rate.to_i64().unwrap_or_default(),
+		food_rate: prod_rates
+			.get(&ResourceType::Food)
+			.expect("Food production rate was not present")
+			.to_i64()
+			.unwrap_or_default(),
+		wood_rate: prod_rates
+			.get(&ResourceType::Wood)
+			.expect("Food production rate was not present")
+			.to_i64()
+			.unwrap_or_default(),
+		stone_rate: prod_rates
+			.get(&ResourceType::Stone)
+			.expect("Food production rate was not present")
+			.to_i64()
+			.unwrap_or_default(),
+		gold_rate: prod_rates
+			.get(&ResourceType::Gold)
+			.expect("Food production rate was not present")
+			.to_i64()
+			.unwrap_or_default(),
 		produced_at: pr_data.8,
 		collected_at: pr_data.9,
 		food_acc: pa_data.0,
