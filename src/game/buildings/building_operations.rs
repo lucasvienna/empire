@@ -174,9 +174,27 @@ pub fn upgrade_building(
 		"Player building details: {:?}, max level: {:?}",
 		player_bld, max_level
 	);
-	let bld_lvl =
-		building_levels::get_next_upgrade(conn, &player_bld.building_id, &player_bld.level)?;
+	let bld_id = &player_bld.building_id;
+	let player_id = &player_bld.player_id;
+
+	let bld_lvl = building_levels::get_next_upgrade(conn, bld_id, &player_bld.level)?;
 	trace!("Next building level details: {:?}", bld_lvl);
+
+	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
+	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
+	let bld_avail = requirement_operations::gen_avail_data(bld, avail_data, reqs);
+	trace!("Building availability: {:?}", bld_avail);
+
+	if !bld_avail.buildable {
+		debug!(
+			"Building {} cannot be upgraded, locks present: {:?}",
+			player_bld.building_id, bld_avail.locks
+		);
+		return Err(Error::from((
+			ErrorKind::UpgradeBuildingError,
+			"Building has locks",
+		)));
+	}
 
 	// check for resources
 	if !has_enough_resources(conn, &player_bld.player_id, &bld_lvl)? {
@@ -187,18 +205,6 @@ pub fn upgrade_building(
 		return Err(Error::from((
 			ErrorKind::UpgradeBuildingError,
 			"Not enough resources",
-		)));
-	}
-
-	// check for max level constraints
-	if player_bld.level >= max_level.unwrap_or(0) {
-		debug!(
-			"Building {} is already at max level {} for player {}",
-			player_bld.building_id, player_bld.level, player_bld.player_id
-		);
-		return Err(Error::from((
-			ErrorKind::UpgradeBuildingError,
-			"Building is at max level",
 		)));
 	}
 

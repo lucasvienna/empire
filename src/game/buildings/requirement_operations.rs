@@ -181,11 +181,10 @@ mod tests {
 
 	use chrono::Utc;
 
-	use crate::domain::building::requirement::BuildingRequirement;
+	use super::{BuildingLock, gen_avail_data, gen_avail_list};
 	use crate::domain::building::Building;
+	use crate::domain::building::requirement::BuildingRequirement;
 	use crate::domain::factions::FactionCode;
-
-	use super::{gen_avail_data, gen_avail_list, BuildingLock};
 
 	fn make_test_building(id: i32, max_count: i32) -> Building {
 		Building {
@@ -236,11 +235,17 @@ mod tests {
 
 		assert_eq!(availability_list.len(), 2);
 
-		let bld1_avail = availability_list.iter().find(|a| a.building.id == 1).unwrap();
+		let bld1_avail = availability_list
+			.iter()
+			.find(|a| a.building.id == 1)
+			.unwrap();
 		assert!(bld1_avail.buildable);
 		assert!(bld1_avail.locks.is_empty());
 
-		let bld2_avail = availability_list.iter().find(|a| a.building.id == 2).unwrap();
+		let bld2_avail = availability_list
+			.iter()
+			.find(|a| a.building.id == 2)
+			.unwrap();
 		assert!(!bld2_avail.buildable);
 		assert_eq!(bld2_avail.locks.len(), 1);
 		assert_eq!(bld2_avail.locks[0], BuildingLock::MaxCountReached);
