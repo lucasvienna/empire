@@ -18,6 +18,14 @@
     <file url="file://$PROJECT_DIR$/migrations/2024-05-01-074658_resource_generation/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/down.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/migrations/2025-01-01-094749_modifiers/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-01-214321_units/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-01-214321_units/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-02-214455_unit_costs/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-02-214455_unit_costs/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-03-214503_player_units/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-03-214503_player_units/up.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-04-214545_training_queue/down.sql" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/migrations/2025-02-04-214545_training_queue/up.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/seeds/001_building_levels.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/seeds/002_production_building_levels.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/seeds/003_research_building_levels.sql" dialect="PostgreSQL" />

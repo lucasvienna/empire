@@ -36,6 +36,14 @@ pub mod sql_types {
 	#[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
 	#[diesel(postgres_type(name = "stacking_behaviour"))]
 	pub struct StackingBehaviour;
+
+	#[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+	#[diesel(postgres_type(name = "training_status"))]
+	pub struct TrainingStatus;
+
+	#[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+	#[diesel(postgres_type(name = "unit_type"))]
+	pub struct UnitType;
 }
 
 diesel::table! {
@@ -268,6 +276,67 @@ diesel::table! {
 	}
 }
 
+diesel::table! {
+	player_unit (id) {
+		id -> Uuid,
+		player_id -> Uuid,
+		unit_id -> Uuid,
+		quantity -> Int4,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
+diesel::table! {
+	use diesel::sql_types::*;
+	use super::sql_types::TrainingStatus;
+
+	training_queue (id) {
+		id -> Uuid,
+		player_id -> Uuid,
+		unit_id -> Uuid,
+		quantity -> Int4,
+		started_at -> Timestamptz,
+		completed_at -> Nullable<Timestamptz>,
+		status -> TrainingStatus,
+		job_id -> Nullable<Uuid>,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
+diesel::table! {
+	use diesel::sql_types::*;
+	use super::sql_types::UnitType;
+
+	unit (id) {
+		id -> Uuid,
+		name -> Text,
+		#[sql_name = "type"]
+		type_ -> UnitType,
+		base_atk -> Int4,
+		base_def -> Int4,
+		base_training_seconds -> Int4,
+		description -> Nullable<Text>,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
+diesel::table! {
+	use diesel::sql_types::*;
+	use super::sql_types::ResourceType;
+
+	unit_cost (id) {
+		id -> Uuid,
+		unit_id -> Uuid,
+		resource -> ResourceType,
+		amount -> Int4,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
 diesel::joinable!(active_modifiers -> modifiers (modifier_id));
 diesel::joinable!(active_modifiers -> player (player_id));
 diesel::joinable!(building -> faction (faction));
@@ -283,6 +352,12 @@ diesel::joinable!(player_building -> building (building_id));
 diesel::joinable!(player_building -> player (player_id));
 diesel::joinable!(player_resource -> player (player_id));
 diesel::joinable!(player_session -> player (player_id));
+diesel::joinable!(player_unit -> player (player_id));
+diesel::joinable!(player_unit -> unit (unit_id));
+diesel::joinable!(training_queue -> job (job_id));
+diesel::joinable!(training_queue -> player (player_id));
+diesel::joinable!(training_queue -> unit (unit_id));
+diesel::joinable!(unit_cost -> unit (unit_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
 	active_modifiers,
@@ -299,4 +374,8 @@ diesel::allow_tables_to_appear_in_same_query!(
 	player_building,
 	player_resource,
 	player_session,
+	player_unit,
+	training_queue,
+	unit,
+	unit_cost,
 );
