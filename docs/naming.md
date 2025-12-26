@@ -10,7 +10,7 @@
 ## Common Abbreviations
 
 | Full Term     | Abbreviation | Usage                    |
-|---------------|--------------|--------------------------|
+| ------------- | ------------ | ------------------------ |
 | calculate     | calc         | `calc_multiplier()`      |
 | computation   | comp         | `comp_effective_stats()` |
 | modifier      | mdf          | `mdf_service`            |
@@ -222,17 +222,17 @@ Use full words in error messages for clarity:
 ## Migration Priority
 
 1. **High Priority** (confusing current names):
-    - `FullModifier` → `AppliedModifier`
-    - `ResourceModifiers` → `ResourceMultipliers`
-    - Function names for clarity
+   - `FullModifier` → `AppliedModifier`
+   - `ResourceModifiers` → `ResourceMultipliers`
+   - Function names for clarity
 
 2. **Medium Priority** (working but inconsistent):
-    - Srv method names
-    - Cache key formats
+   - Srv method names
+   - Cache key formats
 
 3. **Low Priority** (nice to have):
-    - Internal variable names
-    - Test function names
+   - Internal variable names
+   - Test function names
 
 ## Examples
 

@@ -5,22 +5,22 @@
 ### New Domain Entities
 
 - **Modifier**: Core entity representing any modifier to game mechanics
-    - Properties: source, target resource/attribute, effect type, magnitude, duration
-    - Types: percentage modifiers, flat bonuses/penalties, capacity increases/decreases, etc.
+  - Properties: source, target resource/attribute, effect type, magnitude, duration
+  - Types: percentage modifiers, flat bonuses/penalties, capacity increases/decreases, etc.
 
 - **ModifierSource**: Enumeration of possible modifier origins
-    - Faction passives, consumable items, skill tree nodes, research, events, guild effects
+  - Faction passives, consumable items, skill tree nodes, research, events, guild effects
 
 - **ModifierTarget**: What the modifier affects
-    - Resource production, capacity, training speed, combat stats, etc.
+  - Resource production, capacity, training speed, combat stats, etc.
 
 ## 2. Repository Layer Changes
 
 ### New Repositories
 
 - **ModifierRepository**: Stores and retrieves active modifiers for users
-    - Queries for modifiers by user, expiration status, type, etc.
-    - Handles CRUD operations for modifier persistence
+  - Queries for modifiers by user, expiration status, type, etc.
+  - Handles CRUD operations for modifier persistence
 
 ### Enhanced Existing Repositories
 
@@ -34,49 +34,49 @@
 ### New Services
 
 - **ModifierService**: Core service for modifier management
-    - Apply/remove modifiers to users
-    - Calculate aggregate modifier effects for a user
-    - Track modifier expirations
-    - Handle modifier stacking rules
+  - Apply/remove modifiers to users
+  - Calculate aggregate modifier effects for a user
+  - Track modifier expirations
+  - Handle modifier stacking rules
 
 - **ModifierSchedulingService**: Manages temporal aspects of modifiers
-    - Schedules expiration events
-    - Handles recurring effects
-    - Coordinates with resource accumulation timing
+  - Schedules expiration events
+  - Handles recurring effects
+  - Coordinates with resource accumulation timing
 
 ### Modifications to Existing Services
 
 - **ResourceService**: Decouple base resource calculations from modifier applications
-    - Accept modifier multipliers as inputs
-    - Delegate modifier calculations to ModifierService
+  - Accept modifier multipliers as inputs
+  - Delegate modifier calculations to ModifierService
 
 - **SkillService**: Convert skill effects into standardized modifiers
-    - When a skill is learned, create corresponding modifier entities
+  - When a skill is learned, create corresponding modifier entities
 
 - **ItemService**: Implement consumable item effects as modifier applications
-    - When an item is used, invoke ModifierService to create temporary modifiers
+  - When an item is used, invoke ModifierService to create temporary modifiers
 
 ## 4. Infrastructure Layer Changes
 
 ### Persistence Changes
 
 - New database tables:
-    - `modifiers`: Core modifier definitions
-    - `active_modifiers`: Modifiers currently active for users
-    - `modifier_history`: Record of past modifiers for analytics
+  - `modifiers`: Core modifier definitions
+  - `active_modifiers`: Modifiers currently active for users
+  - `modifier_history`: Record of past modifiers for analytics
 
 ### Cache Strategy
 
 - Implement a specialized caching mechanism for active modifiers
-    - Cache user's aggregated modifier multipliers per resource type
-    - Set cache invalidation based on next modifier expiration
+  - Cache user's aggregated modifier multipliers per resource type
+  - Set cache invalidation based on next modifier expiration
 
 ### Background Processing
 
 - Job scheduler for modifier-related operations:
-    - Expiration handling
-    - Resource collection at optimal times
-    - Modifier renewal for recurring effects
+  - Expiration handling
+  - Resource collection at optimal times
+  - Modifier renewal for recurring effects
 
 ## 5. API/Interface Layer Updates
 
@@ -98,18 +98,18 @@
 ### Event System
 
 - Create a modifier event system to propagate changes:
-    - `ModifierApplied`: When a new modifier takes effect
-    - `ModifierExpired`: When a temporary modifier ends
-    - `ModifierRemoved`: When a modifier is explicitly removed
-    - `ModifierChanged`: When a modifier's parameters change
+  - `ModifierApplied`: When a new modifier takes effect
+  - `ModifierExpired`: When a temporary modifier ends
+  - `ModifierRemoved`: When a modifier is explicitly removed
+  - `ModifierChanged`: When a modifier's parameters change
 
 ### Integration Points
 
 - Connect modifier system with:
-    - Resource generation calculations
-    - Combat stat calculations
-    - Training speed adjustments
-    - Building construction times
+  - Resource generation calculations
+  - Combat stat calculations
+  - Training speed adjustments
+  - Building construction times
 
 ## 7. Testing Architecture
 
@@ -151,42 +151,42 @@
 To illustrate how these architectural components would interact, consider this flow for resource collection:
 
 1. **Resource Collection Request**:
-    - User triggers resource collection
+   - User triggers resource collection
 
 2. **ResourceService Processing**:
-    - Retrieves base resource rates from database
-    - Requests current modifier multipliers from ModifierService
-    - Applies multipliers to calculate actual collection amounts
-    - Updates user resources
+   - Retrieves base resource rates from database
+   - Requests current modifier multipliers from ModifierService
+   - Applies multipliers to calculate actual collection amounts
+   - Updates user resources
 
 3. **ModifierService Calculations**:
-    - Retrieves all active modifiers for user
-    - Filters modifiers by resource type
-    - Aggregates modifier effects according to stacking rules
-    - Returns total multipliers for each resource type
-    - Schedules next calculation if modifiers will expire soon
+   - Retrieves all active modifiers for user
+   - Filters modifiers by resource type
+   - Aggregates modifier effects according to stacking rules
+   - Returns total multipliers for each resource type
+   - Schedules next calculation if modifiers will expire soon
 
 ## Implementation Phases
 
 1. **Foundation Phase**:
-    - Define core domain entities
-    - Implement basic modifier persistence
-    - Create ModifierService with simple aggregation
+   - Define core domain entities
+   - Implement basic modifier persistence
+   - Create ModifierService with simple aggregation
 
 2. **Integration Phase**:
-    - Connect faction passive modifiers to the system
-    - Integrate with resource calculations
-    - Implement modifier duration tracking
+   - Connect faction passive modifiers to the system
+   - Integrate with resource calculations
+   - Implement modifier duration tracking
 
 3. **Expansion Phase**:
-    - Add consumable item modifier support
-    - Implement skill tree integration
-    - Develop caching strategy
+   - Add consumable item modifier support
+   - Implement skill tree integration
+   - Develop caching strategy
 
 4. **Optimization Phase**:
-    - Add analytics and monitoring
-    - Optimize performance-critical paths
-    - Implement advanced stacking rules
+   - Add analytics and monitoring
+   - Optimize performance-critical paths
+   - Implement advanced stacking rules
 
 ## Faction Modifier Implementation
 
@@ -195,19 +195,19 @@ To illustrate how these architectural components would interact, consider this f
 The system automatically manages faction-specific modifiers through database triggers, ensuring a consistent application of faction bonuses:
 
 1. **Trigger Events**
-    - On user creation (`AFTER INSERT`)
-    - On faction change (`AFTER UPDATE OF faction`)
+   - On user creation (`AFTER INSERT`)
+   - On faction change (`AFTER UPDATE OF faction`)
 
 2. **Trigger Function Responsibilities**
-    - Removes existing faction modifiers when a user changes faction
-    - Applies new faction modifiers based on the user's faction
-    - Records all modifier changes in the history table
-    - Validates faction modifier existence (fails if no modifiers are found for a faction)
+   - Removes existing faction modifiers when a user changes faction
+   - Applies new faction modifiers based on the user's faction
+   - Records all modifier changes in the history table
+   - Validates faction modifier existence (fails if no modifiers are found for a faction)
 
 3. **Modifier History Tracking**
-    - Records application of initial faction modifiers
-    - Tracks removal and application during faction changes
-    - Maintains audit trail with reasons for changes
+   - Records application of initial faction modifiers
+   - Tracks removal and application during faction changes
+   - Maintains audit trail with reasons for changes
 
 ### Advantages of Trigger-Based Approach
 
@@ -227,20 +227,20 @@ The system automatically manages faction-specific modifiers through database tri
 ### Stacking Behaviour
 
 1. **Additive Stacking**
-    - Modifiers with this behaviour sum their effects
-    - Primarily used for percentage-based modifiers from similar sources
-    - Example: Multiple "training_speed" bonuses are added together before being applied
+   - Modifiers with this behaviour sum their effects
+   - Primarily used for percentage-based modifiers from similar sources
+   - Example: Multiple "training_speed" bonuses are added together before being applied
 
 2. **Multiplicative Stacking**
-    - Modifiers with this behaviour multiply with each other
-    - Used to combine effects from different source types
-    - Example: Faction bonus multiplied by temporary event bonus
+   - Modifiers with this behaviour multiply with each other
+   - Used to combine effects from different source types
+   - Example: Faction bonus multiplied by temporary event bonus
 
 3. **Highest-Only Stacking**
-    - Only the highest magnitude modifier in the stacking group takes effect
-    - Used for mutually exclusive effects
-    - Are then applied multiplicatively
-    - Example: Multiple "combat_effectiveness" buffs from different equipment pieces
+   - Only the highest magnitude modifier in the stacking group takes effect
+   - Used for mutually exclusive effects
+   - Are then applied multiplicatively
+   - Example: Multiple "combat_effectiveness" buffs from different equipment pieces
 
 ### Stacking Group Guidelines
 
@@ -266,48 +266,48 @@ The system automatically manages faction-specific modifiers through database tri
 ### Implementation Guidelines
 
 1. **Group Validation**
-    - Enforce group naming conventions
-    - Validate group compatibility with modifier types
-    - Check stack limits during modifier application
+   - Enforce group naming conventions
+   - Validate group compatibility with modifier types
+   - Check stack limits during modifier application
 
 2. **Performance Considerations**
-    - Cache calculated values until next modifier change
-    - Group modifiers by type for efficient calculation
-    - Pre-validate stacking rules on modifier creation
+   - Cache calculated values until next modifier change
+   - Group modifiers by type for efficient calculation
+   - Pre-validate stacking rules on modifier creation
 
 3. **Error Handling**
-    - Reject invalid stacking attempts
-    - Log stacking rule violations
-    - Provide clear error messages for invalid combinations
+   - Reject invalid stacking attempts
+   - Log stacking rule violations
+   - Provide clear error messages for invalid combinations
 
 4. **Monitoring**
-    - Track highest achieved bonuses by type
-    - Monitor for unexpected stacking behaviour
-    - Alert on cap violations
+   - Track highest achieved bonuses by type
+   - Monitor for unexpected stacking behaviour
+   - Alert on cap violations
 
 ## Additional Considerations for Negative Modifiers
 
 Since we're implementing a generic modifier system that can include both positive and negative effects:
 
 - **Stacking Rules**: Define how positive and negative modifiers interact
-    - Additive vs. multiplicative stacking
-    - Minimum/maximum caps on total modifiers
-    - Order of operations for different modifier types
+  - Additive vs. multiplicative stacking
+  - Minimum/maximum caps on total modifiers
+  - Order of operations for different modifier types
 
 - **Debuff Resistance**: Consider implementing mechanisms for resisting negative modifiers
-    - Faction traits that reduce negative effects
-    - Items that provide immunity to certain debuff types
+  - Faction traits that reduce negative effects
+  - Items that provide immunity to certain debuff types
 
 - **UI Clarity**: Ensure the interface clearly distinguishes between positive and negative effects
-    - Color coding (green/red)
-    - Separate listings for bonuses and penalties
-    - Net effect calculations
+  - Color coding (green/red)
+  - Separate listings for bonuses and penalties
+  - Net effect calculations
 
 - **Balance Mechanics**: Create systems to ensure fair play
-    - Limits on stacking multiple negative modifiers
-    - Diminishing returns on both positive and negative effects
-    - Recovery mechanisms from severe penalties
+  - Limits on stacking multiple negative modifiers
+  - Diminishing returns on both positive and negative effects
+  - Recovery mechanisms from severe penalties
 
-This architectural approach keeps the modifier logic in the domain layer while providing clear integration points with 
+This architectural approach keeps the modifier logic in the domain layer while providing clear integration points with
 other systems. It maintains separation of concerns, with the modifier system responsible for calculating the effects
 and other services applying those effects to their respective domains.

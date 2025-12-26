@@ -334,15 +334,10 @@ manage, and expand their empires.
         "cost": {
           "gold": 500
         },
-        "requirements": [
-          "infantry_training"
-        ]
+        "requirements": ["infantry_training"]
       }
     ],
-    "completed": [
-      "basic_combat",
-      "infantry_training"
-    ]
+    "completed": ["basic_combat", "infantry_training"]
   }
 }
 ```
@@ -589,10 +584,7 @@ security through role-based access control.
       "level": 15,
       "last_login": "2025-07-20T16:30:00Z",
       "created_at": "2025-07-01T10:00:00Z",
-      "flags": [
-        "premium",
-        "verified"
-      ]
+      "flags": ["premium", "verified"]
     }
   ],
   "total": 1250,
@@ -688,8 +680,8 @@ security through role-based access control.
     "monthly": 8900
   },
   "revenue": {
-    "daily": 2500.00,
-    "monthly": 75000.00
+    "daily": 2500.0,
+    "monthly": 75000.0
   },
   "game_metrics": {
     "avg_session_duration": "45m",
@@ -759,9 +751,7 @@ monitoring systems and manual inspection.
       "status": "degraded",
       "response_time": 150,
       "last_check": "2025-07-20T16:30:00Z",
-      "issues": [
-        "High queue depth"
-      ]
+      "issues": ["High queue depth"]
     }
   ]
 }
@@ -780,11 +770,7 @@ monitoring systems and manual inspection.
     "cpu_usage": 45.2,
     "memory_usage": 68.5,
     "disk_usage": 32.1,
-    "load_average": [
-      1.2,
-      1.5,
-      1.8
-    ]
+    "load_average": [1.2, 1.5, 1.8]
   },
   "application": {
     "active_connections": 1250,
@@ -840,7 +826,7 @@ for live content management essential for modern game operations.
     "new_sessions_last_hour": 180
   },
   "revenue": {
-    "last_hour": 125.50,
+    "last_hour": 125.5,
     "today": 2850.75,
     "trend": "+12%"
   },
@@ -869,8 +855,8 @@ for live content management essential for modern game operations.
       "trend": "+5%"
     },
     "revenue": {
-      "arpu": 12.50,
-      "arppu": 45.80,
+      "arpu": 12.5,
+      "arppu": 45.8,
       "conversion_rate": 0.15,
       "trend": "+8%"
     },
@@ -899,7 +885,7 @@ for live content management essential for modern game operations.
       "count": 150,
       "percentage": 1.8,
       "characteristics": {
-        "avg_revenue": 125.50,
+        "avg_revenue": 125.5,
         "avg_level": 25,
         "avg_session_time": "65m"
       }
@@ -909,7 +895,7 @@ for live content management essential for modern game operations.
       "count": 6800,
       "percentage": 80.0,
       "characteristics": {
-        "avg_revenue": 2.50,
+        "avg_revenue": 2.5,
         "avg_level": 8,
         "avg_session_time": "25m"
       }
@@ -1118,29 +1104,29 @@ enable live communication and instant notifications for critical game events.
 
 - **Purpose**: Real-time game updates
 - **Events**:
-    - `resource_update`: Resource changes and production updates
-    - `building_complete`: Building upgrades finished
-    - `research_complete`: Research finished
-    - `attack_incoming`: Combat alerts and warnings
-    - `trade_completed`: Market transactions
-    - `modifier_applied`: New modifiers activated
-    - `modifier_expired`: Temporary modifiers ended
-    - `alliance_request`: Diplomatic proposals received
-    - `guild_message`: Guild announcements
+  - `resource_update`: Resource changes and production updates
+  - `building_complete`: Building upgrades finished
+  - `research_complete`: Research finished
+  - `attack_incoming`: Combat alerts and warnings
+  - `trade_completed`: Market transactions
+  - `modifier_applied`: New modifiers activated
+  - `modifier_expired`: Temporary modifiers ended
+  - `alliance_request`: Diplomatic proposals received
+  - `guild_message`: Guild announcements
 
 #### WS /ws/chat
 
 - **Purpose**: Real-time chat system
 - **Events**:
-    - `message_received`: New chat message
-    - `user_joined`: Player joined chat channel
-    - `user_left`: Player left chat channel
-    - `typing_indicator`: Player is typing
+  - `message_received`: New chat message
+  - `user_joined`: Player joined chat channel
+  - `user_left`: Player left chat channel
+  - `typing_indicator`: Player is typing
 - **Channels**:
-    - `global`: Server-wide chat
-    - `guild`: Guild-specific chat
-    - `alliance`: Alliance member chat
-    - `private`: Direct messages between players
+  - `global`: Server-wide chat
+  - `guild`: Guild-specific chat
+  - `alliance`: Alliance member chat
+  - `private`: Direct messages between players
 
 ### Chat REST Endpoints
 

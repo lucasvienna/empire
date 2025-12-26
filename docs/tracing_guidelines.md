@@ -33,7 +33,7 @@ The current tracing implementation in the Empire project has several strengths a
 Use the following log levels consistently throughout the codebase:
 
 | Level   | Purpose                                          | Examples                                                      |
-|---------|--------------------------------------------------|---------------------------------------------------------------|
+| ------- | ------------------------------------------------ | ------------------------------------------------------------- |
 | `error` | Critical issues that require immediate attention | Database connection failures, API failures, security breaches |
 | `warn`  | Non-critical issues that might need attention    | Failed operations that can be retried, deprecated API usage   |
 | `info`  | Important operational events                     | Server startup, user login/logout, significant state changes  |
@@ -43,77 +43,81 @@ Use the following log levels consistently throughout the codebase:
 ## Best Practices
 
 1. **Use the `#[instrument]` macro for all public methods**
-    - Skip large parameters with `#[instrument(skip(param1, param2))]`
-    - Add fields for context with `#[instrument(fields(user_id = ?user.id))]`
+   - Skip large parameters with `#[instrument(skip(param1, param2))]`
+   - Add fields for context with `#[instrument(fields(user_id = ?user.id))]`
 
 2. **Log at appropriate levels**
-    - Use `info` for events that operators need to see in normal operation
-    - Use `debug` for information useful during development and troubleshooting
-    - Use `trace` for very detailed information needed only for deep debugging
+   - Use `info` for events that operators need to see in normal operation
+   - Use `debug` for information useful during development and troubleshooting
+   - Use `trace` for very detailed information needed only for deep debugging
 
 3. **Include context in log messages**
-    - Always include relevant IDs (user ID, session ID, job ID, etc.)
-    - Format complex objects with debug formatting (`{:?}`) only at `trace` level
+   - Always include relevant IDs (user ID, session ID, job ID, etc.)
+   - Format complex objects with debug formatting (`{:?}`) only at `trace` level
 
 4. **Log both entry and exit of critical operations**
-    - Log at `debug` level when entering a critical operation
-    - Log at `info` level when completing a critical operation
-    - Log at `warn` or `error` level when an operation fails
+   - Log at `debug` level when entering a critical operation
+   - Log at `info` level when completing a critical operation
+   - Log at `warn` or `error` level when an operation fails
 
 5. **Use structured logging**
-    - Use the `span!` and `event!` macros for complex logging scenarios
-    - Add fields to spans for additional context
+   - Use the `span!` and `event!` macros for complex logging scenarios
+   - Add fields to spans for additional context
 
 6. **Log all errors**
-    - Log at `error` level for unexpected errors
-    - Log at `warn` level for expected errors (e.g., validation failures)
-    - Include error details and context
+   - Log at `error` level for unexpected errors
+   - Log at `warn` level for expected errors (e.g., validation failures)
+   - Include error details and context
 
 7. **Skip instrumenting `new` and `drop` methods**
-    - These methods are called frequently and can cause performance issues
+   - These methods are called frequently and can cause performance issues
 
 ## Anti-Patterns
 
 1. **Logging sensitive information**
-    - Never log passwords, tokens, or other sensitive data
-    - Use `#[instrument(skip(password))]` to exclude sensitive parameters
+   - Never log passwords, tokens, or other sensitive data
+   - Use `#[instrument(skip(password))]` to exclude sensitive parameters
 
 2. **Excessive logging**
-    - Avoid logging entire objects at `debug` level
-    - Don't log in tight loops without level checks
+   - Avoid logging entire objects at `debug` level
+   - Don't log in tight loops without level checks
 
 3. **Inconsistent log levels**
-    - Don't use `info` for detailed debugging information
-    - Don't use `debug` for critical operational events
+   - Don't use `info` for detailed debugging information
+   - Don't use `debug` for critical operational events
 
 4. **Missing context**
-    - Avoid generic log messages without context (e.g., "Operation failed")
-    - Always include relevant IDs and error details
+   - Avoid generic log messages without context (e.g., "Operation failed")
+   - Always include relevant IDs and error details
 
 5. **Ignoring errors in logging**
-    - Don't swallow errors without logging them
-    - Don't log errors without context
+   - Don't swallow errors without logging them
+   - Don't log errors without context
 
 ## Standardized Log Message Formats
 
 Use the following formats for consistency:
 
 1. **Operation Start**
+
    ```
    Starting [operation] for [entity] [ID]
    ```
 
 2. **Operation Success**
+
    ```
    Completed [operation] for [entity] [ID] in [duration]
    ```
 
 3. **Operation Failure**
+
    ```
    Failed to [operation] for [entity] [ID]: [error]
    ```
 
 4. **State Change**
+
    ```
    [Entity] [ID] state changed from [old_state] to [new_state]
    ```
@@ -126,30 +130,30 @@ Use the following formats for consistency:
 ## Recommendations for Improvement
 
 1. **Standardize tracing across all modules**
-    - Add the `#[instrument]` macro to all public methods
-    - Ensure consistent use of log levels
+   - Add the `#[instrument]` macro to all public methods
+   - Ensure consistent use of log levels
 
 2. **Enhance authentication and session tracing**
-    - Add comprehensive tracing to the `auth` module
-    - Log all session creation, validation, and invalidation events
+   - Add comprehensive tracing to the `auth` module
+   - Log all session creation, validation, and invalidation events
 
 3. **Improve error logging**
-    - Ensure all error paths include appropriate logging
-    - Add context to error logs
+   - Ensure all error paths include appropriate logging
+   - Add context to error logs
 
 4. **Reduce verbosity of debug logs**
-    - Move detailed object dumps to trace level
-    - Format complex objects more concisely
+   - Move detailed object dumps to trace level
+   - Format complex objects more concisely
 
 5. **Add metrics collection**
-    - Track operation durations
-    - Monitor resource usage
-    - Count error occurrences
+   - Track operation durations
+   - Monitor resource usage
+   - Count error occurrences
 
 6. **Enhance telemetry configuration**
-    - Add support for structured JSON logging
-    - Configure different log levels for different environments
-    - Add correlation IDs for request tracing
+   - Add support for structured JSON logging
+   - Configure different log levels for different environments
+   - Add correlation IDs for request tracing
 
 ## Examples
 

@@ -1,10 +1,10 @@
 # AGENTS.md - Empire
 
-*Last updated 2025-11-16*
+_Last updated 2025-11-16_
 
 > **Purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT, etc.) and every human
 > who edits this repository.  
-> It encodes our coding standards, guard-rails, and workflow tricks so the *human 30%* (architecture, tests, domain
+> It encodes our coding standards, guard-rails, and workflow tricks so the _human 30%_ (architecture, tests, domain
 > judgment) stays in human hands.[^1]
 
 ---
@@ -27,8 +27,8 @@ making assumptions.
 
 ## 2. Non-Negotiable Golden Rules
 
-| #   | AI *may* do                                                                                                                                                                                         | AI *must NOT* do                                                                                                                                     |
-|-----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| #   | AI _may_ do                                                                                                                                                                                         | AI _must NOT_ do                                                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | G-1 | Whenever unsure about something that's related to the project, ask the developer for clarification before making changes.                                                                           | ❌ Write changes or use tools when you are not sure about something project specific, or if you don't have context for a particular feature/decision. |
 | G-2 | Generate code **only inside** relevant source directories (e.g., `src/game/` for the main API, `migrations/` for the SQL blueprints, `crates/` for non-core libraries) or explicitly pointed files. | ❌ Touch `tests/`, `AGENTS.md`, or any `test` modules (humans own tests & specs).                                                                     |
 | G-3 | Add/update **`AIDEV-NOTE:` anchor comments** near non-trivial edited code.                                                                                                                          | ❌ Delete or mangle existing `AIDEV-` comments.                                                                                                       |
@@ -41,6 +41,7 @@ making assumptions.
 ## 3. Essential Commands
 
 ### Development Commands
+
 - `cargo build` - Build the project
 - `cargo test` - Run all tests
 - `cargo test <test_name>` - Run specific test
@@ -49,6 +50,7 @@ making assumptions.
 - `cargo run` - Build and run the application
 
 ### Database Commands
+
 - `./scripts/init_db.sh` - Initialize PostgreSQL database with Docker (runs migrations + seeds)
 - `./scripts/test_db.sh` - Set up test database (runs migrations + seeds)
 - `./scripts/pq_clean.sh` - Clean up test databases (removes UUID-named databases)
@@ -58,6 +60,7 @@ making assumptions.
 - `cargo run --bin seed` - Run database seeds (populates reference data)
 
 ### Testing Commands
+
 - `cargo test --bin empire` - Run binary tests
 - `cargo test --lib` - Run library tests
 - `cargo test tests::` - Run integration tests
@@ -66,16 +69,16 @@ making assumptions.
 
 ## 4. Rust Coding Standards
 
-* **Rust Version**: 1.87+, use stable features unless explicitly requiring nightly
-* **Formatting**: Use `cargo fmt` with project's `rustfmt.toml` configuration
-* **Naming**: `snake_case` (functions/variables), `PascalCase` (structs, types, traits), `SCREAMING_SNAKE_CASE` (
+- **Rust Version**: 1.87+, use stable features unless explicitly requiring nightly
+- **Formatting**: Use `cargo fmt` with project's `rustfmt.toml` configuration
+- **Naming**: `snake_case` (functions/variables), `PascalCase` (structs, types, traits), `SCREAMING_SNAKE_CASE` (
   constants)
-* **Error Handling**: Prefer `Result<T, E>` and `?` operator. Use `anyhow` for application errors, custom error types
+- **Error Handling**: Prefer `Result<T, E>` and `?` operator. Use `anyhow` for application errors, custom error types
   for domain errors
-* **Documentation**: Use `///` for public APIs, `//` for implementation details
-* **Testing**: Use `#[cfg(test)]` modules for unit tests within source files, separate integration tests in `tests/`
+- **Documentation**: Use `///` for public APIs, `//` for implementation details
+- **Testing**: Use `#[cfg(test)]` modules for unit tests within source files, separate integration tests in `tests/`
   directory. Use `axum-test` for API endpoint testing
-* **Tracing**: Use `#[instrument]` macro for tracing in public methods. Skip sensitive parameters
+- **Tracing**: Use `#[instrument]` macro for tracing in public methods. Skip sensitive parameters
   with `#[instrument(skip(password))]`. Follow consistent logging levels per `docs/tracing_guidelines.md`
 
 **Error Handling Patterns**:
@@ -107,7 +110,7 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 ## 5. Project Layout & Core Components
 
 | Directory     | Description                                        |
-|---------------|----------------------------------------------------|
+| ------------- | -------------------------------------------------- |
 | `config/`     | DEV and PROD default configuration                 |
 | `crates/`     | Large modules that became library crates           |
 | `docs/`       | Markdown specs for the game                        |
@@ -177,10 +180,10 @@ Add specially formatted comments throughout the codebase for inline knowledge th
 - **Update relevant anchors** when modifying associated code
 - **Do not remove `AIDEV-NOTE`s** without explicit human instruction
 - Add relevant anchor comments whenever code is:
-    * Complex or non-obvious
-    * Performance-critical
-    * Part of a larger architectural pattern
-    * Contains potential gotchas or edge cases
+  - Complex or non-obvious
+  - Performance-critical
+  - Part of a larger architectural pattern
+  - Contains potential gotchas or edge cases
 
 Example:
 
@@ -198,11 +201,11 @@ type PlayerMap = std::collections::HashMap<PlayerId, Player>;
 
 ## 7. Commit Discipline
 
-* **Granular commits**: One logical change per commit
-* **Tag AI-generated commits**: e.g., `feat: optimize resource calculation [AI]`
-* **Clear commit messages**: Follow conventional commits format, explain the *why*
-* **Use `git worktree`** for parallel/long-running AI branches
-* **Review AI-generated code**: Never merge code you don't understand
+- **Granular commits**: One logical change per commit
+- **Tag AI-generated commits**: e.g., `feat: optimize resource calculation [AI]`
+- **Clear commit messages**: Follow conventional commits format, explain the _why_
+- **Use `git worktree`** for parallel/long-running AI branches
+- **Review AI-generated code**: Never merge code you don't understand
 
 Example commit messages:
 
@@ -288,32 +291,32 @@ struct DatabaseConfig {
 
 ## 10. Directory-Specific AGENTS.md Files
 
-* **Always check for `AGENTS.md` files in specific directories** before working on code within them
-* If a directory's `AGENTS.md` is outdated or incorrect, **update it**
-* If you make significant changes to a directory's structure or patterns, **document these in its `AGENTS.md`**
-* If a directory lacks an `AGENTS.md` but contains complex logic worth documenting, **suggest creating one**
+- **Always check for `AGENTS.md` files in specific directories** before working on code within them
+- If a directory's `AGENTS.md` is outdated or incorrect, **update it**
+- If you make significant changes to a directory's structure or patterns, **document these in its `AGENTS.md`**
+- If a directory lacks an `AGENTS.md` but contains complex logic worth documenting, **suggest creating one**
 
 ---
 
 ## 11. Common Pitfalls
 
-* **Ownership Issues**: Forgetting to consider Rust's ownership model when designing APIs
-* **Async Context**: Not properly handling async contexts and potential blocking operations
-* **Error Propagation**: Using `unwrap()` or `expect()` instead of proper error handling
-* **Database Connections**: Not properly managing connection pools or transactions
-* **Performance**: Creating unnecessary allocations in hot code paths
-* **Testing**: Writing tests that don't account for async behavior or database state
+- **Ownership Issues**: Forgetting to consider Rust's ownership model when designing APIs
+- **Async Context**: Not properly handling async contexts and potential blocking operations
+- **Error Propagation**: Using `unwrap()` or `expect()` instead of proper error handling
+- **Database Connections**: Not properly managing connection pools or transactions
+- **Performance**: Creating unnecessary allocations in hot code paths
+- **Testing**: Writing tests that don't account for async behavior or database state
 
 ---
 
 ## 12. Domain-Specific Terminology
 
-* **Player**: A user account that owns buildings and resources in the game
-* **Building**: A structure that produces resources or provides game benefits
-* **Resource**: Materials like wood, stone, gold that are consumed and produced
-* **Realm**: A player's territory containing their buildings
-* **Modifier**: Temporary or permanent effects that change game mechanics
-* **Job**: Scheduled background tasks (building construction, resource production)
+- **Player**: A user account that owns buildings and resources in the game
+- **Building**: A structure that produces resources or provides game benefits
+- **Resource**: Materials like wood, stone, gold that are consumed and produced
+- **Realm**: A player's territory containing their buildings
+- **Modifier**: Temporary or permanent effects that change game mechanics
+- **Job**: Scheduled background tasks (building construction, resource production)
 
 ---
 
@@ -348,11 +351,12 @@ When responding to user instructions, follow this process:
 
 These files control which files should be ignored by AI tools:
 
-* `.agentignore`: Specifies files ignored by IDE (build directories, logs, caches, etc.)
-* `.agentindexignore`: Controls IDE indexing exclusions for performance
+- `.agentignore`: Specifies files ignored by IDE (build directories, logs, caches, etc.)
+- `.agentindexignore`: Controls IDE indexing exclusions for performance
 
 **Never modify these ignore files** without explicit permission. When adding new files, check these patterns to ensure
 proper indexing.
 
-[^1]: This principle emphasizes human oversight for critical aspects like architecture, testing, and domain-specific
-decisions, ensuring AI assists rather than fully dictates development.
+[^1]:
+    This principle emphasizes human oversight for critical aspects like architecture, testing, and domain-specific
+    decisions, ensuring AI assists rather than fully dictates development.

@@ -5,6 +5,7 @@ This directory contains SQL files for seeding reference/configuration data into 
 ## Purpose
 
 Seeds contain **extended configuration data** that is:
+
 - Required for the game to function
 - Identical across all environments (dev, test, prod)
 - Subject to frequent modification during balancing
@@ -13,11 +14,13 @@ Seeds contain **extended configuration data** that is:
 ## What Belongs Here vs Migrations
 
 ### Migrations (`migrations/` directory)
+
 - Database schema (tables, columns, indexes, constraints)
 - Critical reference data that's tightly coupled to schema
 - Examples: faction enum values, core building definitions
 
 ### Seeds (`seeds/` directory)
+
 - Bulk configuration data
 - Game balance parameters
 - Examples: building levels, building resources, items, tech trees, unit definitions
@@ -36,16 +39,19 @@ Seed files are executed in **alphabetical order** by filename. Use numeric prefi
 ## Running Seeds
 
 ### Initial Setup
+
 ```bash
 ./scripts/init_db.sh  # Runs migrations + seeds automatically
 ```
 
 ### Manual Execution
+
 ```bash
 cargo run --bin seed  # Run all seed files
 ```
 
 ### Test Database
+
 ```bash
 ./scripts/test_db.sh  # Creates test DB with migrations + seeds
 ```
@@ -58,6 +64,7 @@ Seed files are **idempotent** and can be run multiple times safely. This is achi
 2. **ON CONFLICT DO NOTHING** clauses in all INSERT statements
 
 Example:
+
 ```sql
 INSERT INTO building_level (building_id, level, upgrade_seconds, req_food)
 VALUES (1, 0, 0, 0)
@@ -65,6 +72,7 @@ ON CONFLICT (building_id, level) DO NOTHING;
 ```
 
 This ensures that:
+
 - Re-running seeds won't create duplicate data
 - Seed execution is safe in all environments
 - Tests can run seeds without worrying about conflicts
@@ -83,6 +91,7 @@ This ensures that:
 ## Version Control
 
 Seed files are **committed to git** and represent the canonical game configuration at each version. Changes to seed files should:
+
 - Be reviewed like code changes
 - Include clear commit messages explaining balance changes
 - Be deployed alongside code that depends on them
@@ -90,6 +99,7 @@ Seed files are **committed to git** and represent the canonical game configurati
 ## Future Considerations
 
 As seed data grows:
+
 - Consider splitting large files by entity or faction
 - Add seed file validation/linting
 - Create separate dev-only sample data mechanism

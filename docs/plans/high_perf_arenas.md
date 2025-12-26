@@ -112,7 +112,7 @@ use tokio::sync::Mutex;
 
 /// Thread-local request context pool
 thread_local! {
-    static CONTEXT_POOL: Arc<Mutex<Vec<RequestContext>>> = 
+    static CONTEXT_POOL: Arc<Mutex<Vec<RequestContext>>> =
         Arc::new(Mutex::new(Vec::with_capacity(10)));
 }
 
