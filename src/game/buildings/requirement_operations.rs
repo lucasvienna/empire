@@ -29,6 +29,7 @@ pub struct BuildingAvailability {
 
 /// Represents different types of restrictions that can prevent a building from being constructed
 #[derive(Serialize, Copy, Clone, Debug, Eq, PartialEq, PartialOrd)]
+#[serde(tag = "kind")]
 pub enum BuildingLock {
 	/// Maximum allowed number of building instances has been reached
 	MaxCountReached,
