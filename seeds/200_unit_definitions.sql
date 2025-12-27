@@ -15,7 +15,7 @@
 
 -- ===== UNIT DEFINITIONS =====
 
-INSERT INTO unit (name, type, base_atk, base_def, base_training_seconds, description)
+INSERT INTO unit (name, unit_type, base_atk, base_def, base_training_seconds, description)
 VALUES
     ('Infantry', 'infantry', 10, 15, 60, 'Frontline fighters armed with sword and shield. Balanced offense and strong defense.'),
     ('Ranged', 'ranged', 15, 5, 90, 'Archers and crossbowmen dealing damage from afar. High attack but fragile.'),

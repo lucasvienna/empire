@@ -9,8 +9,12 @@ pub mod migrations;
 pub mod modifiers;
 pub mod player_buildings;
 pub mod player_sessions;
+pub mod player_units;
 pub mod players;
 pub mod resources;
 pub mod seeds;
+pub mod training_queue;
+pub mod unit_costs;
+pub mod units;
 
 pub use connection::{DbConn, DbPool};
