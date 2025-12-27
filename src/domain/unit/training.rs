@@ -2,6 +2,7 @@
 //! Tracks units currently being trained by players.
 
 use std::io::Write;
+use std::str::from_utf8;
 
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
@@ -44,29 +45,32 @@ pub enum TrainingStatus {
 	Cancelled,
 }
 
+impl AsRef<str> for TrainingStatus {
+	fn as_ref(&self) -> &str {
+		match self {
+			TrainingStatus::Pending => "pending",
+			TrainingStatus::InProgress => "in_progress",
+			TrainingStatus::Completed => "completed",
+			TrainingStatus::Cancelled => "cancelled",
+		}
+	}
+}
+
 impl ToSql<crate::schema::sql_types::TrainingStatus, Pg> for TrainingStatus {
 	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-		match *self {
-			TrainingStatus::Pending => out.write_all(b"pending")?,
-			TrainingStatus::InProgress => out.write_all(b"in_progress")?,
-			TrainingStatus::Completed => out.write_all(b"completed")?,
-			TrainingStatus::Cancelled => out.write_all(b"cancelled")?,
-		}
+		out.write_all(self.as_ref().as_bytes())?;
 		Ok(IsNull::No)
 	}
 }
 
 impl FromSql<crate::schema::sql_types::TrainingStatus, Pg> for TrainingStatus {
 	fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-		match bytes.as_bytes() {
-			b"pending" => Ok(TrainingStatus::Pending),
-			b"in_progress" => Ok(TrainingStatus::InProgress),
-			b"completed" => Ok(TrainingStatus::Completed),
-			b"cancelled" => Ok(TrainingStatus::Cancelled),
-			_ => {
-				let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-				Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
-			}
+		match from_utf8(bytes.as_bytes())? {
+			"pending" => Ok(TrainingStatus::Pending),
+			"in_progress" => Ok(TrainingStatus::InProgress),
+			"completed" => Ok(TrainingStatus::Completed),
+			"cancelled" => Ok(TrainingStatus::Cancelled),
+			other => Err(format!("Unrecognized enum variant: {other}").into()),
 		}
 	}
 }
