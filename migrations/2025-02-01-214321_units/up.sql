@@ -12,7 +12,8 @@ CREATE TABLE unit
     created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CONSTRAINT unit_name_unique UNIQUE (name)
 );
 
 CREATE TRIGGER set_unit_updated_at
