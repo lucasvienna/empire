@@ -312,8 +312,7 @@ diesel::table! {
 	unit (id) {
 		id -> Uuid,
 		name -> Text,
-		#[sql_name = "type"]
-		type_ -> UnitType,
+		unit_type -> UnitType,
 		base_atk -> Int4,
 		base_def -> Int4,
 		base_training_seconds -> Int4,

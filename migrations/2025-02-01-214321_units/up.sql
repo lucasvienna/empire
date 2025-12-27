@@ -4,7 +4,7 @@ CREATE TABLE unit
 (
     id                    UUID        NOT NULL DEFAULT uuidv7(),
     name                  TEXT        NOT NULL,
-    type                  unit_type   NOT NULL,
+    unit_type             unit_type   NOT NULL,
     base_atk              INTEGER     NOT NULL,
     base_def              INTEGER     NOT NULL,
     base_training_seconds INTEGER     NOT NULL,
