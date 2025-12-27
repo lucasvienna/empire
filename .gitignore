@@ -138,6 +138,7 @@ target/
 # Development databases
 *.sqlite
 *.sqlite-*
+.diesel_lock
 
 # Logs folder
 log/
