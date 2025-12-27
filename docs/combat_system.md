@@ -10,6 +10,9 @@ Empire's combat system is a deterministic battle resolution system where players
 players or NPCs to plunder resources. Combat outcomes are calculated based on unit compositions,
 unit type advantages, and faction bonuses.
 
+> **v0.1.0 Scope**: This version focuses on **PvE combat only** (attacking NPCs). PvP combat,
+> marches, garrisons, and walls are deferred to v0.2.0 to allow the core combat math to mature.
+
 ### Design Principles
 
 1. **Deterministic**: No randomness - identical inputs always produce identical outputs
@@ -209,10 +212,10 @@ Goblins compensate for lack of combat bonuses through superior production speed:
 Combat is resolved in a single calculation phase. Both sides contribute power based on their army
 composition, and the ratio of attacker power to defender power determines the outcome.
 
-### Step 1: Calculate Army Power (Cross-Product Formula)
+### Step 1: Calculate Raw Army Power
 
-Power calculation uses a **cross-product weighted formula** where each unit type's contribution is
-weighted by the enemy's composition. This ensures that army composition matters strategically.
+Power calculation separates raw strength from tactical advantage. First, calculate each army's raw
+power without type matchups:
 
 **Mathematical Definition:**
 
@@ -228,27 +231,55 @@ Let:
 **Attacker Power Formula:**
 
 ```
-P_atk = Σᵢ Σⱼ [ qty_i × atk_i × mod(attacker, ATK, type_i) × adv(type_i, type_j) × (qty_j / N_D) ]
+P_atk = Σᵢ [ qty_i × atk_i × mod(attacker, ATK, type_i) ]
 ```
 
 **Defender Power Formula:**
 
 ```
-P_def = Σⱼ Σᵢ [ qty_j × def_j × mod(defender, DEF, type_j) × adv(type_j, type_i) × (qty_i / N_A) ]
+P_def = Σⱼ [ qty_j × def_j × mod(defender, DEF, type_j) ]
 ```
 
-**Intuition**: Each unit type contributes power against each enemy type, weighted by the proportion
-of the enemy army that type represents. Fighting 100% archers means your cavalry takes full
-disadvantage; fighting 50% archers means only half disadvantage.
-
-**Simplified Single-Type Case:**
-
-When both armies have only one unit type, the formula reduces to:
+**Raw Ratio:**
 
 ```
-P_atk = qty_atk × atk × mod(attacker, ATK, unit_type) × advantage_multiplier
-P_def = qty_def × def × mod(defender, DEF, unit_type) × advantage_multiplier
+raw_ratio = P_atk / P_def
 ```
+
+### Step 2: Calculate Advantage Factor
+
+Type advantages are applied as a single weighted multiplier after raw power calculation. This
+prevents the "squared advantage" problem where both sides applying multipliers creates ~2.25x
+effective advantage instead of the intended 1.5x.
+
+**Advantage Factor Formula:**
+
+```
+advantage_factor = Σᵢ Σⱼ [ (qty_i / N_A) × (qty_j / N_D) × adv(type_i, type_j) ]
+```
+
+**Intuition**: The advantage factor is a weighted average of all attacker-vs-defender matchups. Each
+matchup contributes proportionally to how much of each army is involved.
+
+**Properties:**
+
+| Matchup Type                                             | Advantage Factor              |
+| -------------------------------------------------------- | ----------------------------- |
+| Pure counter-pick (e.g., 100% Infantry vs 100% Ranged)   | 1.50x                         |
+| Pure counter-picked (e.g., 100% Ranged vs 100% Infantry) | 0.67x                         |
+| Mixed vs Mixed                                           | ~1.0x (advantages cancel out) |
+| Partial counter                                          | Proportional blend            |
+
+**Example** (60% Infantry + 40% Cavalry vs 62.5% Ranged + 37.5% Artillery):
+
+| Attacker | Weight | Defender  | Weight | adv() | Contribution |
+| -------- | ------ | --------- | ------ | ----- | ------------ |
+| Infantry | 0.60   | Ranged    | 0.625  | 1.50  | 0.5625       |
+| Infantry | 0.60   | Artillery | 0.375  | 0.67  | 0.1508       |
+| Cavalry  | 0.40   | Ranged    | 0.625  | 0.67  | 0.1675       |
+| Cavalry  | 0.40   | Artillery | 0.375  | 1.50  | 0.2250       |
+
+**advantage_factor** = 0.5625 + 0.1508 + 0.1675 + 0.2250 = **1.106** (slight attacker advantage)
 
 ### Modifier System Integration
 
@@ -348,10 +379,10 @@ Total for Infantry ATK:
   Final: 1.20 × 1.0 = 1.20x multiplier
 ```
 
-### Step 3: Calculate Combat Ratio
+### Step 3: Calculate Final Combat Ratio
 
 ```
-Combat Ratio = Attacker Power / Defender Power
+combat_ratio = raw_ratio × advantage_factor
 ```
 
 - Ratio > 1.0: Attacker has advantage
@@ -361,32 +392,69 @@ Combat Ratio = Attacker Power / Defender Power
 ### Step 4: Determine Winner
 
 ```
-Winner = Combat Ratio >= 1.0 ? Attacker : Defender
+Winner = combat_ratio >= 1.0 ? Attacker : Defender
 ```
 
 **Note**: Ties (ratio = 1.0) favor the attacker. Defenders need >1.0 equivalent power to win.
 
-### Step 5: Calculate Losses
+### Step 5: Calculate Losses (Asymmetric)
 
-**Winner Losses:**
-
-```
-winner_loss_pct = max(1%, min(5%, 100 / combat_ratio))
-```
-
-- Minimum 1% losses (always lose something)
-- Maximum 5% losses (even overwhelming victories cost something)
-- Better ratio = fewer losses
-
-**Loser Losses:**
+Losses are calculated asymmetrically based on role (attacker vs defender) to reward defenders and
+punish failed attacks. The `effective_ratio` is always >= 1.0 (inverted if defender wins).
 
 ```
-loser_loss_pct = min(80%, 30% + 20% × (combat_ratio - 1))
+effective_ratio = combat_ratio >= 1.0 ? combat_ratio : 1.0 / combat_ratio
 ```
 
-- Base 30% losses
-- +20% for each point of ratio above 1.0
-- Maximum 80% losses (some always survive to rebuild)
+**Winner Losses (2-15%):**
+
+```
+winner_loss_pct = clamp(20% / effective_ratio, 2%, 15%)
+```
+
+| Effective Ratio  | Winner Losses |
+| ---------------- | ------------- |
+| 1.0 (barely won) | 15%           |
+| 1.5              | 13%           |
+| 2.0              | 10%           |
+| 5.0              | 4%            |
+| 10+              | 2%            |
+
+**Losing Attacker (40-90%):**
+
+Failed attacks are punished harshly - you marched into enemy territory and lost.
+
+```
+losing_attacker_pct = clamp(40% + 25% × (effective_ratio - 1), 40%, 90%)
+```
+
+| Effective Ratio   | Attacker Losses |
+| ----------------- | --------------- |
+| 1.0 (barely lost) | 40%             |
+| 1.5               | 52%             |
+| 2.0               | 65%             |
+| 3.0+              | 90%             |
+
+**Losing Defender (20-35%):**
+
+Defenders can retreat to safety - home turf advantage even in defeat.
+
+```
+losing_defender_pct = clamp(20% + 10% × (effective_ratio - 1), 20%, 35%)
+```
+
+| Effective Ratio   | Defender Losses |
+| ----------------- | --------------- |
+| 1.0 (barely lost) | 20%             |
+| 1.5               | 25%             |
+| 2.5+              | 35%             |
+
+**Design Rationale:**
+
+- Attacking is high-risk/high-reward: win decisively or get crushed
+- Defending is safer: even a loss is survivable
+- Close fights are bloody for everyone (15% winner, 40%+ loser)
+- Pairs well with v0.2.0 walls giving defenders additional power
 
 ### Step 6: Apply Losses (Weighted Distribution)
 
@@ -436,109 +504,170 @@ losses_i = round(total_losses × weight_i)
 
 ### Step 7: Calculate Plunder
 
-Winner takes a percentage of loser's resources:
+Winner takes a percentage of loser's **plunderable** resources. Only stored resources can be
+plundered - accumulators (uncollected production) are safe.
+
+**Plunder Percentage:**
 
 ```
-plunder_pct = min(50%, 10% + 5% × (combat_ratio - 1))
+plunder_pct = clamp(10% + 5% × (effective_ratio - 1), 10%, 50%)
 ```
 
-- Base 10% plunder
-- +5% for each point of ratio above 1.0
-- Maximum 50% plunder
-- Applied to each resource type independently
+| Effective Ratio | Plunder % |
+| --------------- | --------- |
+| 1.0             | 10%       |
+| 2.0             | 15%       |
+| 5.0             | 30%       |
+| 9.0+            | 50%       |
+
+**Protected Resource Pool:**
+
+Defenders have 20% of their stored resources protected from plunder. This scales naturally with
+Keep/Warehouse levels and prevents complete economic wipeouts.
+
+```
+protected_amount = stored_resources × 0.20
+plunderable_amount = stored_resources × 0.80
+actual_plunder = plunderable_amount × plunder_pct
+```
 
 **Resource Transfer:**
 
 ```
 for each resource:
-    plundered_amount = floor(loser_resources × plunder_pct)
+    plunderable = stored_resources × 0.80
+    plundered_amount = floor(plunderable × plunder_pct)
     transfer(plundered_amount, from: loser, to: winner)
 ```
+
+**Why Accumulators Are Safe:**
+
+- Accumulators represent "uncollected" production (grain in fields, ore in mines)
+- Thematically: raiders loot warehouses, not unharvested crops
+- Mechanically: prevents griefing idle players to zero
+
+**Disincentive for Attacking Broke Players:**
+
+If potential plunder is less than Monster Lair rewards (~50 food, ~25 wood), the attacker gains
+little while still paying full unit losses. The API may display a warning for low-value targets.
 
 ---
 
 ## Complete Formula Summary
 
+### Combat Snapshots
+
+Before combat begins, both armies and their modifiers are **snapshotted**:
+
+1. **Army Snapshot**: Unit quantities frozen at combat start
+2. **Modifier Cache**: All applicable modifiers batch-loaded once per player
+
+This prevents race conditions (e.g., units finishing training mid-combat) and avoids repeated
+database queries during the cross-product calculations.
+
 ```rust
 // Pseudocode implementation
 
-fn calculate_combat(conn: &mut DbConn, attacker: Army, defender: Army) -> Result<CombatResult> {
-    // Calculate power (queries modifier system for each unit type)
-    let attacker_power = calculate_army_power(conn, attacker, defender, true)?;
-    let defender_power = calculate_army_power(conn, defender, attacker, false)?;
+fn calculate_combat(
+    attacker_snapshot: &ArmySnapshot,
+    defender_snapshot: &ArmySnapshot,
+) -> CombatResult {
+    // Step 1: Calculate raw power (no advantages)
+    let attacker_power = calculate_raw_power(attacker_snapshot, true);
+    let defender_power = calculate_raw_power(defender_snapshot, false);
+    let raw_ratio = attacker_power / defender_power;
 
-    // Combat ratio
-    let ratio = attacker_power / defender_power;
+    // Step 2: Calculate advantage factor
+    let advantage_factor = calculate_advantage_factor(
+        &attacker_snapshot.army,
+        &defender_snapshot.army,
+    );
 
-    // Determine outcome
-    let attacker_wins = ratio >= 1.0;
-    let effective_ratio = if attacker_wins { ratio } else { 1.0 / ratio };
+    // Step 3: Final combat ratio
+    let combat_ratio = raw_ratio * advantage_factor;
 
-    // Calculate losses
-    let winner_loss_pct = (1.0_f64).max((5.0_f64).min(100.0 / effective_ratio)) / 100.0;
-    let loser_loss_pct = (80.0_f64).min(30.0 + 20.0 * (effective_ratio - 1.0)) / 100.0;
+    // Step 4: Determine outcome
+    let attacker_wins = combat_ratio >= 1.0;
+    let effective_ratio = if attacker_wins { combat_ratio } else { 1.0 / combat_ratio };
 
-    // Calculate plunder (only if attacker wins)
+    // Step 5: Calculate losses (asymmetric)
+    let winner_loss_pct = (0.20 / effective_ratio).clamp(0.02, 0.15);
+
+    let (attacker_loss_pct, defender_loss_pct) = if attacker_wins {
+        let loser_pct = (0.20 + 0.10 * (effective_ratio - 1.0)).clamp(0.20, 0.35);
+        (winner_loss_pct, loser_pct)
+    } else {
+        let loser_pct = (0.40 + 0.25 * (effective_ratio - 1.0)).clamp(0.40, 0.90);
+        (loser_pct, winner_loss_pct)
+    };
+
+    // Step 7: Calculate plunder (only if attacker wins)
     let plunder_pct = if attacker_wins {
-        (50.0_f64).min(10.0 + 5.0 * (ratio - 1.0)) / 100.0
+        (0.10 + 0.05 * (effective_ratio - 1.0)).clamp(0.10, 0.50)
     } else {
         0.0
     };
 
-    Ok(CombatResult {
-        winner: if attacker_wins { attacker } else { defender },
-        attacker_loss_pct: if attacker_wins { winner_loss_pct } else { loser_loss_pct },
-        defender_loss_pct: if attacker_wins { loser_loss_pct } else { winner_loss_pct },
+    CombatResult {
+        attacker_wins,
+        combat_ratio,
+        attacker_loss_pct,
+        defender_loss_pct,
         plunder_pct,
-        combat_ratio: ratio,
-    })
+    }
 }
 
-fn calculate_army_power(
-    conn: &mut DbConn,
-    army: Army,
-    enemy: Army,
-    is_attacker: bool,
-) -> Result<f64> {
+fn calculate_raw_power(snapshot: &ArmySnapshot, is_attacker: bool) -> f64 {
     let mut total_power = 0.0;
     let stat_type = if is_attacker { CombatStat::ATK } else { CombatStat::DEF };
 
-    for unit_stack in army.units {
+    for unit_stack in &snapshot.army.units {
         let base_stat = if is_attacker { unit_stack.base_atk } else { unit_stack.base_def };
 
-        // Query modifier system for total combat modifier (faction + research + buffs + etc.)
-        let modifier = get_combat_modifier(conn, &army.player_id, stat_type, unit_stack.unit_type)?;
+        // Use cached modifier (no DB query)
+        let modifier = snapshot.modifiers.get(stat_type, unit_stack.unit_type);
 
-        // Weight contribution by enemy composition
-        for enemy_stack in enemy.units {
-            let advantage = get_advantage_multiplier(unit_stack.unit_type, enemy_stack.unit_type);
-            let enemy_weight = enemy_stack.quantity as f64 / enemy.total_units() as f64;
+        total_power += unit_stack.quantity as f64 * base_stat as f64 * modifier;
+    }
 
-            total_power += unit_stack.quantity as f64
-                * base_stat as f64
-                * modifier.to_f64()  // From BigDecimal
-                * advantage
-                * enemy_weight;
+    total_power
+}
+
+fn calculate_advantage_factor(attacker: &Army, defender: &Army) -> f64 {
+    let mut factor = 0.0;
+    let n_atk = attacker.total_units() as f64;
+    let n_def = defender.total_units() as f64;
+
+    for atk_stack in &attacker.units {
+        let atk_weight = atk_stack.quantity as f64 / n_atk;
+
+        for def_stack in &defender.units {
+            let def_weight = def_stack.quantity as f64 / n_def;
+            let advantage = get_advantage_multiplier(atk_stack.unit_type, def_stack.unit_type);
+
+            factor += atk_weight * def_weight * advantage;
         }
     }
 
-    Ok(total_power)
+    factor
 }
 
-/// Query the modifier system for combat bonuses
-/// Returns aggregated multiplier from all sources: faction, research, buffs, etc.
-fn get_combat_modifier(
+// --- Snapshot Creation (called once before combat) ---
+
+/// Create army snapshot with cached modifiers
+fn create_army_snapshot(conn: &mut DbConn, army: Army) -> Result<ArmySnapshot> {
+    let modifiers = batch_load_combat_modifiers(conn, &army.player_id)?;
+    Ok(ArmySnapshot { army, modifiers })
+}
+
+/// Batch load all combat modifiers for a player (called once per snapshot)
+fn batch_load_combat_modifiers(
     conn: &mut DbConn,
     player_id: &PlayerKey,
-    stat: CombatStat,
-    unit_type: UnitType,
-) -> Result<BigDecimal> {
-    combat_modifier_operations::calc_combat_multiplier(
-        conn,
-        player_id,
-        unit_type,
-        stat,
-    )
+) -> Result<ModifierCache> {
+    // Load all combat modifiers in a single query, cache by (stat, unit_type)
+    // Implementation queries active_modifiers joined with modifiers table
+    // See calc_combat_multiplier below for query pattern
 }
 
 // In src/game/combat/modifier_operations.rs
