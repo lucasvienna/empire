@@ -32,14 +32,14 @@ pub fn get_player_unit_count(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
 	unit_key: &UnitKey,
-) -> Result<i64> {
+) -> Result<i32> {
 	let count: Option<i32> = pu::table
 		.filter(pu::player_id.eq(player_key))
 		.filter(pu::unit_id.eq(unit_key))
 		.select(pu::quantity)
 		.first(conn)
 		.optional()?;
-	Ok(count.unwrap_or(0) as i64)
+	Ok(count.unwrap_or(0))
 }
 
 /// Updates the quantity of a specific unit for a player by a delta amount.
