@@ -148,7 +148,8 @@
 
 ## Example System Interactions
 
-To illustrate how these architectural components would interact, consider this flow for resource collection:
+To illustrate how these architectural components would interact, consider this flow for resource
+collection:
 
 1. **Resource Collection Request**:
    - User triggers resource collection
@@ -192,7 +193,8 @@ To illustrate how these architectural components would interact, consider this f
 
 ### Trigger-Based Faction Modifier Management
 
-The system automatically manages faction-specific modifiers through database triggers, ensuring a consistent application of faction bonuses:
+The system automatically manages faction-specific modifiers through database triggers, ensuring a
+consistent application of faction bonuses:
 
 1. **Trigger Events**
    - On user creation (`AFTER INSERT`)
@@ -212,7 +214,8 @@ The system automatically manages faction-specific modifiers through database tri
 ### Advantages of Trigger-Based Approach
 
 - **Data Consistency**: Ensures faction modifiers are always applied correctly
-- **Atomic Operations**: Changes to faction modifiers happen in the same transaction as faction changes
+- **Atomic Operations**: Changes to faction modifiers happen in the same transaction as faction
+  changes
 - **Audit Trail**: Automatic tracking of all faction modifier changes
 - **Error Prevention**: Built-in validation prevents missing or incorrect faction modifier states
 
@@ -287,7 +290,8 @@ The system automatically manages faction-specific modifiers through database tri
 
 ## Additional Considerations for Negative Modifiers
 
-Since we're implementing a generic modifier system that can include both positive and negative effects:
+Since we're implementing a generic modifier system that can include both positive and negative
+effects:
 
 - **Stacking Rules**: Define how positive and negative modifiers interact
   - Additive vs. multiplicative stacking
@@ -308,6 +312,7 @@ Since we're implementing a generic modifier system that can include both positiv
   - Diminishing returns on both positive and negative effects
   - Recovery mechanisms from severe penalties
 
-This architectural approach keeps the modifier logic in the domain layer while providing clear integration points with
-other systems. It maintains separation of concerns, with the modifier system responsible for calculating the effects
-and other services applying those effects to their respective domains.
+This architectural approach keeps the modifier logic in the domain layer while providing clear
+integration points with other systems. It maintains separation of concerns, with the modifier system
+responsible for calculating the effects and other services applying those effects to their
+respective domains.

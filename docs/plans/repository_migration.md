@@ -2,8 +2,9 @@
 
 ## Executive Summary
 
-This document outlines the migration from Java-style repository structs to idiomatic Rust function modules. The goal is
-to improve performance by eliminating unnecessary struct overhead while maintaining type safety and code organization.
+This document outlines the migration from Java-style repository structs to idiomatic Rust function
+modules. The goal is to improve performance by eliminating unnecessary struct overhead while
+maintaining type safety and code organization.
 
 ## Background
 
@@ -71,9 +72,9 @@ pub fn get_player_buildings(conn: &mut DbConn, player_key: &PlayerKey) -> Result
 5. Remove `FromRef<AppState>` and `Debug` implementations
 6. Keep type aliases like `FullBuilding` and `UpgradeTuple`
 
-**Architectural Insight**: The pool reference in repository structs was merely an artifact of the struct pattern. Using
-the `DatabaseConnection` extractor allows each request to acquire a single connection that can be reused across all
-database operations within that request.
+**Architectural Insight**: The pool reference in repository structs was merely an artifact of the
+struct pattern. Using the `DatabaseConnection` extractor allows each request to acquire a single
+connection that can be reused across all database operations within that request.
 
 ### Phase 2: Handler Migration with DatabaseConnection Extractor
 
@@ -257,8 +258,8 @@ pub fn get_player_buildings(conn: &mut DbConn, player_key: &PlayerKey) -> Result
 }
 ```
 
-**Note**: Connection acquisition errors are handled at the handler level by the `DatabaseConnection` extractor,
-eliminating the need for connection-related error handling within individual functions.
+**Note**: Connection acquisition errors are handled at the handler level by the `DatabaseConnection`
+extractor, eliminating the need for connection-related error handling within individual functions.
 
 ## Performance Expected Improvements
 
@@ -484,8 +485,9 @@ pub async fn get_buildings_optimized(
 
 ## Conclusion
 
-This migration represents a fundamental architectural shift from object-oriented patterns to functional programming
-principles that align with Rust's strengths. The benefits extend beyond performance improvements to include:
+This migration represents a fundamental architectural shift from object-oriented patterns to
+functional programming principles that align with Rust's strengths. The benefits extend beyond
+performance improvements to include:
 
 **Technical Benefits**:
 
@@ -508,9 +510,11 @@ principles that align with Rust's strengths. The benefits extend beyond performa
 - Easier onboarding for Rust-native developers
 - Platform for implementing cutting-edge performance optimizations
 
-The incremental migration approach ensures minimal risk while delivering measurable performance improvements. Each phase
-builds upon the previous one, culminating in a more efficient, maintainable, and idiomatic Rust codebase that can serve
-as the foundation for advanced performance optimization techniques like memory arenas and zero-copy operations.
+The incremental migration approach ensures minimal risk while delivering measurable performance
+improvements. Each phase builds upon the previous one, culminating in a more efficient,
+maintainable, and idiomatic Rust codebase that can serve as the foundation for advanced performance
+optimization techniques like memory arenas and zero-copy operations.
 
-This migration positions the codebase to take full advantage of Rust's performance capabilities while maintaining the
-safety and reliability that makes Rust an excellent choice for systems programming.
+This migration positions the codebase to take full advantage of Rust's performance capabilities
+while maintaining the safety and reliability that makes Rust an excellent choice for systems
+programming.

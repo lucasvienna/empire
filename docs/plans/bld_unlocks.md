@@ -2,8 +2,9 @@
 
 ## Problem
 
-Building limits are currently static (`max_count` in `building` table). We need dynamic limits based on Keep level and
-tech tree nodes, without overloading the modifier system (designed for temporal/rate-based calculations).
+Building limits are currently static (`max_count` in `building` table). We need dynamic limits based
+on Keep level and tech tree nodes, without overloading the modifier system (designed for
+temporal/rate-based calculations).
 
 ## Solution: Purpose-Built Unlocks Table
 
@@ -11,15 +12,17 @@ Create `building_count_unlocks` table that defines **additive** unlocks for spec
 
 ### Why This Design?
 
-**Semantic clarity**: This is a capability unlock system, not a modifier system. Keeping them separate prevents
-architectural confusion.
+**Semantic clarity**: This is a capability unlock system, not a modifier system. Keeping them
+separate prevents architectural confusion.
 
-**Data-driven iteration**: Game designers can add/remove/balance unlocks via SQL without code deploys.
+**Data-driven iteration**: Game designers can add/remove/balance unlocks via SQL without code
+deploys.
 
-**Incremental adoption**: Works immediately for Keep levels. When tech tree arrives, same table handles tech unlocks—no
-refactoring.
+**Incremental adoption**: Works immediately for Keep levels. When tech tree arrives, same table
+handles tech unlocks—no refactoring.
 
-**Query simplicity**: Single JOIN to get all applicable unlocks. No JSONB parsing, no enum proliferation.
+**Query simplicity**: Single JOIN to get all applicable unlocks. No JSONB parsing, no enum
+proliferation.
 
 ## How It Works
 
@@ -45,11 +48,11 @@ building_count_unlocks
 
 ### Why Not Other Approaches?
 
-**vs. Modifiers**: Modifiers handle continuous values (production rates, combat multipliers). Unlocks are discrete
-gates—different semantics.
+**vs. Modifiers**: Modifiers handle continuous values (production rates, combat multipliers).
+Unlocks are discrete gates—different semantics.
 
-**vs. JSONB in tech_nodes**: Keeps unlock logic centralized and queryable. Avoids parsing blobs in construction
-hot-path.
+**vs. JSONB in tech_nodes**: Keeps unlock logic centralized and queryable. Avoids parsing blobs in
+construction hot-path.
 
 **vs. Hardcoded**: Data-driven = faster balance iteration. Code deploys are expensive.
 
@@ -68,13 +71,14 @@ hot-path.
 
 ## Migration Path
 
-**Phase 1** (Now): Implement table + Keep level checks. Embassy/farms get dynamic limits based on Keep.
+**Phase 1** (Now): Implement table + Keep level checks. Embassy/farms get dynamic limits based on
+Keep.
 
-**Phase 2** (Later): Add tech tree schema. `player_tech` table tracks researched nodes. Same unlocks table handles
-tech-based limits.
+**Phase 2** (Later): Add tech tree schema. `player_tech` table tracks researched nodes. Same unlocks
+table handles tech-based limits.
 
-**Phase 3** (Future): Complex unlocks (e.g., "Tech A OR Tech B") → small helper function in `can_construct()`, still
-reads from unlocks table.
+**Phase 3** (Future): Complex unlocks (e.g., "Tech A OR Tech B") → small helper function in
+`can_construct()`, still reads from unlocks table.
 
 ## Files Touched
 

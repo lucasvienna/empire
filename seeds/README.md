@@ -27,7 +27,8 @@ Seeds contain **extended configuration data** that is:
 
 ## File Naming Convention
 
-Seed files are executed in **alphabetical order** by filename. Use numeric prefixes to control execution order:
+Seed files are executed in **alphabetical order** by filename. Use numeric prefixes to control
+execution order:
 
 ```
 001_building_levels.sql
@@ -90,7 +91,8 @@ This ensures that:
 
 ## Version Control
 
-Seed files are **committed to git** and represent the canonical game configuration at each version. Changes to seed files should:
+Seed files are **committed to git** and represent the canonical game configuration at each version.
+Changes to seed files should:
 
 - Be reviewed like code changes
 - Include clear commit messages explaining balance changes

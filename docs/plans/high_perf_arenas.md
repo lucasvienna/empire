@@ -341,5 +341,5 @@ mod benches {
 6. **Add object pooling** for frequently allocated types
 7. **Implement zero-copy serialization** for largest responses
 
-The request context pattern is most effective when you have clear evidence of allocation-heavy hot paths. Start small,
-measure everything, and expand based on concrete performance gains.
+The request context pattern is most effective when you have clear evidence of allocation-heavy hot
+paths. Start small, measure everything, and expand based on concrete performance gains.

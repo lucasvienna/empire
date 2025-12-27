@@ -1,15 +1,14 @@
 # Combat System Design
 
-**Version**: 0.1.0
-**Created**: 2025-12-26
-**Status**: Draft
+**Version**: 0.1.0 **Created**: 2025-12-26 **Status**: Draft
 
 ---
 
 ## Overview
 
-Empire's combat system is a deterministic battle resolution system where players attack other players or NPCs to plunder
-resources. Combat outcomes are calculated based on unit compositions, unit type advantages, and faction bonuses.
+Empire's combat system is a deterministic battle resolution system where players attack other
+players or NPCs to plunder resources. Combat outcomes are calculated based on unit compositions,
+unit type advantages, and faction bonuses.
 
 ### Design Principles
 
@@ -34,7 +33,7 @@ Attack → Calculate Power → Determine Winner → Apply Losses → Transfer Pl
 Four unit types are available in v0.1.0, with a fifth (Magical) coming in v0.2.0+:
 
 | Unit Type   | Building   | Role               | Base ATK | Base DEF | Training Time | Version |
-|-------------|------------|--------------------|----------|----------|---------------|---------|
+| ----------- | ---------- | ------------------ | -------- | -------- | ------------- | ------- |
 | Infantry    | Barracks   | Frontline fighters | 10       | 15       | 60s           | v0.1.0  |
 | Ranged      | Range      | Backline damage    | 15       | 5        | 90s           | v0.1.0  |
 | Cavalry     | Stable     | Fast flankers      | 12       | 10       | 120s          | v0.1.0  |
@@ -47,14 +46,15 @@ Four unit types are available in v0.1.0, with a fifth (Magical) coming in v0.2.0
 - Ranged: Glass cannon, high damage but fragile
 - Cavalry: Mobile, moderate stats, counters artillery
 - Artillery: Extreme damage, extremely fragile
-- Magical: Ultimate glass cannon - devastates if protected, melts if focused (requires tech research)
+- Magical: Ultimate glass cannon - devastates if protected, melts if focused (requires tech
+  research)
 
 ### Unit Costs
 
 Each unit has resource costs that scale with their power:
 
 | Unit Type   | Food | Wood | Stone | Gold | Total Value | Version |
-|-------------|------|------|-------|------|-------------|---------|
+| ----------- | ---- | ---- | ----- | ---- | ----------- | ------- |
 | Infantry    | 20   | 10   | -     | -    | 30          | v0.1.0  |
 | Ranged      | 15   | 20   | -     | -    | 35          | v0.1.0  |
 | Cavalry     | 30   | -    | -     | 15   | 45          | v0.1.0  |
@@ -65,8 +65,8 @@ Each unit has resource costs that scale with their power:
 
 ## Unit Type Advantages
 
-Combat uses a rock-paper-scissors advantage system where each unit type is strong against one type and weak against
-another.
+Combat uses a rock-paper-scissors advantage system where each unit type is strong against one type
+and weak against another.
 
 ### Advantage Matrix
 
@@ -90,7 +90,7 @@ Artillery  Ranged
 ### Advantage Multipliers
 
 | Matchup Type | Multiplier | Description                       |
-|--------------|------------|-----------------------------------|
+| ------------ | ---------- | --------------------------------- |
 | Strong       | 1.50x      | Attacker's unit type beats target |
 | Neutral      | 1.00x      | No advantage                      |
 | Weak         | 0.67x      | Target's unit type beats attacker |
@@ -98,7 +98,7 @@ Artillery  Ranged
 ### Full Matchup Table
 
 | Attacker ↓ / Defender → | Infantry | Ranged | Cavalry | Artillery |
-|-------------------------|----------|--------|---------|-----------|
+| ----------------------- | -------- | ------ | ------- | --------- |
 | **Infantry**            | 1.00     | 1.50   | 1.00    | 0.67      |
 | **Ranged**              | 0.67     | 1.00   | 1.50    | 1.00      |
 | **Cavalry**             | 1.00     | 0.67   | 1.00    | 1.50      |
@@ -116,23 +116,23 @@ Magical units operate **outside the rock-paper-scissors cycle** as glass cannons
 
 **Offensive Multipliers (Magical attacking):**
 
-| Target Type | Multiplier | Notes                          |
-|-------------|------------|--------------------------------|
-| Infantry    | 1.25x      | Slight advantage               |
-| Ranged      | 1.25x      | Slight advantage               |
-| Cavalry     | 1.25x      | Slight advantage               |
-| Artillery   | 1.25x      | Slight advantage               |
-| Magical     | 1.00x      | Mage duels are neutral         |
+| Target Type | Multiplier | Notes                  |
+| ----------- | ---------- | ---------------------- |
+| Infantry    | 1.25x      | Slight advantage       |
+| Ranged      | 1.25x      | Slight advantage       |
+| Cavalry     | 1.25x      | Slight advantage       |
+| Artillery   | 1.25x      | Slight advantage       |
+| Magical     | 1.00x      | Mage duels are neutral |
 
 **Defensive Multipliers (Magical defending):**
 
-| Attacker Type | Multiplier | Notes                          |
-|---------------|------------|--------------------------------|
-| Infantry      | 0.75x      | Takes extra damage             |
-| Ranged        | 0.75x      | Takes extra damage             |
-| Cavalry       | 0.75x      | Takes extra damage             |
-| Artillery     | 0.75x      | Takes extra damage             |
-| Magical       | 1.00x      | Mage duels are neutral         |
+| Attacker Type | Multiplier | Notes                  |
+| ------------- | ---------- | ---------------------- |
+| Infantry      | 0.75x      | Takes extra damage     |
+| Ranged        | 0.75x      | Takes extra damage     |
+| Cavalry       | 0.75x      | Takes extra damage     |
+| Artillery     | 0.75x      | Takes extra damage     |
+| Magical       | 1.00x      | Mage duels are neutral |
 
 **Strategic Implications:**
 
@@ -154,11 +154,11 @@ Magical units operate **outside the rock-paper-scissors cycle** as glass cannons
 
 ## Faction Bonuses
 
-Each faction has combat bonuses that apply to specific unit types. These are implemented as **permanent modifiers**
-applied via the modifier system when a player selects their faction.
+Each faction has combat bonuses that apply to specific unit types. These are implemented as
+**permanent modifiers** applied via the modifier system when a player selects their faction.
 
 | Faction | Combat Bonus           | Effect                              |
-|---------|------------------------|-------------------------------------|
+| ------- | ---------------------- | ----------------------------------- |
 | Humans  | +15% Cavalry ATK/DEF   | Cavalry units deal/take 15% more    |
 | Orcs    | +15% Infantry ATK/DEF  | Infantry units deal/take 15% more   |
 | Elves   | +15% Ranged ATK/DEF    | Ranged units deal/take 15% more     |
@@ -167,7 +167,8 @@ applied via the modifier system when a player selects their faction.
 
 **Implementation via Modifier System:**
 
-Faction bonuses are stored as modifiers in the database and applied via triggers on player creation/faction change:
+Faction bonuses are stored as modifiers in the database and applied via triggers on player
+creation/faction change:
 
 ```sql
 -- Example faction modifier records (seeded data)
@@ -184,6 +185,7 @@ INSERT INTO modifiers (name, target_type, target_unit_type, target_combat_stat, 
 ```
 
 When combat calculations run, the modifier system aggregates all applicable modifiers:
+
 - Faction passives (permanent, no expiry)
 - Research bonuses (permanent after unlock)
 - Temporary buffs (items, events)
@@ -192,6 +194,7 @@ When combat calculations run, the modifier system aggregates all applicable modi
 **Goblin Strategy:**
 
 Goblins compensate for lack of combat bonuses through superior production speed:
+
 - +20% training speed means ~17% more units over time
 - Swarm tactics: overwhelm with numbers instead of quality
 - Better recovery after losses (faster replenishment)
@@ -203,17 +206,18 @@ Goblins compensate for lack of combat bonuses through superior production speed:
 
 ### Overview
 
-Combat is resolved in a single calculation phase. Both sides contribute power based on their army composition, and the
-ratio of attacker power to defender power determines the outcome.
+Combat is resolved in a single calculation phase. Both sides contribute power based on their army
+composition, and the ratio of attacker power to defender power determines the outcome.
 
 ### Step 1: Calculate Army Power (Cross-Product Formula)
 
-Power calculation uses a **cross-product weighted formula** where each unit type's contribution is weighted by the
-enemy's composition. This ensures that army composition matters strategically.
+Power calculation uses a **cross-product weighted formula** where each unit type's contribution is
+weighted by the enemy's composition. This ensures that army composition matters strategically.
 
 **Mathematical Definition:**
 
 Let:
+
 - `A` = Attacker's army: set of unit stacks `{(type_i, qty_i, atk_i)}`
 - `D` = Defender's army: set of unit stacks `{(type_j, qty_j, def_j)}`
 - `N_A` = Total attacker units: `Σ qty_i`
@@ -222,22 +226,25 @@ Let:
 - `adv(type_a, type_d)` = Advantage multiplier from matchup table
 
 **Attacker Power Formula:**
+
 ```
 P_atk = Σᵢ Σⱼ [ qty_i × atk_i × mod(attacker, ATK, type_i) × adv(type_i, type_j) × (qty_j / N_D) ]
 ```
 
 **Defender Power Formula:**
+
 ```
 P_def = Σⱼ Σᵢ [ qty_j × def_j × mod(defender, DEF, type_j) × adv(type_j, type_i) × (qty_i / N_A) ]
 ```
 
-**Intuition**: Each unit type contributes power against each enemy type, weighted by the proportion of the enemy army
-that type represents. Fighting 100% archers means your cavalry takes full disadvantage; fighting 50% archers means
-only half disadvantage.
+**Intuition**: Each unit type contributes power against each enemy type, weighted by the proportion
+of the enemy army that type represents. Fighting 100% archers means your cavalry takes full
+disadvantage; fighting 50% archers means only half disadvantage.
 
 **Simplified Single-Type Case:**
 
 When both armies have only one unit type, the formula reduces to:
+
 ```
 P_atk = qty_atk × atk × mod(attacker, ATK, unit_type) × advantage_multiplier
 P_def = qty_def × def × mod(defender, DEF, unit_type) × advantage_multiplier
@@ -313,20 +320,22 @@ pub struct Modifier {
 
 **Modifier Sources for Combat:**
 
-| Source | target_type | target_unit_type | target_combat_stat | Example |
-|--------|-------------|------------------|-------------------|---------|
-| Faction passive | `combat` | `infantry` | `atk` | Orcs: +15% Infantry ATK |
-| Faction passive | `combat` | `infantry` | `def` | Orcs: +15% Infantry DEF |
-| Research node | `combat` | `NULL` (all) | `atk` | Military Tactics I: +5% all ATK |
-| Temporary buff | `combat` | `cavalry` | `atk` | War Horn: +20% Cavalry ATK |
-| Building bonus | `combat` | `NULL` (all) | `def` | Walls Lv5: +10% all DEF |
+| Source          | target_type | target_unit_type | target_combat_stat | Example                         |
+| --------------- | ----------- | ---------------- | ------------------ | ------------------------------- |
+| Faction passive | `combat`    | `infantry`       | `atk`              | Orcs: +15% Infantry ATK         |
+| Faction passive | `combat`    | `infantry`       | `def`              | Orcs: +15% Infantry DEF         |
+| Research node   | `combat`    | `NULL` (all)     | `atk`              | Military Tactics I: +5% all ATK |
+| Temporary buff  | `combat`    | `cavalry`        | `atk`              | War Horn: +20% Cavalry ATK      |
+| Building bonus  | `combat`    | `NULL` (all)     | `def`              | Walls Lv5: +10% all DEF         |
 
-**Note**: When `target_unit_type` is `NULL`, the modifier applies to all unit types. The query should use
-`(target_unit_type IS NULL OR target_unit_type = :unit_type)` to match both specific and global modifiers.
+**Note**: When `target_unit_type` is `NULL`, the modifier applies to all unit types. The query
+should use `(target_unit_type IS NULL OR target_unit_type = :unit_type)` to match both specific and
+global modifiers.
 
 **Stacking Example:**
 
-Player is Orc with "Military Tactics I" research and active "War Horn" buff, attacking with Infantry:
+Player is Orc with "Military Tactics I" research and active "War Horn" buff, attacking with
+Infantry:
 
 ```
 Faction modifier (Additive):     +15% Infantry ATK
@@ -381,8 +390,8 @@ loser_loss_pct = min(80%, 30% + 20% × (combat_ratio - 1))
 
 ### Step 6: Apply Losses (Weighted Distribution)
 
-Total losses are calculated, then **distributed based on disadvantage weighting**. Units facing unfavorable matchups
-suffer higher casualties than those with advantages.
+Total losses are calculated, then **distributed based on disadvantage weighting**. Units facing
+unfavorable matchups suffer higher casualties than those with advantages.
 
 **Loss Distribution Formula:**
 
@@ -393,21 +402,25 @@ vulnerability_i = Σⱼ [ (qty_j / N_enemy) × inverse_advantage(type_i, type_j)
 ```
 
 Where `inverse_advantage` is:
+
 - 1.5 if enemy type beats this type (we're weak)
 - 1.0 if neutral matchup
 - 0.67 if we beat enemy type (we're strong)
 
 Normalize weights to sum to 1.0:
+
 ```
 weight_i = vulnerability_i / Σ vulnerability_k
 ```
 
 Apply losses per unit type:
+
 ```
 losses_i = round(total_losses × weight_i)
 ```
 
 **Example**: Cavalry + Infantry vs pure Ranged (Ranged beats Cavalry)
+
 - Cavalry vulnerability: 1.5 (weak vs Ranged)
 - Infantry vulnerability: 0.67 (strong vs Ranged)
 - Total: 2.17
@@ -416,6 +429,7 @@ losses_i = round(total_losses × weight_i)
 - If 10 total losses: 7 Cavalry die, 3 Infantry die
 
 **Rounding Rules:**
+
 - Winners: Round DOWN (favor winners)
 - Losers: Round UP (punish losers)
 - Minimum 1 loss per unit type if that type has units
@@ -701,8 +715,8 @@ Losses and plunder are capped:
 
 ## PvE Combat System
 
-Empire v0.1.0 focuses primarily on **PvE (Player vs Environment)** combat. Players attack NPC targets to gain resources
-and test army compositions before engaging in PvP.
+Empire v0.1.0 focuses primarily on **PvE (Player vs Environment)** combat. Players attack NPC
+targets to gain resources and test army compositions before engaging in PvP.
 
 ### Design Goals
 
@@ -714,31 +728,31 @@ and test army compositions before engaging in PvP.
 
 ### NPC Target Types
 
-NPCs are attackable targets that don't have player accounts. They exist on the world map and respawn after being
-defeated.
+NPCs are attackable targets that don't have player accounts. They exist on the world map and respawn
+after being defeated.
 
 #### World Map Targets
 
-| NPC Type           | Difficulty | Army Size | Resources | Respawn  | Description                    |
-|--------------------|------------|-----------|-----------|----------|--------------------------------|
-| **Monster Lair**   | Trivial    | 5-10      | Minimal   | 30 min   | Wild beasts, tutorial targets  |
-| **Bandit Camp**    | Easy       | 15-25     | Low       | 1 hour   | Outlaws with mixed units       |
-| **Outlaw Hideout** | Medium     | 40-60     | Medium    | 4 hours  | Organized criminals            |
-| **Rebel Fort**     | Hard       | 100-150   | High      | 12 hours | Fortified military deserters   |
+| NPC Type           | Difficulty | Army Size | Resources | Respawn  | Description                   |
+| ------------------ | ---------- | --------- | --------- | -------- | ----------------------------- |
+| **Monster Lair**   | Trivial    | 5-10      | Minimal   | 30 min   | Wild beasts, tutorial targets |
+| **Bandit Camp**    | Easy       | 15-25     | Low       | 1 hour   | Outlaws with mixed units      |
+| **Outlaw Hideout** | Medium     | 40-60     | Medium    | 4 hours  | Organized criminals           |
+| **Rebel Fort**     | Hard       | 100-150   | High      | 12 hours | Fortified military deserters  |
 
 **NPC Army Compositions:**
 
-| NPC Type           | Infantry | Ranged | Cavalry | Artillery | Strategy Hint                    |
-|--------------------|----------|--------|---------|-----------|----------------------------------|
-| Monster Lair       | 100%     | 0%     | 0%      | 0%        | Any army works                   |
-| Bandit Camp        | 60%      | 30%    | 10%     | 0%        | Bring Infantry for Ranged        |
-| Outlaw Hideout     | 40%      | 40%    | 20%     | 0%        | Mixed army recommended           |
-| Rebel Fort         | 30%      | 30%    | 20%     | 20%       | Need balanced force with Cavalry |
+| NPC Type       | Infantry | Ranged | Cavalry | Artillery | Strategy Hint                    |
+| -------------- | -------- | ------ | ------- | --------- | -------------------------------- |
+| Monster Lair   | 100%     | 0%     | 0%      | 0%        | Any army works                   |
+| Bandit Camp    | 60%      | 30%    | 10%     | 0%        | Bring Infantry for Ranged        |
+| Outlaw Hideout | 40%      | 40%    | 20%     | 0%        | Mixed army recommended           |
+| Rebel Fort     | 30%      | 30%    | 20%     | 20%       | Need balanced force with Cavalry |
 
 #### The Infinite Tower
 
-The **Tower of Trials** is an endgame PvE challenge with infinite floors of increasing difficulty. Each floor has a
-preset army composition that tests different strategies.
+The **Tower of Trials** is an endgame PvE challenge with infinite floors of increasing difficulty.
+Each floor has a preset army composition that tests different strategies.
 
 **Tower Mechanics:**
 
@@ -758,13 +772,13 @@ Floor N rewards = base_reward × (1.05 ^ N)
 
 **Example Floors:**
 
-| Floor | Army Size | Composition Focus          | Challenge Type              |
-|-------|-----------|----------------------------|-----------------------------|
-| 1-5   | 20-30     | Single unit type           | Learn counter-picking       |
-| 6-10  | 40-60     | Two unit types             | Mixed army basics           |
-| 11-20 | 80-150    | Three unit types           | Full composition strategy   |
-| 21-50 | 200-500   | Optimized compositions     | Min-max required            |
-| 51+   | 600+      | Perfect counters           | Whale territory             |
+| Floor | Army Size | Composition Focus      | Challenge Type            |
+| ----- | --------- | ---------------------- | ------------------------- |
+| 1-5   | 20-30     | Single unit type       | Learn counter-picking     |
+| 6-10  | 40-60     | Two unit types         | Mixed army basics         |
+| 11-20 | 80-150    | Three unit types       | Full composition strategy |
+| 21-50 | 200-500   | Optimized compositions | Min-max required          |
+| 51+   | 600+      | Perfect counters       | Whale territory           |
 
 **Floor Themes (Rotating):**
 
@@ -783,13 +797,13 @@ Floor N rewards = base_reward × (1.05 ^ N)
 
 ### NPC Rewards
 
-| Target Type    | Food     | Wood     | Stone    | Gold     | Special          |
-|----------------|----------|----------|----------|----------|------------------|
-| Monster Lair   | 50-100   | 25-50    | 0        | 0        | -                |
-| Bandit Camp    | 100-200  | 100-200  | 50-100   | 25-50    | -                |
-| Outlaw Hideout | 300-500  | 300-500  | 200-300  | 100-200  | -                |
-| Rebel Fort     | 800-1200 | 800-1200 | 500-800  | 300-500  | -                |
-| Tower (per 5)  | Scaling  | Scaling  | Scaling  | Scaling  | Cosmetics (TBD)  |
+| Target Type    | Food     | Wood     | Stone   | Gold    | Special         |
+| -------------- | -------- | -------- | ------- | ------- | --------------- |
+| Monster Lair   | 50-100   | 25-50    | 0       | 0       | -               |
+| Bandit Camp    | 100-200  | 100-200  | 50-100  | 25-50   | -               |
+| Outlaw Hideout | 300-500  | 300-500  | 200-300 | 100-200 | -               |
+| Rebel Fort     | 800-1200 | 800-1200 | 500-800 | 300-500 | -               |
+| Tower (per 5)  | Scaling  | Scaling  | Scaling | Scaling | Cosmetics (TBD) |
 
 ---
 
@@ -815,7 +829,7 @@ POST /game/combat/attack
 
 ```json
 {
-  "result": "victory",  // or "defeat"
+  "result": "victory", // or "defeat"
   "combat_ratio": 1.56,
   "attacker_losses": {
     "infantry": 3,
@@ -875,35 +889,38 @@ POST /game/combat/attack
 
 ### Why Attacker Wins Ties
 
-In v0.1.0, when combat ratio equals exactly 1.0, the **attacker wins**. This design decision supports the core game
-loop and leaves room for future defender advantages.
+In v0.1.0, when combat ratio equals exactly 1.0, the **attacker wins**. This design decision
+supports the core game loop and leaves room for future defender advantages.
 
 **Arguments for Attacker Wins Ties:**
 
-| Benefit                     | Explanation                                                    |
-|-----------------------------|----------------------------------------------------------------|
-| Encourages offensive play   | Supports "Build → Train → Attack → Expand" core loop           |
-| Prevents turtling meta      | Players can't passively sit and accumulate without risk        |
-| Simple mental model         | "Equal force = I can win" is intuitive                         |
-| Rewards initiative          | Taking action should be rewarded over passive defense          |
+| Benefit                   | Explanation                                             |
+| ------------------------- | ------------------------------------------------------- |
+| Encourages offensive play | Supports "Build → Train → Attack → Expand" core loop    |
+| Prevents turtling meta    | Players can't passively sit and accumulate without risk |
+| Simple mental model       | "Equal force = I can win" is intuitive                  |
+| Rewards initiative        | Taking action should be rewarded over passive defense   |
 
 **Arguments Against (Considered but Rejected for v0.1.0):**
 
-| Concern                    | Mitigation                                                      |
-|----------------------------|-----------------------------------------------------------------|
-| No home advantage          | Walls will provide this in v0.2.0+                              |
-| Snowball effect            | Loss caps (80% max) prevent complete wipeouts                   |
-| New player vulnerability   | PvE focus means new players don't need to PvP immediately       |
+| Concern                  | Mitigation                                                |
+| ------------------------ | --------------------------------------------------------- |
+| No home advantage        | Walls will provide this in v0.2.0+                        |
+| Snowball effect          | Loss caps (80% max) prevent complete wipeouts             |
+| New player vulnerability | PvE focus means new players don't need to PvP immediately |
 
 **Future: Walls as Defender Advantage**
 
-Rather than inherent defender bonuses, Empire will use **Walls** (v0.2.0+) to provide defender advantages:
+Rather than inherent defender bonuses, Empire will use **Walls** (v0.2.0+) to provide defender
+advantages:
+
 - Players who invest in Walls earn defensive bonuses
 - Creates strategic choice: offense (more units) vs defense (walls)
 - Active players can attack before enemies build walls
 - Defensive players can turtle if they invest properly
 
-This design gives players **agency** over their defensive capabilities rather than free passive bonuses.
+This design gives players **agency** over their defensive capabilities rather than free passive
+bonuses.
 
 ---
 
@@ -918,7 +935,8 @@ This design gives players **agency** over their defensive capabilities rather th
 
 ### Known Balance Questions
 
-1. ~~Should Goblins get a minor combat bonus?~~ **Resolved**: No - 20% training speed enables swarm tactics
+1. ~~Should Goblins get a minor combat bonus?~~ **Resolved**: No - 20% training speed enables swarm
+   tactics
 2. Is 80% max losses too punishing? (Current: Acceptable, prevents complete wipeout)
 3. Should plunder affect storage buildings? (Current: No, takes from raw totals)
 4. Should attacker win ties? (Current: Yes - see Design Rationale section)
@@ -937,6 +955,7 @@ If balance adjustments needed:
 ## Implementation Checklist
 
 ### Core Combat Engine
+
 - [ ] Create `src/game/combat/mod.rs`
 - [ ] Create `src/game/combat/calculator.rs` with pure calculation functions
 - [ ] Create `src/domain/combat.rs` with domain models
@@ -947,6 +966,7 @@ If balance adjustments needed:
 - [ ] Implement plunder calculation
 
 ### PvE System
+
 - [ ] Create NPC target types (Monster, Bandit, Outlaw, Rebel)
 - [ ] Create NPC spawn/respawn system
 - [ ] Create Tower of Trials floor generation
@@ -954,12 +974,14 @@ If balance adjustments needed:
 - [ ] Create Tower leaderboard
 
 ### API & Persistence
+
 - [ ] Create combat history table for logging
 - [ ] Create combat API endpoints
 - [ ] Create NPC attack endpoints
 - [ ] Create Tower endpoints
 
 ### Testing
+
 - [ ] Write unit tests for combat calculator
 - [ ] Write unit tests for loss distribution
 - [ ] Write integration tests for full combat flow
@@ -967,6 +989,5 @@ If balance adjustments needed:
 
 ---
 
-**Last Updated**: 2025-12-26
-**Maintainer**: Lucas Vienna (@lucasvienna)
-**Status**: Draft - Awaiting Review
+**Last Updated**: 2025-12-26 **Maintainer**: Lucas Vienna (@lucasvienna) **Status**: Draft -
+Awaiting Review

@@ -2,10 +2,9 @@
 
 ## Overview
 
-This document outlines best practices, antipatterns, and recommendations for
-tracing and telemetry in the Empire project. Consistent and effective tracing
-is essential for monitoring, debugging, and understanding the behavior of our
-application in production.
+This document outlines best practices, antipatterns, and recommendations for tracing and telemetry
+in the Empire project. Consistent and effective tracing is essential for monitoring, debugging, and
+understanding the behavior of our application in production.
 
 ## Current Implementation Analysis
 
@@ -216,7 +215,6 @@ fn process() -> Result<()> {
 
 ## Conclusion
 
-Consistent and effective tracing is essential for maintaining and troubleshooting
-the Empire application. By following these guidelines, we can improve the
-observability of our system and make it easier to identify and resolve issues in
-production.
+Consistent and effective tracing is essential for maintaining and troubleshooting the Empire
+application. By following these guidelines, we can improve the observability of our system and make
+it easier to identify and resolve issues in production.

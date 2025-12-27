@@ -1,0 +1,7 @@
+[tools]
+prettier = "latest"
+rust = "stable"
+
+[tasks.mdfmt]
+description = "Formats MD files with prettier"
+run = "prettier ./**/*.md --write --prose-wrap always --print-width 100"

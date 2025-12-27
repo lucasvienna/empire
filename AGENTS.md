@@ -2,26 +2,25 @@
 
 _Last updated 2025-11-16_
 
-> **Purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT, etc.) and every human
-> who edits this repository.  
-> It encodes our coding standards, guard-rails, and workflow tricks so the _human 30%_ (architecture, tests, domain
-> judgment) stays in human hands.[^1]
+> **Purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT,
+> etc.) and every human who edits this repository.  
+> It encodes our coding standards, guard-rails, and workflow tricks so the _human 30%_
+> (architecture, tests, domain judgment) stays in human hands.[^1]
 
 ---
 
 ## 1. Project Overview
 
-Empire is the server backend for a base-building multi-client game built in Rust. It handles data, storage, scheduled
-tasks,
-and all logic in a server-authoritative manner. Key components:
+Empire is the server backend for a base-building multi-client game built in Rust. It handles data,
+storage, scheduled tasks, and all logic in a server-authoritative manner. Key components:
 
 - **domain**: Core data structures (DB, business, etc)
 - **game**: Main game logic and routines
 - **net**: Networking utilities and server scaffolding
 - **controllers**: REST API routers & controllers
 
-**Golden Rule**: When unsure about implementation details or requirements, ALWAYS consult the developer rather than
-making assumptions.
+**Golden Rule**: When unsure about implementation details or requirements, ALWAYS consult the
+developer rather than making assumptions.
 
 ---
 
@@ -71,15 +70,16 @@ making assumptions.
 
 - **Rust Version**: 1.87+, use stable features unless explicitly requiring nightly
 - **Formatting**: Use `cargo fmt` with project's `rustfmt.toml` configuration
-- **Naming**: `snake_case` (functions/variables), `PascalCase` (structs, types, traits), `SCREAMING_SNAKE_CASE` (
-  constants)
-- **Error Handling**: Prefer `Result<T, E>` and `?` operator. Use `anyhow` for application errors, custom error types
-  for domain errors
+- **Naming**: `snake_case` (functions/variables), `PascalCase` (structs, types, traits),
+  `SCREAMING_SNAKE_CASE` ( constants)
+- **Error Handling**: Prefer `Result<T, E>` and `?` operator. Use `anyhow` for application errors,
+  custom error types for domain errors
 - **Documentation**: Use `///` for public APIs, `//` for implementation details
-- **Testing**: Use `#[cfg(test)]` modules for unit tests within source files, separate integration tests in `tests/`
-  directory. Use `axum-test` for API endpoint testing
+- **Testing**: Use `#[cfg(test)]` modules for unit tests within source files, separate integration
+  tests in `tests/` directory. Use `axum-test` for API endpoint testing
 - **Tracing**: Use `#[instrument]` macro for tracing in public methods. Skip sensitive parameters
-  with `#[instrument(skip(password))]`. Follow consistent logging levels per `docs/tracing_guidelines.md`
+  with `#[instrument(skip(password))]`. Follow consistent logging levels per
+  `docs/tracing_guidelines.md`
 
 **Error Handling Patterns**:
 
@@ -122,7 +122,8 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 ### Core Modules
 
 - **domain/**: Business logic and data models (Player, Building, Resource, Modifier, Job)
-- **game/**: Game-specific logic including resource processing, building services, and modifier systems
+- **game/**: Game-specific logic including resource processing, building services, and modifier
+  systems
 - **controllers/**: REST API endpoints organized by feature (auth, game, health, player, user)
 - **db/**: Database models and connection handling using Diesel ORM
 - **net/**: Networking layer with Axum web framework
@@ -156,8 +157,10 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 
 **Seeding Strategy**: Hybrid approach separating schema from data
 
-- **Migrations** (`migrations/`): Schema structure + critical reference data (factions, core building definitions)
-- **Seeds** (`seeds/`): Extended configuration data (building levels, resources, future items/tech trees)
+- **Migrations** (`migrations/`): Schema structure + critical reference data (factions, core
+  building definitions)
+- **Seeds** (`seeds/`): Extended configuration data (building levels, resources, future items/tech
+  trees)
   - Seeds are SQL files executed in alphabetical order by `empire::db::seeds::run()`
   - All seeds are idempotent using unique constraints + `ON CONFLICT DO NOTHING`
   - Seeds run automatically in tests via `tests/common/mod.rs`
@@ -169,14 +172,16 @@ fn validate_building_placement(building: &Building) -> Result<(), GameError> {
 
 ## 6. Anchor Comments
 
-Add specially formatted comments throughout the codebase for inline knowledge that can be easily `grep`ped.
+Add specially formatted comments throughout the codebase for inline knowledge that can be easily
+`grep`ped.
 
 ### Guidelines:
 
-- Use `AIDEV-NOTE:`, `AIDEV-TODO:`, or `AIDEV-QUESTION:` (all-caps prefix) for comments aimed at AI and developers
+- Use `AIDEV-NOTE:`, `AIDEV-TODO:`, or `AIDEV-QUESTION:` (all-caps prefix) for comments aimed at AI
+  and developers
 - Keep them concise (≤ 120 chars)
-- **Important:** Before scanning files, always first try to **locate existing anchors** `AIDEV-*` in relevant
-  subdirectories
+- **Important:** Before scanning files, always first try to **locate existing anchors** `AIDEV-*` in
+  relevant subdirectories
 - **Update relevant anchors** when modifying associated code
 - **Do not remove `AIDEV-NOTE`s** without explicit human instruction
 - Add relevant anchor comments whenever code is:
@@ -293,8 +298,10 @@ struct DatabaseConfig {
 
 - **Always check for `AGENTS.md` files in specific directories** before working on code within them
 - If a directory's `AGENTS.md` is outdated or incorrect, **update it**
-- If you make significant changes to a directory's structure or patterns, **document these in its `AGENTS.md`**
-- If a directory lacks an `AGENTS.md` but contains complex logic worth documenting, **suggest creating one**
+- If you make significant changes to a directory's structure or patterns, **document these in its
+  `AGENTS.md`**
+- If a directory lacks an `AGENTS.md` but contains complex logic worth documenting, **suggest
+  creating one**
 
 ---
 
@@ -338,7 +345,8 @@ When responding to user instructions, follow this process:
 1. **Consult Guidance**: Review relevant `AGENTS.md` files for the request
 2. **Clarify Ambiguities**: Ask targeted questions if requirements are unclear
 3. **Plan & Break Down**: Create a rough plan referencing project conventions
-4. **Execute or Confirm**: For trivial tasks, proceed immediately; for complex tasks, present plan for review
+4. **Execute or Confirm**: For trivial tasks, proceed immediately; for complex tasks, present plan
+   for review
 5. **Track Progress**: Use internal to-do lists for multi-step tasks
 6. **Re-plan if Stuck**: Return to planning phase if blocked
 7. **Update Documentation**: Update anchor comments and documentation after completion
@@ -354,9 +362,9 @@ These files control which files should be ignored by AI tools:
 - `.agentignore`: Specifies files ignored by IDE (build directories, logs, caches, etc.)
 - `.agentindexignore`: Controls IDE indexing exclusions for performance
 
-**Never modify these ignore files** without explicit permission. When adding new files, check these patterns to ensure
-proper indexing.
+**Never modify these ignore files** without explicit permission. When adding new files, check these
+patterns to ensure proper indexing.
 
 [^1]:
-    This principle emphasizes human oversight for critical aspects like architecture, testing, and domain-specific
-    decisions, ensuring AI assists rather than fully dictates development.
+    This principle emphasizes human oversight for critical aspects like architecture, testing, and
+    domain-specific decisions, ensuring AI assists rather than fully dictates development.
