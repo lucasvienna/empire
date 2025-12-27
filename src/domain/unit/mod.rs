@@ -6,6 +6,7 @@ pub mod player_unit;
 pub mod training;
 
 use std::io::Write;
+use std::str::from_utf8;
 
 use chrono::{DateTime, Utc};
 use diesel::deserialize::FromSql;
@@ -46,31 +47,34 @@ pub enum UnitType {
 	Magical,
 }
 
+impl AsRef<str> for UnitType {
+	fn as_ref(&self) -> &str {
+		match self {
+			UnitType::Infantry => "infantry",
+			UnitType::Ranged => "ranged",
+			UnitType::Cavalry => "cavalry",
+			UnitType::Artillery => "artillery",
+			UnitType::Magical => "magical",
+		}
+	}
+}
+
 impl ToSql<crate::schema::sql_types::UnitType, Pg> for UnitType {
 	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-		match *self {
-			UnitType::Infantry => out.write_all(b"infantry")?,
-			UnitType::Ranged => out.write_all(b"ranged")?,
-			UnitType::Cavalry => out.write_all(b"cavalry")?,
-			UnitType::Artillery => out.write_all(b"artillery")?,
-			UnitType::Magical => out.write_all(b"magical")?,
-		}
+		out.write_all(self.as_ref().as_bytes())?;
 		Ok(IsNull::No)
 	}
 }
 
 impl FromSql<crate::schema::sql_types::UnitType, Pg> for UnitType {
 	fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-		match bytes.as_bytes() {
-			b"infantry" => Ok(UnitType::Infantry),
-			b"ranged" => Ok(UnitType::Ranged),
-			b"cavalry" => Ok(UnitType::Cavalry),
-			b"artillery" => Ok(UnitType::Artillery),
-			b"magical" => Ok(UnitType::Magical),
-			_ => {
-				let unrecognized_value = String::from_utf8_lossy(bytes.as_bytes());
-				Err(format!("Unrecognized enum variant: {unrecognized_value}").into())
-			}
+		match from_utf8(bytes.as_bytes())? {
+			"infantry" => Ok(UnitType::Infantry),
+			"ranged" => Ok(UnitType::Ranged),
+			"cavalry" => Ok(UnitType::Cavalry),
+			"artillery" => Ok(UnitType::Artillery),
+			"magical" => Ok(UnitType::Magical),
+			other => Err(format!("Unrecognized enum variant: {other}").into()),
 		}
 	}
 }
