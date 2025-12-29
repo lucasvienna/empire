@@ -192,9 +192,10 @@ pub fn start_training(
 ///
 /// # Returns
 /// The updated TrainingQueueEntry with Cancelled status
-#[instrument(skip(conn))]
+#[instrument(skip(conn, job_queue))]
 pub fn cancel_training(
 	conn: &mut DbConn,
+	job_queue: &JobQueue,
 	player_id: &PlayerKey,
 	entry_id: &TrainingQueueKey,
 ) -> Result<TrainingQueueEntry> {
@@ -239,14 +240,25 @@ pub fn cancel_training(
 		Ok(cancelled)
 	});
 
-	res.map_err(|e| {
+	let cancelled_entry = res.map_err(|e| {
 		warn!("Failed to cancel training {}: {}", entry_id, e);
 		Error::from((
 			ErrorKind::CancelTrainingError,
 			"Failed to cancel training",
 			format!("{:?}", e),
 		))
-	})
+	})?;
+
+	// Cancel the associated job if one exists
+	if let Some(job_id) = entry.job_id {
+		match job_queue.cancel_job(&job_id) {
+			Ok(true) => trace!("Cancelled job {}", job_id),
+			Ok(false) => trace!("Job {} was not pending, may have already started", job_id),
+			Err(e) => warn!("Failed to cancel job {}: {}", job_id, e),
+		}
+	}
+
+	Ok(cancelled_entry)
 }
 
 /// Completes a training entry and adds units to player inventory.
