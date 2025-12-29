@@ -23,6 +23,7 @@ use crate::configuration::{ServerSettings, Settings};
 use crate::domain::app_state::{App, AppPool, AppState};
 use crate::game::modifiers::modifier_processor::ModifierProcessor;
 use crate::game::resources::resource_processor::ResourceProcessor;
+use crate::game::units::training_processor::TrainingProcessor;
 use crate::job_queue::worker_pool::WorkerPool;
 use crate::net::server;
 
@@ -102,8 +103,10 @@ fn start_subroutines(
 	let default_workers = settings.workers.unwrap_or(available_parallelism()?.get()) / 2;
 	let mod_workers = ModifierProcessor::initialise_n(default_workers, app_state);
 	let res_workers = ResourceProcessor::initialise_n(default_workers, app_state);
+	let train_workers = TrainingProcessor::initialise_n(default_workers, app_state);
 	worker_pool.add_workers(mod_workers);
 	worker_pool.add_workers(res_workers);
+	worker_pool.add_workers(train_workers);
 
 	Ok(worker_pool)
 }
