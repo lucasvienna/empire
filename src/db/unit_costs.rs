@@ -24,6 +24,15 @@ pub fn get_by_unit(conn: &mut DbConn, unit_key: &UnitKey) -> Result<Vec<UnitCost
 	Ok(costs)
 }
 
+// Retrieves all matching units by ID.
+#[instrument(skip(conn))]
+pub fn get_all_by_unit(conn: &mut DbConn, unit_ids: &[UnitKey]) -> Result<Vec<UnitCost>> {
+	let result = uc::table
+		.filter(uc::unit_id.eq_any(unit_ids))
+		.get_results(conn)?;
+	Ok(result)
+}
+
 /// Retrieves all unit costs grouped by unit ID.
 ///
 /// Returns a HashMap where keys are unit IDs and values are vectors of costs.
