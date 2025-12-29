@@ -4,7 +4,7 @@ CREATE TABLE player_unit
     id         UUID        NOT NULL DEFAULT uuidv7(),
     player_id  UUID        NOT NULL,
     unit_id    UUID        NOT NULL,
-    quantity   INTEGER     NOT NULL DEFAULT 0,
+    quantity   BIGINT      NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 

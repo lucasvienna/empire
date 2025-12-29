@@ -24,7 +24,7 @@ pub struct PlayerUnit {
 	pub id: PlayerUnitKey,
 	pub player_id: PlayerKey,
 	pub unit_id: UnitKey,
-	pub quantity: i32,
+	pub quantity: i64,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 }
@@ -35,7 +35,7 @@ pub struct PlayerUnit {
 pub struct NewPlayerUnit {
 	pub player_id: PlayerKey,
 	pub unit_id: UnitKey,
-	pub quantity: i32,
+	pub quantity: i64,
 }
 
 /// Data transfer object for updating a player unit entry
@@ -43,5 +43,5 @@ pub struct NewPlayerUnit {
 #[diesel(table_name = player_unit, check_for_backend(diesel::pg::Pg))]
 pub struct UpdatePlayerUnit {
 	pub id: PlayerUnitKey,
-	pub quantity: Option<i32>,
+	pub quantity: Option<i64>,
 }

@@ -22,7 +22,7 @@ pub struct UnitCost {
 	pub id: UnitCostKey,
 	pub unit_id: UnitKey,
 	pub resource: ResourceType,
-	pub amount: i32,
+	pub amount: i64,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 }
@@ -33,5 +33,5 @@ pub struct UnitCost {
 pub struct NewUnitCost {
 	pub unit_id: UnitKey,
 	pub resource: ResourceType,
-	pub amount: i32,
+	pub amount: i64,
 }

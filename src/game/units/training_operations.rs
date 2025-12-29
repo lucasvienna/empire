@@ -47,7 +47,7 @@ pub struct TrainingJobPayload {
 	pub training_queue_entry_id: Uuid,
 	pub player_id: Uuid,
 	pub unit_id: Uuid,
-	pub quantity: i32,
+	pub quantity: i64,
 }
 
 /// Starts training units at a specified building.
@@ -68,7 +68,7 @@ pub fn start_training(
 	player_id: &PlayerKey,
 	building_id: &PlayerBuildingKey,
 	unit_id: &UnitKey,
-	quantity: i32,
+	quantity: i64,
 ) -> Result<TrainingQueueEntry> {
 	debug!(
 		"Starting training for player {} at building {}: unit {} x {}",
@@ -350,21 +350,6 @@ pub fn complete_training(
 	})
 }
 
-/// Gets all active (Pending/InProgress) training entries for a player.
-#[instrument(skip(conn))]
-pub fn get_training_queue(
-	conn: &mut DbConn,
-	player_id: &PlayerKey,
-) -> Result<Vec<TrainingQueueEntry>> {
-	let entries = training_queue::get_active_for_player(conn, player_id)?;
-	trace!(
-		"Found {} active training entries for player {}",
-		entries.len(),
-		player_id
-	);
-	Ok(entries)
-}
-
 /// Gets all units that can be trained at a specific building.
 ///
 /// Validates building ownership and returns available unit types.
@@ -466,7 +451,7 @@ fn has_enough_resources(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
 	unit_id: &UnitKey,
-	quantity: i32,
+	quantity: i64,
 ) -> Result<bool> {
 	let costs = get_total_cost(conn, unit_id, quantity)?;
 	let player_res = resources::get_by_player_id(conn, player_id)?;
@@ -483,7 +468,7 @@ fn has_enough_resources(
 fn get_total_cost(
 	conn: &mut DbConn,
 	unit_id: &UnitKey,
-	quantity: i32,
+	quantity: i64,
 ) -> Result<(i64, i64, i64, i64)> {
 	let costs = unit_costs::get_by_unit(conn, unit_id)?;
 
@@ -494,10 +479,10 @@ fn get_total_cost(
 
 	for cost in costs {
 		match cost.resource.as_str() {
-			"food" => food = cost.amount as i64 * quantity as i64,
-			"wood" => wood = cost.amount as i64 * quantity as i64,
-			"stone" => stone = cost.amount as i64 * quantity as i64,
-			"gold" => gold = cost.amount as i64 * quantity as i64,
+			"food" => food = cost.amount * quantity,
+			"wood" => wood = cost.amount * quantity,
+			"stone" => stone = cost.amount * quantity,
+			"gold" => gold = cost.amount * quantity,
 			_ => {} // Ignore unknown resource types
 		}
 	}
@@ -512,7 +497,7 @@ fn calculate_training_duration(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
 	unit: &Unit,
-	quantity: i32,
+	quantity: i64,
 ) -> Result<TimeDelta> {
 	// Get base training time per unit
 	let base_seconds = unit.base_training_seconds as i64;
@@ -530,7 +515,7 @@ fn calculate_training_duration(
 	let modified_seconds = (base_seconds as f64 * modifier_f64) as i64;
 
 	// Total time = per_unit_time * quantity
-	let total_seconds = modified_seconds * quantity as i64;
+	let total_seconds = modified_seconds * quantity;
 
 	Ok(TimeDelta::seconds(total_seconds))
 }

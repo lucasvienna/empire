@@ -9,7 +9,9 @@
 
 use diesel::prelude::*;
 use empire::auth::utils::hash_password;
-use empire::db::{DbConn, player_buildings, player_units, players, resources, units};
+use empire::db::{
+	DbConn, player_buildings, player_units, players, resources, training_queue, units,
+};
 use empire::domain::factions::FactionCode;
 use empire::domain::jobs::JobType;
 use empire::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding};
@@ -18,7 +20,7 @@ use empire::domain::unit::training::TrainingStatus;
 use empire::domain::unit::{Unit, UnitType};
 use empire::game::units::training_operations::{
 	MAX_QUEUE_PER_BUILDING, TrainingJobPayload, cancel_training, complete_training,
-	get_available_units_for_building, get_training_queue, start_training,
+	get_available_units_for_building, start_training,
 };
 use empire::schema::{job, unit};
 
@@ -169,8 +171,8 @@ async fn test_start_training_happy_path() {
 
 	// Assert: resources were deducted
 	// Infantry costs: Food 20, Wood 10 per unit
-	let expected_food_cost = 20 * quantity as i64;
-	let expected_wood_cost = 10 * quantity as i64;
+	let expected_food_cost = 20 * quantity;
+	let expected_wood_cost = 10 * quantity;
 	let (food_after, wood_after, _, _) = get_player_resources(&mut conn, &player.id);
 	assert_eq!(food_after, food_before - expected_food_cost);
 	assert_eq!(wood_after, wood_before - expected_wood_cost);
@@ -218,7 +220,8 @@ async fn test_get_training_queue() {
 	.expect("Failed to start second training");
 
 	// Get training queue
-	let queue = get_training_queue(&mut conn, &player.id).expect("Failed to get training queue");
+	let queue = training_queue::get_active_for_player(&mut conn, &player.id)
+		.expect("Failed to get training queue");
 
 	// Assert: both entries are in the queue
 	assert_eq!(queue.len(), 2);
@@ -330,8 +333,8 @@ async fn test_cancel_training_full_refund() {
 	// Assert: player received ~80% refund
 	// Infantry costs: Food 20, Wood 10 per unit = 100 food, 50 wood for 5 units
 	// Since cancelled immediately, remaining ratio ≈ 1.0, so refund ≈ 80%
-	let cost_food = 20 * quantity as i64;
-	let cost_wood = 10 * quantity as i64;
+	let cost_food = 20 * quantity;
+	let cost_wood = 10 * quantity;
 	let expected_refund_food = (cost_food as f64 * 0.80) as i64;
 	let expected_refund_wood = (cost_wood as f64 * 0.80) as i64;
 

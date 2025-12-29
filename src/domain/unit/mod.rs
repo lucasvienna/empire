@@ -86,8 +86,8 @@ pub struct Unit {
 	pub id: UnitKey,
 	pub name: String,
 	pub unit_type: UnitType,
-	pub base_atk: i32,
-	pub base_def: i32,
+	pub base_atk: i64,
+	pub base_def: i64,
 	pub base_training_seconds: i32,
 	pub description: Option<String>,
 	pub created_at: DateTime<Utc>,
@@ -100,8 +100,8 @@ pub struct Unit {
 pub struct NewUnit {
 	pub name: String,
 	pub unit_type: UnitType,
-	pub base_atk: i32,
-	pub base_def: i32,
+	pub base_atk: i64,
+	pub base_def: i64,
 	pub base_training_seconds: i32,
 	pub description: Option<String>,
 }
@@ -113,8 +113,8 @@ pub struct UpdateUnit {
 	pub id: UnitKey,
 	pub name: Option<String>,
 	pub unit_type: Option<UnitType>,
-	pub base_atk: Option<i32>,
-	pub base_def: Option<i32>,
+	pub base_atk: Option<i64>,
+	pub base_def: Option<i64>,
 	pub base_training_seconds: Option<i32>,
 	pub description: Option<String>,
 }

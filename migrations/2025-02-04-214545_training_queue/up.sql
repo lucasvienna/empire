@@ -6,7 +6,7 @@ CREATE TABLE training_queue
     player_id    UUID            NOT NULL,
     building_id  UUID            NOT NULL,
     unit_id      UUID            NOT NULL,
-    quantity     INTEGER         NOT NULL DEFAULT 0,
+    quantity     BIGINT          NOT NULL DEFAULT 0,
     started_at   TIMESTAMPTZ     NOT NULL DEFAULT now(),
     completed_at TIMESTAMPTZ     NULL,
     status       training_status NOT NULL DEFAULT 'pending'::training_status,

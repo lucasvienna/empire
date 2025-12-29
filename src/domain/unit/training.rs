@@ -88,7 +88,7 @@ pub struct TrainingQueueEntry {
 	pub player_id: PlayerKey,
 	pub building_id: PlayerBuildingKey,
 	pub unit_id: UnitKey,
-	pub quantity: i32,
+	pub quantity: i64,
 	pub started_at: DateTime<Utc>,
 	pub completed_at: Option<DateTime<Utc>>,
 	pub status: TrainingStatus,
@@ -104,7 +104,7 @@ pub struct NewTrainingQueueEntry {
 	pub player_id: PlayerKey,
 	pub building_id: PlayerBuildingKey,
 	pub unit_id: UnitKey,
-	pub quantity: i32,
+	pub quantity: i64,
 	pub status: Option<TrainingStatus>,
 	pub job_id: Option<JobKey>,
 }
@@ -114,7 +114,7 @@ pub struct NewTrainingQueueEntry {
 #[diesel(table_name = training_queue, check_for_backend(diesel::pg::Pg))]
 pub struct UpdateTrainingQueueEntry {
 	pub id: TrainingQueueKey,
-	pub quantity: Option<i32>,
+	pub quantity: Option<i64>,
 	pub completed_at: Option<DateTime<Utc>>,
 	pub status: Option<TrainingStatus>,
 	pub job_id: Option<JobKey>,

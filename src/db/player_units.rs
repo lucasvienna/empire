@@ -32,8 +32,8 @@ pub fn get_player_unit_count(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
 	unit_key: &UnitKey,
-) -> Result<i32> {
-	let count: Option<i32> = pu::table
+) -> Result<i64> {
+	let count: Option<i64> = pu::table
 		.filter(pu::player_id.eq(player_key))
 		.filter(pu::unit_id.eq(unit_key))
 		.select(pu::quantity)
@@ -50,7 +50,7 @@ pub fn update_quantity(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
 	unit_key: &UnitKey,
-	delta: i32,
+	delta: i64,
 ) -> Result<PlayerUnit> {
 	debug!(
 		"Updating player {} unit {} quantity by {}",
@@ -107,7 +107,7 @@ pub fn add_units(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
 	unit_key: &UnitKey,
-	quantity: i32,
+	quantity: i64,
 ) -> Result<PlayerUnit> {
 	debug!(
 		"Adding {} units of {} to player {}",
