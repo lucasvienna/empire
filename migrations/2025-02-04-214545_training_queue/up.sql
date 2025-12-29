@@ -33,9 +33,9 @@ EXECUTE FUNCTION set_current_timestamp_updated_at();
 -- e.g., Barracks -> Infantry, Stables -> Cavalry
 CREATE TABLE building_unit_type
 (
-    id          UUID      NOT NULL DEFAULT uuidv7(),
-    building_id INTEGER   NOT NULL,
-    unit_type   unit_type NOT NULL,
+    id          UUID        NOT NULL DEFAULT uuidv7(),
+    building_id INTEGER     NOT NULL,
+    unit_type   unit_type   NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
 
