@@ -216,14 +216,14 @@ pub fn start_training(
 /// - If 50% complete: 40% refund (80% * 50%)
 ///
 /// # Returns
-/// The updated TrainingQueueEntry with Cancelled status
+/// A tuple of (TrainingQueueEntry with Cancelled status, refund amounts as (food, wood, stone, gold))
 #[instrument(skip(conn, job_queue))]
 pub fn cancel_training(
 	conn: &mut DbConn,
 	job_queue: &JobQueue,
 	player_id: &PlayerKey,
 	entry_id: &TrainingQueueKey,
-) -> Result<TrainingQueueEntry> {
+) -> Result<(TrainingQueueEntry, (i64, i64, i64, i64))> {
 	debug!("Cancelling training {} for player {}", entry_id, player_id);
 
 	// Get training entry
@@ -283,7 +283,7 @@ pub fn cancel_training(
 		}
 	}
 
-	Ok(cancelled_entry)
+	Ok((cancelled_entry, refund))
 }
 
 /// Completes a training entry and adds units to player inventory.

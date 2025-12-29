@@ -328,7 +328,7 @@ async fn test_cancel_training_full_refund() {
 		.expect("Failed to cancel training");
 
 	// Assert: entry status is Cancelled
-	assert_eq!(cancelled.status, TrainingStatus::Cancelled);
+	assert_eq!(cancelled.0.status, TrainingStatus::Cancelled);
 
 	// Assert: player received ~80% refund
 	// Infantry costs: Food 20, Wood 10 per unit = 100 food, 50 wood for 5 units
