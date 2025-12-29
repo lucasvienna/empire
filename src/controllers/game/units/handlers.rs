@@ -3,6 +3,8 @@
 //! Provides handlers for unit training operations including listing available units,
 //! starting training, viewing the queue, cancelling, and checking inventory.
 
+use std::collections::HashMap;
+
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -56,14 +58,23 @@ pub async fn get_available_units(
 			.map(|m| m.to_f64().unwrap_or(1.0))
 			.unwrap_or(1.0);
 
+	// Batch fetch all unit costs to avoid N+1 query problem
+	let unit_ids: Vec<_> = available_units.iter().map(|u| u.id).collect();
+	let all_costs = unit_costs::get_all_by_unit(&mut conn, &unit_ids)?;
+	let costs_map: HashMap<_, Vec<_>> =
+		all_costs.into_iter().fold(HashMap::new(), |mut map, cost| {
+			map.entry(cost.unit_id).or_default().push(cost);
+			map
+		});
+
 	// Enrich each unit with costs and affordability
 	let mut unit_dtos = Vec::with_capacity(available_units.len());
 	for unit in &available_units {
-		let costs = unit_costs::get_by_unit(&mut conn, &unit.id).unwrap_or_default();
+		let costs = costs_map.get(&unit.id).map(|v| v.as_slice()).unwrap_or(&[]);
 
 		// Convert costs to our DTO format
 		let mut cost_dto = UnitCostDto::default();
-		for cost in &costs {
+		for cost in costs {
 			match cost.resource.as_str() {
 				"food" => cost_dto.food = cost.amount,
 				"wood" => cost_dto.wood = cost.amount,
@@ -223,6 +234,11 @@ pub async fn get_training_queue(
 	// Get active training entries
 	let entries = training_queue::get_active_for_player(&mut conn, &player_id)?;
 
+	// Batch fetch all units to avoid N+1 query problem
+	let unit_ids: Vec<_> = entries.iter().map(|e| e.unit_id).collect();
+	let units_list = units::get_all_by_id(&mut conn, &unit_ids)?;
+	let units_map: HashMap<_, _> = units_list.into_iter().map(|u| (u.id, u)).collect();
+
 	// Get training modifier for progress calculations
 	// AIDEV-NOTE: Progress uses faction-modified duration, not base duration
 	let training_modifier =
@@ -234,8 +250,11 @@ pub async fn get_training_queue(
 	let mut entry_dtos = Vec::with_capacity(entries.len());
 
 	for entry in &entries {
-		// Get unit details
-		let unit = units::get_by_id(&mut conn, &entry.unit_id)?;
+		// Get unit details from pre-fetched map
+		let unit = match units_map.get(&entry.unit_id) {
+			Some(u) => u,
+			None => continue, // Skip entries with missing units
+		};
 
 		// Calculate total training time with modifier
 		let total_seconds =
@@ -255,7 +274,7 @@ pub async fn get_training_queue(
 			id: entry.id,
 			building_id: entry.building_id,
 			unit_id: entry.unit_id,
-			unit_name: unit.name,
+			unit_name: unit.name.clone(),
 			unit_type: unit.unit_type,
 			quantity: entry.quantity,
 			started_at: entry.started_at,
@@ -332,18 +351,26 @@ pub async fn get_player_inventory(
 	// Get all player units
 	let player_units_list = player_units::get_for_player(&mut conn, &player_id)?;
 
+	// Batch fetch all units to avoid N+1 query problem
+	let unit_ids: Vec<_> = player_units_list.iter().map(|pu| pu.unit_id).collect();
+	let units_list = units::get_all_by_id(&mut conn, &unit_ids)?;
+	let units_map: HashMap<_, _> = units_list.into_iter().map(|u| (u.id, u)).collect();
+
 	let mut unit_dtos = Vec::with_capacity(player_units_list.len());
 	let mut total_units: i64 = 0;
 
 	for pu in &player_units_list {
-		// Get unit details
-		let unit = units::get_by_id(&mut conn, &pu.unit_id)?;
+		// Get unit details from pre-fetched map
+		let unit = match units_map.get(&pu.unit_id) {
+			Some(u) => u,
+			None => continue, // Skip entries with missing units
+		};
 
 		total_units += pu.quantity;
 
 		let dto = PlayerUnitDto {
 			unit_id: pu.unit_id,
-			unit_name: unit.name,
+			unit_name: unit.name.clone(),
 			unit_type: unit.unit_type,
 			quantity: pu.quantity,
 		};
