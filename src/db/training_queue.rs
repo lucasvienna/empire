@@ -138,6 +138,29 @@ pub fn get_active_count_for_building(
 	Ok(count)
 }
 
+/// Gets the count of active training entries for a building with row-level locking.
+///
+/// Uses `FOR UPDATE` to prevent race conditions when checking queue capacity.
+/// Must be called within a transaction.
+#[instrument(skip(conn))]
+pub fn get_active_count_for_building_locked(
+	conn: &mut DbConn,
+	building_key: &PlayerBuildingKey,
+) -> Result<i64> {
+	// Lock all active entries for this building to prevent concurrent inserts
+	let _locked_entries: Vec<TrainingQueueEntry> = tq::table
+		.filter(tq::building_id.eq(building_key))
+		.filter(
+			tq::status
+				.eq(TrainingStatus::Pending)
+				.or(tq::status.eq(TrainingStatus::InProgress)),
+		)
+		.for_update()
+		.load(conn)?;
+
+	Ok(_locked_entries.len() as i64)
+}
+
 /// Gets all active training queue entries for a specific building.
 #[instrument(skip(conn))]
 pub fn get_active_for_building(
