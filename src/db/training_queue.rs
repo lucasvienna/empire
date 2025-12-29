@@ -205,3 +205,13 @@ pub fn set_job_id(
 		.get_result(conn)?;
 	Ok(entry)
 }
+
+/// Deletes a training queue entry.
+///
+/// Used for cleanup when job scheduling fails after entry creation.
+#[instrument(skip(conn))]
+pub fn delete(conn: &mut DbConn, entry_id: &TrainingQueueKey) -> Result<usize> {
+	debug!("Deleting training queue entry {}", entry_id);
+	let count = diesel::delete(tq::table.find(entry_id)).execute(conn)?;
+	Ok(count)
+}
