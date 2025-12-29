@@ -95,20 +95,7 @@ pub fn start_training(
 	validate_building_unit_match(conn, &player_bld.building_id, &unit)?;
 	trace!("Building-unit type match validated");
 
-	// Check queue capacity
-	let active_count = training_queue::get_active_count_for_building(conn, building_id)?;
-	if active_count >= MAX_QUEUE_PER_BUILDING {
-		return Err(Error::from((
-			ErrorKind::TrainingQueueFullError,
-			"Training queue is full for this building",
-		)));
-	}
-	trace!(
-		"Queue capacity check passed: {}/{}",
-		active_count, MAX_QUEUE_PER_BUILDING
-	);
-
-	// Check resources
+	// Check resources (before transaction to fail fast)
 	if !has_enough_resources(conn, player_id, unit_id, quantity)? {
 		return Err(Error::from((
 			ErrorKind::InsufficientResourcesError,
@@ -125,9 +112,24 @@ pub fn start_training(
 		duration, completion_time
 	);
 
-	// Execute transaction: deduct resources, create queue entry, schedule job
+	// Execute transaction: check queue capacity (with lock), deduct resources, create entry
 	let res: Result<TrainingQueueEntry> = conn.transaction(|connection| {
 		info!("Initiating training transaction");
+
+		// Check queue capacity with row-level locking to prevent race conditions
+		// AIDEV-NOTE: FOR UPDATE lock serializes concurrent requests for the same building
+		let active_count =
+			training_queue::get_active_count_for_building_locked(connection, building_id)?;
+		if active_count >= MAX_QUEUE_PER_BUILDING {
+			return Err(Error::from((
+				ErrorKind::TrainingQueueFullError,
+				"Training queue is full for this building",
+			)));
+		}
+		trace!(
+			"Queue capacity check passed: {}/{}",
+			active_count, MAX_QUEUE_PER_BUILDING
+		);
 
 		// Deduct resources
 		let costs = get_total_cost(connection, unit_id, quantity)?;
