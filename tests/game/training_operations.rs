@@ -17,8 +17,8 @@ use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
 use empire::domain::unit::training::TrainingStatus;
 use empire::domain::unit::{Unit, UnitType};
 use empire::game::units::training_operations::{
-	MAX_QUEUE_PER_BUILDING, cancel_training, complete_training, get_available_units_for_building,
-	get_training_queue, start_training,
+	MAX_QUEUE_PER_BUILDING, TrainingJobPayload, cancel_training, complete_training,
+	get_available_units_for_building, get_training_queue, start_training,
 };
 use empire::schema::{job, unit};
 
@@ -261,9 +261,14 @@ async fn test_complete_training() {
 	)
 	.expect("Failed to start training");
 
-	// Complete training (simulates job processor calling this)
-	let job_id = entry.job_id.expect("Job ID should be set");
-	let completed = complete_training(&mut conn, &job_id).expect("Failed to complete training");
+	// Complete training (simulates job processor calling this with payload)
+	let payload = TrainingJobPayload {
+		training_queue_entry_id: entry.id,
+		player_id: player.id,
+		unit_id: infantry.id,
+		quantity,
+	};
+	let completed = complete_training(&mut conn, &payload).expect("Failed to complete training");
 
 	// Assert: entry status is now Completed
 	assert_eq!(completed.status, TrainingStatus::Completed);
@@ -275,7 +280,7 @@ async fn test_complete_training() {
 
 	// Assert: function is idempotent
 	let completed_again =
-		complete_training(&mut conn, &job_id).expect("Idempotent call should succeed");
+		complete_training(&mut conn, &payload).expect("Idempotent call should succeed");
 	assert_eq!(completed_again.status, TrainingStatus::Completed);
 
 	// Assert: unit count didn't increase again
@@ -565,17 +570,23 @@ async fn test_cancel_training_already_completed() {
 	let infantry = get_infantry_unit(&mut conn);
 
 	// Start and complete training
+	let quantity = 3;
 	let entry = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
 		&barracks.id,
 		&infantry.id,
-		3,
+		quantity,
 	)
 	.expect("Failed to start training");
-	let job_id = entry.job_id.expect("Job ID should be set");
-	complete_training(&mut conn, &job_id).expect("Failed to complete training");
+	let payload = TrainingJobPayload {
+		training_queue_entry_id: entry.id,
+		player_id: player.id,
+		unit_id: infantry.id,
+		quantity,
+	};
+	complete_training(&mut conn, &payload).expect("Failed to complete training");
 
 	// Try to cancel completed training
 	let result = cancel_training(&mut conn, &app.job_queue, &player.id, &entry.id);

@@ -22,7 +22,7 @@ use crate::db::{
 	unit_costs, units,
 };
 use crate::domain::error::{Error, ErrorKind, Result};
-use crate::domain::jobs::{JobKey, JobType};
+use crate::domain::jobs::JobType;
 use crate::domain::modifier::ModifierTarget;
 use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::PlayerBuildingKey;
@@ -113,7 +113,8 @@ pub fn start_training(
 	);
 
 	// Execute transaction: check queue capacity (with lock), deduct resources, create entry
-	let res: Result<TrainingQueueEntry> = conn.transaction(|connection| {
+	// Returns both entry and costs (for potential cleanup if job scheduling fails)
+	let res: Result<(TrainingQueueEntry, (i64, i64, i64, i64))> = conn.transaction(|connection| {
 		info!("Initiating training transaction");
 
 		// Check queue capacity with row-level locking to prevent race conditions
@@ -148,10 +149,10 @@ pub fn start_training(
 		let entry = training_queue::create(connection, new_entry)?;
 		trace!("Training queue entry created: {:?}", entry);
 
-		Ok(entry)
+		Ok((entry, costs))
 	});
 
-	let mut entry = res.map_err(|e| {
+	let (entry, costs) = res.map_err(|e| {
 		warn!("Failed to start training: {}", e);
 		Error::from((
 			ErrorKind::StartTrainingError,
@@ -167,16 +168,38 @@ pub fn start_training(
 		unit_id: *unit_id,
 		quantity,
 	};
-	let job_id = job_queue.enqueue(
+	let job_id = match job_queue.enqueue(
 		JobType::Training,
 		payload,
 		JobPriority::Normal,
 		completion_time,
-	)?;
+	) {
+		Ok(id) => id,
+		Err(e) => {
+			// AIDEV-NOTE: Cleanup on enqueue failure - refund resources and delete entry
+			warn!("Failed to schedule training job, rolling back: {}", e);
+			if let Err(cleanup_err) = cleanup_failed_training(conn, &entry.id, player_id, &costs) {
+				warn!("Failed to cleanup after enqueue failure: {}", cleanup_err);
+			}
+			return Err(Error::from((
+				ErrorKind::StartTrainingError,
+				"Failed to schedule training job",
+				format!("{:?}", e),
+			)));
+		}
+	};
 	trace!("Scheduled training job: {}", job_id);
 
-	// Link job to training entry
-	entry = training_queue::set_job_id(conn, &entry.id, &job_id)?;
+	// Link job to training entry (non-critical - complete_training uses payload)
+	// AIDEV-NOTE: set_job_id failure is non-critical since complete_training
+	// looks up by entry_id from payload, not job_id
+	let entry = match training_queue::set_job_id(conn, &entry.id, &job_id) {
+		Ok(updated) => updated,
+		Err(e) => {
+			warn!("Failed to link job_id to entry, continuing anyway: {}", e);
+			entry
+		}
+	};
 
 	info!(
 		"Successfully started training for player {}: {} x {} units",
@@ -268,14 +291,23 @@ pub fn cancel_training(
 /// Called by the job processor when training time has elapsed.
 /// This function is idempotent - calling it multiple times is safe.
 ///
+/// Uses the entry_id from the job payload for lookup, making the job_id link non-critical.
+///
 /// # Returns
 /// The updated TrainingQueueEntry with Completed status
 #[instrument(skip(conn))]
-pub fn complete_training(conn: &mut DbConn, job_id: &JobKey) -> Result<TrainingQueueEntry> {
-	debug!("Completing training for job {}", job_id);
+pub fn complete_training(
+	conn: &mut DbConn,
+	payload: &TrainingJobPayload,
+) -> Result<TrainingQueueEntry> {
+	debug!(
+		"Completing training for entry {}",
+		payload.training_queue_entry_id
+	);
 
-	// Get training entry by job ID
-	let entry = training_queue::get_by_job_id(conn, job_id)?;
+	// Get training entry by entry ID from payload (not job_id)
+	// AIDEV-NOTE: Using entry_id from payload makes job_id link non-critical
+	let entry = training_queue::get_by_id(conn, &payload.training_queue_entry_id)?;
 
 	// Check if already completed (idempotent)
 	if entry.status == TrainingStatus::Completed {
@@ -306,7 +338,10 @@ pub fn complete_training(conn: &mut DbConn, job_id: &JobKey) -> Result<TrainingQ
 	});
 
 	res.map_err(|e| {
-		warn!("Failed to complete training for job {}: {}", job_id, e);
+		warn!(
+			"Failed to complete training for entry {}: {}",
+			payload.training_queue_entry_id, e
+		);
 		Error::from((
 			ErrorKind::CompleteTrainingError,
 			"Failed to complete training",
@@ -367,6 +402,28 @@ pub fn get_available_units_for_building(
 }
 
 // === Internal Helper Functions ===
+
+/// Cleans up a failed training attempt by refunding resources and deleting the entry.
+///
+/// Called when job scheduling fails after the transaction has committed.
+fn cleanup_failed_training(
+	conn: &mut DbConn,
+	entry_id: &TrainingQueueKey,
+	player_id: &PlayerKey,
+	costs: &(i64, i64, i64, i64),
+) -> Result<()> {
+	conn.transaction(|connection| {
+		// Refund resources
+		resources::add(connection, player_id, costs)?;
+		trace!("Refunded resources after failed job scheduling");
+
+		// Delete the orphaned entry
+		training_queue::delete(connection, entry_id)?;
+		trace!("Deleted orphaned training entry {}", entry_id);
+
+		Ok(())
+	})
+}
 
 /// Validates building ownership by player.
 fn validate_building_ownership(
