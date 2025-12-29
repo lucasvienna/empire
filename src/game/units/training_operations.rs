@@ -478,6 +478,9 @@ fn calculate_training_duration(
 
 /// Calculates refund amount based on remaining time.
 ///
+/// Uses the same faction-modified training time as the original duration calculation
+/// to ensure consistent refund ratios.
+///
 /// Returns tuple of (food, wood, stone, gold) to refund.
 fn calculate_refund(conn: &mut DbConn, entry: &TrainingQueueEntry) -> Result<(i64, i64, i64, i64)> {
 	let costs = get_total_cost(conn, &entry.unit_id, entry.quantity)?;
@@ -486,14 +489,23 @@ fn calculate_refund(conn: &mut DbConn, entry: &TrainingQueueEntry) -> Result<(i6
 	let remaining_ratio = if entry.status == TrainingStatus::Pending {
 		1.0
 	} else {
-		// Calculate based on elapsed time vs expected duration
+		// Calculate based on elapsed time vs expected duration (with faction modifiers)
 		let unit = units::get_by_id(conn, &entry.unit_id)?;
-		let total_seconds = unit.base_training_seconds as i64 * entry.quantity as i64;
 
-		let elapsed = Utc::now() - entry.started_at;
-		let elapsed_seconds = elapsed.num_seconds();
+		// Apply faction modifier to match original duration calculation
+		let modifier = modifier_operations::calc_multiplier(
+			conn,
+			&entry.player_id,
+			ModifierTarget::Training,
+			None,
+		)?;
+		let modifier_f64 = modifier.to_f64().unwrap_or(1.0);
+		let total_seconds =
+			unit.base_training_seconds as f64 * modifier_f64 * entry.quantity as f64;
 
-		let ratio = 1.0 - (elapsed_seconds as f64 / total_seconds as f64);
+		let elapsed_seconds = (Utc::now() - entry.started_at).num_seconds() as f64;
+
+		let ratio = 1.0 - (elapsed_seconds / total_seconds);
 		ratio.max(0.0) // Don't go negative
 	};
 
