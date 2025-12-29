@@ -12,8 +12,7 @@ use empire::domain::auth::{Claims, encode_token};
 use empire::domain::factions::FactionCode;
 use empire::domain::player::buildings::PlayerBuilding;
 use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
-use empire::schema::player::dsl::player;
-use empire::schema::player_building;
+use empire::schema::{player, player_building};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -42,9 +41,9 @@ async fn get_all() {
 	let body: UserListBody = serde_json::from_slice(&body).unwrap();
 	assert!(!body.is_empty(), "No users returned");
 	assert_eq!(
-		body[0].username.as_str(),
+		body.last().unwrap().username.as_str(),
 		"test_user",
-		"First user isn't test_user"
+		"Last user isn't test_user"
 	)
 }
 
@@ -118,7 +117,10 @@ async fn update() {
 		.expect("Failed to create player.");
 	assert_eq!(response.status(), StatusCode::CREATED);
 
-	let user: Player = player.first(&mut conn).unwrap();
+	let user: Player = player::table
+		.filter(player::name.eq("testy"))
+		.first(&mut conn)
+		.unwrap();
 	assert_eq!(user.faction, FactionCode::Neutral, "Faction is not neutral");
 
 	let player_blds: Vec<PlayerBuilding> = player_building::table
