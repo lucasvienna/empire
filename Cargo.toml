@@ -29,7 +29,7 @@ name = "seed"
 anyhow = { workspace = true }
 argon2 = "0.5.3"
 axum = { version = "0.8.8", features = ["query", "macros", "tokio", "http2"] }
-axum-extra = { version = "0.12.4", features = [
+axum-extra = { version = "0.12.5", features = [
     "cookie",
     "tracing",
     "typed-header",
@@ -37,7 +37,7 @@ axum-extra = { version = "0.12.4", features = [
     "with-rejection",
 ] }
 axum-test = { version = "18.4.1", features = ["all"] }
-bigdecimal = { version = "0.4.9", features = ["std", "serde", "serde_json"] }
+bigdecimal = { version = "0.4.10", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.42", features = ["serde"] }
 config = { version = "0.15.19", default-features = false, features = ["yaml", "toml", "convert-case", "async"] }
