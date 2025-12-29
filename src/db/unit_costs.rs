@@ -24,7 +24,7 @@ pub fn get_by_unit(conn: &mut DbConn, unit_key: &UnitKey) -> Result<Vec<UnitCost
 	Ok(costs)
 }
 
-// Retrieves all matching units by ID.
+/// Retrieves all costs matching units IDs.
 #[instrument(skip(conn))]
 pub fn get_all_by_unit(conn: &mut DbConn, unit_ids: &[UnitKey]) -> Result<Vec<UnitCost>> {
 	let result = uc::table

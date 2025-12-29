@@ -25,7 +25,7 @@ pub fn get_by_id(conn: &mut DbConn, unit_id: &UnitKey) -> Result<Unit> {
 	Ok(result)
 }
 
-// Retrieves all matching units by ID.
+/// Retrieves all matching units by ID.
 #[instrument(skip(conn))]
 pub fn get_all_by_id(conn: &mut DbConn, unit_ids: &[UnitKey]) -> Result<Vec<Unit>> {
 	let result = unit.filter(id.eq_any(unit_ids)).get_results(conn)?;
