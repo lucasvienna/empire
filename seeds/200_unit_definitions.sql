@@ -16,11 +16,10 @@
 -- ===== UNIT DEFINITIONS =====
 
 INSERT INTO unit (name, unit_type, base_atk, base_def, base_training_seconds, description)
-VALUES
-    ('Infantry', 'infantry', 10, 15, 60, 'Frontline fighters armed with sword and shield. Balanced offense and strong defense.'),
-    ('Ranged', 'ranged', 15, 5, 90, 'Archers and crossbowmen dealing damage from afar. High attack but fragile.'),
-    ('Cavalry', 'cavalry', 12, 10, 120, 'Mounted warriors with superior mobility. Fast flankers that excel against siege weapons.'),
-    ('Artillery', 'artillery', 20, 3, 180, 'Siege engines and war machines. Devastating firepower but extremely vulnerable.')
+VALUES ('Infantry',  'infantry',  10, 15, 60,  'Frontline fighters armed with sword and shield. Balanced offense and strong defense.'    ),
+       ('Ranged',    'ranged',    15, 5,  90,  'Archers and crossbowmen dealing damage from afar. High attack but fragile.'              ),
+       ('Cavalry',   'cavalry',   12, 10, 120, 'Mounted warriors with superior mobility. Fast flankers that excel against siege weapons.'),
+       ('Artillery', 'artillery', 20, 3,  180, 'Siege engines and war machines. Devastating firepower but extremely vulnerable.'         )
 ON CONFLICT (name) DO NOTHING;
 
 -- ===== UNIT COSTS =====
@@ -34,16 +33,14 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO unit_cost (unit_id, resource, amount)
 SELECT u.id, r.resource::resource_type, r.amount
 FROM unit u
-CROSS JOIN (VALUES
-    ('Infantry', 'food', 20),
-    ('Infantry', 'wood', 10),
-    ('Ranged', 'food', 15),
-    ('Ranged', 'wood', 20),
-    ('Cavalry', 'food', 30),
-    ('Cavalry', 'gold', 15),
-    ('Artillery', 'food', 25),
-    ('Artillery', 'wood', 15),
-    ('Artillery', 'stone', 20)
-) AS r(unit_name, resource, amount)
+         CROSS JOIN (VALUES ('Infantry', 'food', 20),
+                            ('Infantry', 'wood', 10),
+                            ('Ranged', 'food', 15),
+                            ('Ranged', 'wood', 20),
+                            ('Cavalry', 'food', 30),
+                            ('Cavalry', 'gold', 15),
+                            ('Artillery', 'food', 25),
+                            ('Artillery', 'wood', 15),
+                            ('Artillery', 'stone', 20)) AS r(unit_name, resource, amount)
 WHERE u.name = r.unit_name
 ON CONFLICT (unit_id, resource) DO NOTHING;
