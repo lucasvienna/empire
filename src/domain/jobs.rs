@@ -42,6 +42,8 @@ pub enum JobType {
 	Building,
 	/// Resource-related tasks such as gathering or distribution.
 	Resource,
+	/// Training-related tasks such as unit training completion.
+	Training,
 }
 
 impl JobType {
@@ -52,6 +54,7 @@ impl JobType {
 			JobType::Modifier => "modifier",
 			JobType::Building => "building",
 			JobType::Resource => "resource",
+			JobType::Training => "training",
 		}
 	}
 }
@@ -69,6 +72,7 @@ impl FromSql<crate::schema::sql_types::JobType, Pg> for JobType {
 			"modifier" => Ok(JobType::Modifier),
 			"building" => Ok(JobType::Building),
 			"resource" => Ok(JobType::Resource),
+			"training" => Ok(JobType::Training),
 			other => Err(format!("Unrecognized job type: {other}").into()),
 		}
 	}

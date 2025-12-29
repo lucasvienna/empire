@@ -132,6 +132,19 @@ diesel::table! {
 
 diesel::table! {
 	use diesel::sql_types::*;
+	use super::sql_types::UnitType;
+
+	building_unit_type (id) {
+		id -> Uuid,
+		building_id -> Int4,
+		unit_type -> UnitType,
+		created_at -> Timestamptz,
+		updated_at -> Timestamptz,
+	}
+}
+
+diesel::table! {
+	use diesel::sql_types::*;
 	use super::sql_types::FactionCode;
 
 	faction (id) {
@@ -294,6 +307,7 @@ diesel::table! {
 	training_queue (id) {
 		id -> Uuid,
 		player_id -> Uuid,
+		building_id -> Uuid,
 		unit_id -> Uuid,
 		quantity -> Int4,
 		started_at -> Timestamptz,
@@ -343,6 +357,7 @@ diesel::joinable!(building_level -> building (building_id));
 diesel::joinable!(building_requirement -> building (required_building_id));
 diesel::joinable!(building_requirement -> building_level (building_level_id));
 diesel::joinable!(building_resource -> building (building_id));
+diesel::joinable!(building_unit_type -> building (building_id));
 diesel::joinable!(modifier_history -> modifiers (modifier_id));
 diesel::joinable!(modifier_history -> player (player_id));
 diesel::joinable!(player -> faction (faction));
@@ -355,6 +370,7 @@ diesel::joinable!(player_unit -> player (player_id));
 diesel::joinable!(player_unit -> unit (unit_id));
 diesel::joinable!(training_queue -> job (job_id));
 diesel::joinable!(training_queue -> player (player_id));
+diesel::joinable!(training_queue -> player_building (building_id));
 diesel::joinable!(training_queue -> unit (unit_id));
 diesel::joinable!(unit_cost -> unit (unit_id));
 
@@ -364,6 +380,7 @@ diesel::allow_tables_to_appear_in_same_query!(
 	building_level,
 	building_requirement,
 	building_resource,
+	building_unit_type,
 	faction,
 	job,
 	modifier_history,

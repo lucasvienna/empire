@@ -1,5 +1,5 @@
 CREATE TYPE job_status AS ENUM ('pending', 'in_progress', 'completed', 'failed', 'cancelled');
-CREATE TYPE job_type AS ENUM ('modifier', 'building', 'resource');
+CREATE TYPE job_type AS ENUM ('modifier', 'building', 'resource', 'training');
 
 CREATE TABLE IF NOT EXISTS job
 (

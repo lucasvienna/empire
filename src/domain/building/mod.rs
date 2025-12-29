@@ -4,6 +4,7 @@
 pub mod level;
 pub mod requirement;
 pub mod resources;
+pub mod unit_type;
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;

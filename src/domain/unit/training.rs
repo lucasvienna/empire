@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use super::{Unit, UnitKey};
 use crate::domain::jobs::JobKey;
+use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::domain::player::{Player, PlayerKey};
 use crate::schema::training_queue;
 
@@ -85,6 +86,7 @@ impl FromSql<crate::schema::sql_types::TrainingStatus, Pg> for TrainingStatus {
 pub struct TrainingQueueEntry {
 	pub id: TrainingQueueKey,
 	pub player_id: PlayerKey,
+	pub building_id: PlayerBuildingKey,
 	pub unit_id: UnitKey,
 	pub quantity: i32,
 	pub started_at: DateTime<Utc>,
@@ -100,6 +102,7 @@ pub struct TrainingQueueEntry {
 #[diesel(table_name = training_queue, check_for_backend(diesel::pg::Pg))]
 pub struct NewTrainingQueueEntry {
 	pub player_id: PlayerKey,
+	pub building_id: PlayerBuildingKey,
 	pub unit_id: UnitKey,
 	pub quantity: i32,
 	pub status: Option<TrainingStatus>,

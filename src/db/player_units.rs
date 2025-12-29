@@ -97,3 +97,26 @@ pub fn create(conn: &mut DbConn, entity: NewPlayerUnit) -> Result<PlayerUnit> {
 		.get_result(conn)?;
 	Ok(result)
 }
+
+/// Adds units to a player's inventory.
+///
+/// Creates a new entry if the player doesn't own this unit type,
+/// or adds to the existing quantity if they do.
+#[instrument(skip(conn))]
+pub fn add_units(
+	conn: &mut DbConn,
+	player_key: &PlayerKey,
+	unit_key: &UnitKey,
+	quantity: i32,
+) -> Result<PlayerUnit> {
+	debug!(
+		"Adding {} units of {} to player {}",
+		quantity, unit_key, player_key
+	);
+	let entity = NewPlayerUnit {
+		player_id: *player_key,
+		unit_id: *unit_key,
+		quantity,
+	};
+	create_or_update(conn, entity)
+}
