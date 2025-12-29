@@ -80,6 +80,12 @@ pub struct AvailableUnitDto {
 pub struct AvailableUnitsResponse {
 	pub building_id: PlayerBuildingKey,
 	pub units: Vec<AvailableUnitDto>,
+	/// Number of training slots currently in use at this building
+	pub training_slots: i64,
+	/// Maximum training slots available at this building
+	pub max_training_slots: i64,
+	/// Free training slots (max - used)
+	pub free_training_slots: i64,
 }
 
 /// Response for POST /units/train

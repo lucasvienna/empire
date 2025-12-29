@@ -33,9 +33,6 @@ use crate::domain::unit::{Unit, UnitKey};
 use crate::game::modifiers::modifier_operations;
 use crate::job_queue::{JobPriority, JobQueue};
 
-/// Maximum number of concurrent training entries per building
-pub const MAX_QUEUE_PER_BUILDING: i64 = 5;
-
 /// Refund percentage when cancelling training (80% = 0.80)
 pub const CANCEL_REFUND_RATE: f64 = 0.80;
 
@@ -57,7 +54,7 @@ pub struct TrainingJobPayload {
 /// - Building must be capable of training the specified unit type
 /// - Player must have sufficient resources
 /// - Quantity must be positive
-/// - Building's training queue must not be full (max 5)
+/// - Building's training queue must not exceed its capacity (based on building level)
 ///
 /// # Returns
 /// A tuple of (TrainingQueueEntry, completion_time) where completion_time is the
@@ -121,9 +118,8 @@ pub fn start_training(
 
 		// Check queue capacity with row-level locking to prevent race conditions
 		// AIDEV-NOTE: FOR UPDATE lock serializes concurrent requests for the same building
-		let active_count =
-			training_queue::get_active_count_for_building_locked(connection, building_id)?;
-		if active_count >= MAX_QUEUE_PER_BUILDING {
+		let queue_state = training_queue::get_queue_state(connection, building_id)?;
+		if queue_state.active_count >= queue_state.capacity {
 			return Err(Error::from((
 				ErrorKind::TrainingQueueFullError,
 				"Training queue is full for this building",
@@ -131,7 +127,7 @@ pub fn start_training(
 		}
 		trace!(
 			"Queue capacity check passed: {}/{}",
-			active_count, MAX_QUEUE_PER_BUILDING
+			queue_state.active_count, queue_state.capacity
 		);
 
 		// Deduct resources

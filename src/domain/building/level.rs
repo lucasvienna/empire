@@ -34,6 +34,7 @@ pub struct BuildingLevel {
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
 	pub req_gold: Option<i64>,
+	pub training_capacity: Option<i32>,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 }
@@ -50,6 +51,7 @@ pub struct NewBuildingLevel {
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
 	pub req_gold: Option<i64>,
+	pub training_capacity: Option<i32>,
 }
 
 /// Data structure for updating an existing building level
@@ -62,4 +64,5 @@ pub struct UpdateBuildingLevel {
 	pub req_wood: Option<i64>,
 	pub req_stone: Option<i64>,
 	pub req_gold: Option<i64>,
+	pub training_capacity: Option<i32>,
 }

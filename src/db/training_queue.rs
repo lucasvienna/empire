@@ -15,7 +15,16 @@ use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::domain::unit::training::{
 	NewTrainingQueueEntry, TrainingQueueEntry, TrainingQueueKey, TrainingStatus,
 };
-use crate::schema::training_queue as tq;
+use crate::schema::{building_level as bl, player_building as pb, training_queue as tq};
+
+/// Current queue state for a building, including active count and capacity.
+#[derive(Debug, Clone)]
+pub struct QueueState {
+	/// Number of active (pending or in-progress) training entries
+	pub active_count: i64,
+	/// Maximum training capacity for this building at its current level
+	pub capacity: i64,
+}
 
 /// Creates a new training queue entry.
 #[instrument(skip(conn, entity))]
@@ -159,6 +168,100 @@ pub fn get_active_count_for_building_locked(
 		.load(conn)?;
 
 	Ok(_locked_entries.len() as i64)
+}
+
+/// Gets the queue state (active count and capacity) for a building with row-level locking.
+///
+/// Performs a single query that:
+/// 1. Locks active training queue entries (FOR UPDATE) to prevent race conditions
+/// 2. Joins with player_building and building_level to get the capacity
+///
+/// Must be called within a transaction.
+///
+/// # Returns
+/// A [`QueueState`] containing the active count and capacity for capacity validation.
+/// Returns capacity of 0 if the building has no training_capacity set (non-military building).
+#[instrument(skip(conn))]
+pub fn get_queue_state(conn: &mut DbConn, building_key: &PlayerBuildingKey) -> Result<QueueState> {
+	// Lock all active entries for this building to prevent concurrent inserts
+	let locked_entries: Vec<TrainingQueueEntry> = tq::table
+		.filter(tq::building_id.eq(building_key))
+		.filter(
+			tq::status
+				.eq(TrainingStatus::Pending)
+				.or(tq::status.eq(TrainingStatus::InProgress)),
+		)
+		.for_update()
+		.load(conn)?;
+
+	let active_count = locked_entries.len() as i64;
+
+	// Get the building's training capacity by joining player_building -> building_level
+	// AIDEV-NOTE: Uses (building_id, level) to find the correct building_level row
+	let capacity: Option<i32> = pb::table
+		.inner_join(
+			bl::table.on(pb::building_id
+				.eq(bl::building_id)
+				.and(pb::level.eq(bl::level))),
+		)
+		.filter(pb::id.eq(building_key))
+		.select(bl::training_capacity)
+		.first::<Option<i32>>(conn)?;
+
+	debug!(
+		"Queue state for building {}: active={}, capacity={:?}",
+		building_key, active_count, capacity
+	);
+
+	Ok(QueueState {
+		active_count,
+		capacity: capacity.unwrap_or(0) as i64,
+	})
+}
+
+/// Gets the queue status (active count and capacity) for a building without locking.
+///
+/// Single-query read-only operation for API responses. Use `get_queue_state` for
+/// transactional capacity checks that require locking.
+///
+/// # Returns
+/// A [`QueueState`] containing the active count and capacity.
+/// Returns capacity of 0 if the building has no training_capacity set (non-military building).
+#[instrument(skip(conn))]
+pub fn get_queue_status(conn: &mut DbConn, building_key: &PlayerBuildingKey) -> Result<QueueState> {
+	// Single query: count active entries and get capacity via joins
+	// AIDEV-NOTE: Uses a subquery for count to avoid loading all entries
+	let (active_count, capacity): (i64, Option<i32>) = pb::table
+		.inner_join(
+			bl::table.on(pb::building_id
+				.eq(bl::building_id)
+				.and(pb::level.eq(bl::level))),
+		)
+		.filter(pb::id.eq(building_key))
+		.select((
+			tq::table
+				.filter(tq::building_id.eq(building_key))
+				.filter(
+					tq::status
+						.eq(TrainingStatus::Pending)
+						.or(tq::status.eq(TrainingStatus::InProgress)),
+				)
+				.count()
+				.single_value()
+				.assume_not_null(),
+			bl::training_capacity,
+		))
+		.first(conn)?;
+
+	trace!(
+		"Queue status for building {}: active={}, capacity={:?}",
+		building_key, active_count, capacity
+	);
+
+	Ok(QueueState {
+		active_count,
+		capacity: capacity.unwrap_or(0) as i64,
+	})
 }
 
 /// Gets all active training queue entries for a specific building.

@@ -162,3 +162,29 @@ pub fn get_next_upgrade(
 	debug!("Next upgrade: {:?}", building);
 	Ok(building)
 }
+
+/// Retrieves the training capacity for a specific building at a given level.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `bld_id` - The building type ID
+/// * `bld_level` - The building level
+///
+/// # Returns
+/// A Result containing the training capacity (None for non-military buildings)
+pub fn get_training_capacity(
+	conn: &mut DbConn,
+	bld_id: &BuildingKey,
+	bld_level: i32,
+) -> Result<Option<i32>> {
+	debug!(
+		"Getting training capacity for building {} at level {}",
+		bld_id, bld_level
+	);
+	let capacity = bl::table
+		.filter(bl::building_id.eq(bld_id).and(bl::level.eq(bld_level)))
+		.select(bl::training_capacity)
+		.first::<Option<i32>>(conn)?;
+	debug!("Training capacity: {:?}", capacity);
+	Ok(capacity)
+}

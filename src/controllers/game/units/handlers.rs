@@ -131,6 +131,8 @@ pub async fn get_available_units(
 		unit_dtos.push(dto);
 	}
 
+	let queue_status = training_queue::get_queue_status(&mut conn, &query.building_id)?;
+
 	trace!("Found {} available units", unit_dtos.len());
 	info!(
 		"Retrieved {} available units for building {} player {}",
@@ -142,6 +144,9 @@ pub async fn get_available_units(
 	Ok(Json(AvailableUnitsResponse {
 		building_id: query.building_id,
 		units: unit_dtos,
+		training_slots: queue_status.active_count,
+		max_training_slots: queue_status.capacity,
+		free_training_slots: queue_status.capacity - queue_status.active_count,
 	}))
 }
 

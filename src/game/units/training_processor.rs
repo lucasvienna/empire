@@ -135,7 +135,6 @@ impl JobProcessor for TrainingProcessor {
 
 		let payload: TrainingJobPayload = serde_json::from_value(job.payload.clone())?;
 
-		// Get database connection
 		let mut conn = self.pool.get()?;
 
 		// AIDEV-NOTE: complete_training handles idempotency - calling multiple times is safe

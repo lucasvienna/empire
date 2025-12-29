@@ -89,6 +89,7 @@ diesel::table! {
 		req_wood -> Nullable<Int8>,
 		req_stone -> Nullable<Int8>,
 		req_gold -> Nullable<Int8>,
+		training_capacity -> Nullable<Int4>,
 		created_at -> Timestamptz,
 		updated_at -> Timestamptz,
 	}

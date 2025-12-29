@@ -19,8 +19,8 @@ use empire::domain::player::{NewPlayer, Player, PlayerKey, UserName};
 use empire::domain::unit::training::TrainingStatus;
 use empire::domain::unit::{Unit, UnitType};
 use empire::game::units::training_operations::{
-	MAX_QUEUE_PER_BUILDING, TrainingJobPayload, cancel_training, complete_training,
-	get_available_units_for_building, start_training,
+	TrainingJobPayload, cancel_training, complete_training, get_available_units_for_building,
+	start_training,
 };
 use empire::schema::{job, unit};
 
@@ -67,6 +67,7 @@ fn get_building_by_name(
 }
 
 /// Construct a building for a player (for non-starter buildings like Barracks).
+/// Buildings are created at level 3 to have 2 training slots.
 fn construct_building_for_player(
 	conn: &mut DbConn,
 	player_id: &PlayerKey,
@@ -79,7 +80,7 @@ fn construct_building_for_player(
 		NewPlayerBuilding {
 			player_id: *player_id,
 			building_id: bld.id,
-			level: Some(0),
+			level: Some(3),
 			upgrade_finishes_at: None,
 		},
 	)
@@ -532,9 +533,11 @@ async fn test_start_training_queue_full() {
 		construct_building_for_player(&mut conn, &player.id, "Barracks", FactionCode::Human);
 	shorten_training_times(&mut conn);
 	let infantry = get_infantry_unit(&mut conn);
+	let queue_state = training_queue::get_queue_status(&mut conn, &barracks.id)
+		.expect("Failed to fetch queue status for barracks.");
 
-	// Fill the queue (max 5 per building)
-	for i in 0..MAX_QUEUE_PER_BUILDING {
+	// Fill the queue (max 5 per building at level 10)
+	for i in 0..queue_state.capacity {
 		start_training(
 			&mut conn,
 			&app.job_queue,
