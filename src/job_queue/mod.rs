@@ -175,6 +175,25 @@ impl JobQueue {
 		Ok(())
 	}
 
+	/// Cancels a pending job, preventing it from being executed.
+	///
+	/// Only cancels jobs that are still pending - jobs already in progress
+	/// or completed are not affected.
+	///
+	/// # Returns
+	/// * `Ok(true)` if the job was cancelled
+	/// * `Ok(false)` if the job was not pending (already running/completed/failed)
+	pub fn cancel_job(&self, job_id: &JobKey) -> Result<bool> {
+		let mut conn = self.pool.get()?;
+
+		let rows_affected = diesel::update(job.filter(id.eq(job_id)))
+			.filter(status.eq(JobStatus::Pending))
+			.set(status.eq(JobStatus::Cancelled))
+			.execute(&mut conn)?;
+
+		Ok(rows_affected > 0)
+	}
+
 	/// Marks a job as failed in the database and records the error message.
 	///
 	/// This method updates the job status to `Failed`, stores the error message,

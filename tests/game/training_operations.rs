@@ -316,8 +316,8 @@ async fn test_cancel_training_full_refund() {
 	let (food_after_start, wood_after_start, _, _) = get_player_resources(&mut conn, &player.id);
 
 	// Immediately cancel training
-	let cancelled =
-		cancel_training(&mut conn, &player.id, &entry.id).expect("Failed to cancel training");
+	let cancelled = cancel_training(&mut conn, &app.job_queue, &player.id, &entry.id)
+		.expect("Failed to cancel training");
 
 	// Assert: entry status is Cancelled
 	assert_eq!(cancelled.status, TrainingStatus::Cancelled);
@@ -578,7 +578,7 @@ async fn test_cancel_training_already_completed() {
 	complete_training(&mut conn, &job_id).expect("Failed to complete training");
 
 	// Try to cancel completed training
-	let result = cancel_training(&mut conn, &player.id, &entry.id);
+	let result = cancel_training(&mut conn, &app.job_queue, &player.id, &entry.id);
 
 	assert!(
 		result.is_err(),
