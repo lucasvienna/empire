@@ -152,7 +152,7 @@ async fn test_start_training_happy_path() {
 
 	// Start training 5 infantry units
 	let quantity = 5;
-	let entry = start_training(
+	let (entry, _completion_time) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
@@ -200,7 +200,7 @@ async fn test_get_training_queue() {
 	let infantry = get_infantry_unit(&mut conn);
 
 	// Start two training entries
-	let entry1 = start_training(
+	let (entry1, _) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
@@ -209,7 +209,7 @@ async fn test_get_training_queue() {
 		3,
 	)
 	.expect("Failed to start first training");
-	let entry2 = start_training(
+	let (entry2, _) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
@@ -254,7 +254,7 @@ async fn test_complete_training() {
 
 	// Start training
 	let quantity = 7;
-	let entry = start_training(
+	let (entry, _) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
@@ -311,7 +311,7 @@ async fn test_cancel_training_full_refund() {
 
 	// Start training
 	let quantity = 5;
-	let entry = start_training(
+	let (entry, _) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,
@@ -544,6 +544,7 @@ async fn test_start_training_queue_full() {
 			1,
 		)
 		.unwrap_or_else(|_| panic!("Failed to start training {}", i + 1));
+		// Discards (entry, completion_time) tuple - we only care that it succeeds
 	}
 
 	// Try to add one more - should fail
@@ -574,7 +575,7 @@ async fn test_cancel_training_already_completed() {
 
 	// Start and complete training
 	let quantity = 3;
-	let entry = start_training(
+	let (entry, _) = start_training(
 		&mut conn,
 		&app.job_queue,
 		&player.id,

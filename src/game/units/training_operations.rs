@@ -11,7 +11,7 @@
 use std::ops::Add;
 
 use bigdecimal::ToPrimitive;
-use chrono::{TimeDelta, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use diesel::Connection;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace, warn};
@@ -60,7 +60,9 @@ pub struct TrainingJobPayload {
 /// - Building's training queue must not be full (max 5)
 ///
 /// # Returns
-/// The created TrainingQueueEntry with associated job scheduled
+/// A tuple of (TrainingQueueEntry, completion_time) where completion_time is the
+/// exact DateTime used to schedule the job, ensuring consistency between API responses
+/// and actual job execution.
 #[instrument(skip(conn, job_queue))]
 pub fn start_training(
 	conn: &mut DbConn,
@@ -69,7 +71,7 @@ pub fn start_training(
 	building_id: &PlayerBuildingKey,
 	unit_id: &UnitKey,
 	quantity: i64,
-) -> Result<TrainingQueueEntry> {
+) -> Result<(TrainingQueueEntry, DateTime<Utc>)> {
 	debug!(
 		"Starting training for player {} at building {}: unit {} x {}",
 		player_id, building_id, unit_id, quantity
@@ -205,7 +207,7 @@ pub fn start_training(
 		"Successfully started training for player {}: {} x {} units",
 		player_id, quantity, unit.name
 	);
-	Ok(entry)
+	Ok((entry, completion_time))
 }
 
 /// Cancels an in-progress or pending training entry.

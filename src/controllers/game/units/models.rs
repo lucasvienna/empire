@@ -7,8 +7,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::player::buildings::PlayerBuildingKey;
-use crate::domain::unit::training::{TrainingQueueEntry, TrainingQueueKey, TrainingStatus};
-use crate::domain::unit::{Unit, UnitKey, UnitType};
+use crate::domain::unit::training::{TrainingQueueKey, TrainingStatus};
+use crate::domain::unit::{UnitKey, UnitType};
 
 // === Request DTOs ===
 
@@ -151,49 +151,4 @@ pub struct CancelTrainingResponse {
 	/// Resources refunded to the player
 	/// AIDEV-NOTE: Refund is 80% * remaining_ratio, where remaining_ratio = (1 - elapsed/total)
 	pub refunded: UnitCostDto,
-}
-
-// === From implementations ===
-
-impl From<&Unit> for AvailableUnitDto {
-	/// Creates a partial AvailableUnitDto from a Unit.
-	/// Note: cost, can_afford, max_affordable, and modified_training_seconds
-	/// must be populated separately by the handler.
-	fn from(unit: &Unit) -> Self {
-		Self {
-			id: unit.id,
-			name: unit.name.clone(),
-			unit_type: unit.unit_type,
-			base_atk: unit.base_atk,
-			base_def: unit.base_def,
-			description: unit.description.clone(),
-			base_training_seconds: unit.base_training_seconds,
-			modified_training_seconds: unit.base_training_seconds, // Will be overwritten
-			training_modifier: 1.0,                                // Will be overwritten
-			cost: UnitCostDto::default(),                          // Will be overwritten
-			can_afford: false,                                     // Will be overwritten
-			max_affordable: 0,                                     // Will be overwritten
-		}
-	}
-}
-
-impl From<&TrainingQueueEntry> for TrainingQueueEntryDto {
-	/// Creates a partial TrainingQueueEntryDto from a TrainingQueueEntry.
-	/// Note: unit_name, unit_type, estimated_completion, progress_percent,
-	/// and seconds_remaining must be populated separately by the handler.
-	fn from(entry: &TrainingQueueEntry) -> Self {
-		Self {
-			id: entry.id,
-			building_id: entry.building_id,
-			unit_id: entry.unit_id,
-			unit_name: String::new(),      // Will be overwritten
-			unit_type: UnitType::Infantry, // Will be overwritten
-			quantity: entry.quantity,
-			started_at: entry.started_at,
-			status: entry.status,
-			estimated_completion: entry.started_at, // Will be overwritten
-			progress_percent: 0.0,                  // Will be overwritten
-			seconds_remaining: 0,                   // Will be overwritten
-		}
-	}
 }

@@ -180,7 +180,9 @@ pub async fn train_units(
 	}
 
 	// Start training via service layer (errors have proper status codes via IntoResponse)
-	let entry = training_operations::start_training(
+	// AIDEV-NOTE: completion_time is returned from start_training to ensure consistency
+	// between API response and actual job scheduling (avoids rounding discrepancies)
+	let (entry, completion_time) = training_operations::start_training(
 		&mut conn,
 		&job_queue,
 		&player_id,
@@ -189,14 +191,8 @@ pub async fn train_units(
 		request.quantity,
 	)?;
 
-	// Calculate completion time based on training duration with modifiers
-	let training_modifier =
-		modifier_operations::calc_multiplier(&mut conn, &player_id, ModifierTarget::Training, None)
-			.map(|m| m.to_f64().unwrap_or(1.0))
-			.unwrap_or(1.0);
-	let total_seconds =
-		(unit.base_training_seconds as f64 * training_modifier * request.quantity as f64) as i64;
-	let completion_time = entry.started_at + TimeDelta::seconds(total_seconds);
+	// Calculate total_seconds from the authoritative completion_time
+	let total_seconds = (completion_time - entry.started_at).num_seconds();
 
 	info!(
 		"Started training for player {}: {} x {} units, completes at {}",
