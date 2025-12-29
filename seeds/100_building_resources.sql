@@ -461,3 +461,52 @@ VALUES (74, 0,  80,   240  ), -- Mine 0: gold rate=80,  gold capacity=240
        (74, 9,  1100, 26400), -- Mine 9: gold rate=1100, gold capacity=26400
        (74, 10, 1300, 46800)  -- Mine 10: gold rate=1300, gold capacity=46800
 ON CONFLICT (building_id, building_level) DO NOTHING;
+
+-- ===== MILITARY BUILDINGS (all factions) =====
+-- AIDEV-NOTE: Military buildings don't produce resources or add caps, but need entries
+-- to prevent NULL constraint violations in the update_player_resource_caps_trigger
+
+-- Human Military Buildings (building_id 10-13)
+INSERT INTO building_resource (building_id, building_level, food_cap, wood_cap, stone_cap, gold_cap)
+VALUES
+(10, 0, 0, 0, 0, 0), -- Barracks
+(11, 0, 0, 0, 0, 0), -- Range
+(12, 0, 0, 0, 0, 0), -- Stables
+(13, 0, 0, 0, 0, 0)  -- Workshop
+ON CONFLICT (building_id, building_level) DO NOTHING;
+
+-- Orc Military Buildings (building_id 27-30)
+INSERT INTO building_resource (building_id, building_level, food_cap, wood_cap, stone_cap, gold_cap)
+VALUES
+(27, 0, 0, 0, 0, 0), -- Barracks
+(28, 0, 0, 0, 0, 0), -- Range
+(29, 0, 0, 0, 0, 0), -- Stables
+(30, 0, 0, 0, 0, 0)  -- Workshop
+ON CONFLICT (building_id, building_level) DO NOTHING;
+
+-- Elf Military Buildings (building_id 44-47)
+INSERT INTO building_resource (building_id, building_level, food_cap, wood_cap, stone_cap, gold_cap)
+VALUES
+(44, 0, 0, 0, 0, 0), -- Barracks
+(45, 0, 0, 0, 0, 0), -- Range
+(46, 0, 0, 0, 0, 0), -- Stables
+(47, 0, 0, 0, 0, 0)  -- Workshop
+ON CONFLICT (building_id, building_level) DO NOTHING;
+
+-- Dwarf Military Buildings (building_id 61-64)
+INSERT INTO building_resource (building_id, building_level, food_cap, wood_cap, stone_cap, gold_cap)
+VALUES
+(61, 0, 0, 0, 0, 0), -- Barracks
+(62, 0, 0, 0, 0, 0), -- Range
+(63, 0, 0, 0, 0, 0), -- Stables
+(64, 0, 0, 0, 0, 0)  -- Workshop
+ON CONFLICT (building_id, building_level) DO NOTHING;
+
+-- Goblin Military Buildings (building_id 78-81)
+INSERT INTO building_resource (building_id, building_level, food_cap, wood_cap, stone_cap, gold_cap)
+VALUES
+(78, 0, 0, 0, 0, 0), -- Barracks
+(79, 0, 0, 0, 0, 0), -- Range
+(80, 0, 0, 0, 0, 0), -- Stables
+(81, 0, 0, 0, 0, 0)  -- Workshop
+ON CONFLICT (building_id, building_level) DO NOTHING;
