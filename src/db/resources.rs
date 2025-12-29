@@ -117,13 +117,13 @@ pub fn delete(conn: &mut DbConn, resource_key: &PlayerResourceKey) -> Result<usi
 	Ok(count)
 }
 
-/// Represents resource amounts to be deducted from a player's resources.
-/// The tuple contains amounts in the following order:
+/// Represents a change to player resources (positive or negative).
+/// The tuple contains deltas in the following order:
 /// * food (i64)
 /// * wood (i64)
 /// * stone (i64)
 /// * gold (i64)
-pub type Deduction = (i64, i64, i64, i64);
+pub type ResourceDelta = (i64, i64, i64, i64);
 
 /// Retrieves resource information for a specific player by their player ID.
 ///
@@ -157,7 +157,7 @@ pub fn get_by_player_id(conn: &mut DbConn, player_key: &PlayerKey) -> Result<Pla
 pub fn deduct(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
-	amounts: &Deduction,
+	amounts: &ResourceDelta,
 ) -> Result<PlayerResource> {
 	debug!(
 		"Starting deduct resources from player {}: food={}, wood={}, stone={}, gold={}",
@@ -200,7 +200,7 @@ pub fn deduct(
 pub fn add(
 	conn: &mut DbConn,
 	player_key: &PlayerKey,
-	amounts: &Deduction,
+	amounts: &ResourceDelta,
 ) -> Result<PlayerResource> {
 	debug!(
 		"Adding resources to player {}: food={}, wood={}, stone={}, gold={}",
