@@ -9,7 +9,9 @@ use tracing::{debug, instrument, trace};
 
 use crate::Result;
 use crate::db::DbConn;
+use crate::domain::jobs::JobKey;
 use crate::domain::player::PlayerKey;
+use crate::domain::player::buildings::PlayerBuildingKey;
 use crate::domain::unit::training::{
 	NewTrainingQueueEntry, TrainingQueueEntry, TrainingQueueKey, TrainingStatus,
 };
@@ -113,5 +115,70 @@ pub fn update_status(
 #[instrument(skip(conn))]
 pub fn get_by_id(conn: &mut DbConn, entry_id: &TrainingQueueKey) -> Result<TrainingQueueEntry> {
 	let entry = tq::table.find(entry_id).first(conn)?;
+	Ok(entry)
+}
+
+/// Gets the count of active training entries for a specific building.
+///
+/// Used to enforce per-building queue capacity limits.
+#[instrument(skip(conn))]
+pub fn get_active_count_for_building(
+	conn: &mut DbConn,
+	building_key: &PlayerBuildingKey,
+) -> Result<i64> {
+	let count = tq::table
+		.filter(tq::building_id.eq(building_key))
+		.filter(
+			tq::status
+				.eq(TrainingStatus::Pending)
+				.or(tq::status.eq(TrainingStatus::InProgress)),
+		)
+		.count()
+		.get_result(conn)?;
+	Ok(count)
+}
+
+/// Gets all active training queue entries for a specific building.
+#[instrument(skip(conn))]
+pub fn get_active_for_building(
+	conn: &mut DbConn,
+	building_key: &PlayerBuildingKey,
+) -> Result<Vec<TrainingQueueEntry>> {
+	let entries = tq::table
+		.filter(tq::building_id.eq(building_key))
+		.filter(
+			tq::status
+				.eq(TrainingStatus::Pending)
+				.or(tq::status.eq(TrainingStatus::InProgress)),
+		)
+		.select(TrainingQueueEntry::as_select())
+		.load(conn)?;
+	Ok(entries)
+}
+
+/// Retrieves a training queue entry by its associated job ID.
+#[instrument(skip(conn))]
+pub fn get_by_job_id(conn: &mut DbConn, job_key: &JobKey) -> Result<TrainingQueueEntry> {
+	let entry = tq::table.filter(tq::job_id.eq(job_key)).first(conn)?;
+	Ok(entry)
+}
+
+/// Sets the job ID for a training queue entry.
+///
+/// Called after scheduling the completion job.
+#[instrument(skip(conn))]
+pub fn set_job_id(
+	conn: &mut DbConn,
+	entry_id: &TrainingQueueKey,
+	job_key: &JobKey,
+) -> Result<TrainingQueueEntry> {
+	debug!(
+		"Setting job_id {} for training queue entry {}",
+		job_key, entry_id
+	);
+	let entry = diesel::update(tq::table.find(entry_id))
+		.set(tq::job_id.eq(Some(job_key)))
+		.returning(TrainingQueueEntry::as_returning())
+		.get_result(conn)?;
 	Ok(entry)
 }

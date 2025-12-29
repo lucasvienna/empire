@@ -88,6 +88,15 @@ pub enum ErrorKind {
 	UpgradeBuildingError,
 	ConfirmUpgradeError,
 
+	// Training Errors
+	StartTrainingError,
+	CancelTrainingError,
+	CompleteTrainingError,
+	TrainingQueueFullError,
+	InsufficientResourcesError,
+	InvalidBuildingTypeError,
+	InvalidQuantityError,
+
 	// Auth errors
 	NoSessionError,
 	SessionExpiredError,
@@ -167,6 +176,15 @@ impl From<ErrorKind> for StatusCode {
 			ErrorKind::ConstructBuildingError
 			| ErrorKind::UpgradeBuildingError
 			| ErrorKind::ConfirmUpgradeError => StatusCode::CONFLICT,
+
+			// Training Errors
+			ErrorKind::StartTrainingError
+			| ErrorKind::CancelTrainingError
+			| ErrorKind::CompleteTrainingError => StatusCode::CONFLICT,
+			ErrorKind::TrainingQueueFullError => StatusCode::CONFLICT,
+			ErrorKind::InsufficientResourcesError => StatusCode::UNPROCESSABLE_ENTITY,
+			ErrorKind::InvalidBuildingTypeError => StatusCode::BAD_REQUEST,
+			ErrorKind::InvalidQuantityError => StatusCode::BAD_REQUEST,
 
 			// Auth errors
 			ErrorKind::NoSessionError => StatusCode::UNAUTHORIZED,

@@ -183,3 +183,38 @@ pub fn deduct(
 	);
 	Ok(updated_res)
 }
+
+/// Adds resources to a player's inventory.
+///
+/// This function increases the resource amounts for a specific player.
+/// Used for refunds when cancelling training.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `player_key` - The unique identifier of the player
+/// * `amounts` - The amounts to add as a tuple of (food, wood, stone, gold)
+///
+/// # Returns
+/// A Result containing the updated [`PlayerResource`] after addition
+#[instrument(skip(conn))]
+pub fn add(
+	conn: &mut DbConn,
+	player_key: &PlayerKey,
+	amounts: &Deduction,
+) -> Result<PlayerResource> {
+	debug!(
+		"Adding resources to player {}: food={}, wood={}, stone={}, gold={}",
+		player_key, amounts.0, amounts.1, amounts.2, amounts.3
+	);
+	let updated_res = diesel::update(player_resource.filter(player_id.eq(player_key)))
+		.set((
+			food.eq(food + amounts.0),
+			wood.eq(wood + amounts.1),
+			stone.eq(stone + amounts.2),
+			gold.eq(gold + amounts.3),
+		))
+		.returning(PlayerResource::as_returning())
+		.get_result(conn)?;
+	trace!("Updated resources after addition: {:?}", updated_res);
+	Ok(updated_res)
+}
