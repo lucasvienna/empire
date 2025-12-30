@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, Utc};
+use diesel::dsl::now;
 use diesel::prelude::*;
 use diesel::sql_types::Int8;
 use tracing::{debug, trace, warn};
@@ -84,6 +85,7 @@ pub fn collect_resources(conn: &mut DbConn, player_id: &PlayerKey) -> Result<Pla
 				pr::wood.eq(pr::wood + collectible_wood),
 				pr::stone.eq(pr::stone + collectible_stone),
 				pr::gold.eq(pr::gold + collectible_gold),
+				pr::collected_at.eq(now),
 			))
 			.returning(PlayerResource::as_returning())
 			.get_result(conn)
