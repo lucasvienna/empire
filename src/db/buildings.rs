@@ -7,8 +7,11 @@
 use diesel::prelude::*;
 
 use crate::db::DbConn;
+use crate::domain::building::level::BuildingLevel;
+use crate::domain::building::resources::BuildingResource;
 use crate::domain::building::{Building, BuildingKey, NewBuilding, UpdateBuilding};
 use crate::domain::error::Result;
+use crate::domain::factions::{FactionCode, FactionKey};
 use crate::schema::building::dsl::*;
 
 /// Retrieves all buildings from the database.
@@ -76,4 +79,48 @@ pub fn update(conn: &mut DbConn, changeset: &UpdateBuilding) -> Result<Building>
 pub fn delete(conn: &mut DbConn, bld_id: &BuildingKey) -> Result<usize> {
 	let deleted_count = diesel::delete(building.find(bld_id)).execute(conn)?;
 	Ok(deleted_count)
+}
+
+/// Tuple containing building, level, and resource data for a specific level
+pub type BuildingLevelData = (Building, BuildingLevel, BuildingResource);
+
+/// Retrieves all buildings for a faction with their levels and resource data.
+///
+/// Returns buildings that match the specified faction OR are neutral.
+/// Each building is joined with all its levels and corresponding resource data.
+///
+/// # Arguments
+/// * `conn` - Database connection
+/// * `faction_key` - The faction to filter buildings for
+///
+/// # Returns
+/// * `Result<Vec<BuildingLevelData>>` - Vector of (Building, BuildingLevel, BuildingResource) tuples
+///   ordered by building_id and level
+pub fn get_faction_building_definitions(
+	conn: &mut DbConn,
+	faction_key: &FactionKey,
+) -> Result<Vec<BuildingLevelData>> {
+	use crate::schema::{building as bld, building_level as bl, building_resource as br};
+
+	let results = bld::table
+		.filter(
+			bld::faction
+				.eq(faction_key)
+				.or(bld::faction.eq(FactionCode::Neutral)),
+		)
+		.inner_join(bl::table.on(bld::id.eq(bl::building_id)))
+		.inner_join(
+			br::table.on(bl::building_id
+				.eq(br::building_id)
+				.and(bl::level.eq(br::building_level))),
+		)
+		.select((
+			Building::as_select(),
+			BuildingLevel::as_select(),
+			BuildingResource::as_select(),
+		))
+		.order((bld::id.asc(), bl::level.asc()))
+		.load::<BuildingLevelData>(conn)?;
+
+	Ok(results)
 }

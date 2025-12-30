@@ -9,6 +9,7 @@ pub fn buildings_routes() -> Router<AppState> {
 		"/buildings",
 		Router::new()
 			.route("/", get(get_player_buildings))
+			.route("/all", get(get_all_building_definitions))
 			.route("/available", get(get_available_buildings))
 			.route("/construct", post(construct_player_building))
 			.nest(
