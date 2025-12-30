@@ -13,7 +13,7 @@ use crate::controllers::game::factions::models::{FactionDetails, FactionResponse
 use crate::db::extractor::DatabaseConnection;
 use crate::db::factions;
 use crate::domain::app_state::AppState;
-use crate::domain::factions::FactionKey;
+use crate::domain::factions::{FactionCode, FactionKey};
 
 /// GET `/game/factions`
 /// List all available factions with their bonuses
@@ -53,10 +53,13 @@ pub(super) async fn get_factions(
 	let factions: Vec<FactionResponse> = factions::get_all(&mut conn)
 		.unwrap_or_default()
 		.into_iter()
-		.map(|val| {
+		.filter_map(|val| {
+			if val.id == FactionCode::Neutral {
+				return None;
+			}
 			let mut res = FactionResponse::from(val);
 			res.bonuses = faction_bonuses.get(&res.id).cloned().unwrap_or_default();
-			res
+			Some(res)
 		})
 		.collect();
 	info!("Retrieved factions list with {} items", factions.len());
