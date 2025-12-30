@@ -28,7 +28,8 @@ AS
 $$
 BEGIN
     INSERT INTO player_building (player_id, building_id, level)
-    SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+    SELECT NEW.id, id,
+           CASE WHEN max_count = 1 THEN 1 ELSE 0 END -- headquarters start at level 1
     FROM building
     WHERE faction = NEW.faction
       AND starter = TRUE;
@@ -53,7 +54,8 @@ BEGIN
     -- insert all pre-built buildings for that faction
     IF OLD.faction = 'neutral' THEN
         INSERT INTO player_building (player_id, building_id, level)
-        SELECT NEW.id, id, 0 -- pre-built buildings should be level 0
+        SELECT NEW.id, id,
+               CASE WHEN max_count = 1 THEN 1 ELSE 0 END -- headquarters start at level 1
         FROM building
         WHERE faction = NEW.faction
           AND starter = TRUE;

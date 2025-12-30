@@ -18,11 +18,11 @@ ON CONFLICT (name) DO NOTHING;
 -- Starter buildings only, 1 of each resource producer
 -- Resources: 5000 each
 
--- Upgrade existing starter buildings to level 1
+-- Upgrade starter Farm and Lumberyard to level 1 (Keep starts at level 1)
 UPDATE player_building
 SET level = 1
 WHERE player_id = (SELECT id FROM player WHERE name = 'rookie')
-  AND building_id IN (1, 3, 4);
+  AND building_id IN (3, 4);
 
 -- Add basic buildings (1 resource producer each)
 INSERT INTO player_building (player_id, building_id, level)
@@ -54,7 +54,7 @@ WHERE player_id = (SELECT id FROM player WHERE name = 'rookie');
 -- Some progression buildings, 2 of each resource producer
 -- Resources: 15000 each
 
--- Upgrade existing starter buildings
+-- Upgrade all starter buildings to level 3
 UPDATE player_building
 SET level = 3
 WHERE player_id = (SELECT id FROM player WHERE name = 'prince')
@@ -98,7 +98,7 @@ WHERE player_id = (SELECT id FROM player WHERE name = 'prince');
 -- Mid-progression buildings, 3 of each resource producer
 -- Resources: 75000 each
 
--- Upgrade existing starter buildings
+-- Upgrade all starter buildings to level 7
 UPDATE player_building
 SET level = 7
 WHERE player_id = (SELECT id FROM player WHERE name = 'king')
@@ -144,7 +144,7 @@ WHERE player_id = (SELECT id FROM player WHERE name = 'king');
 -- All buildings at max count and max level (L10)
 -- Resources: 250000 each
 
--- Upgrade existing starter buildings
+-- Upgrade all starter buildings to level 10
 UPDATE player_building
 SET level = 10
 WHERE player_id = (SELECT id FROM player WHERE name = 'emperor')
