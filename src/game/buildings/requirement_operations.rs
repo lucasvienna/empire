@@ -12,6 +12,21 @@ use uuid::Uuid;
 use crate::domain::building::requirement::BuildingRequirement;
 use crate::domain::building::{Building, BuildingKey};
 
+/// Contains resource costs and time required for building construction
+#[derive(Debug, Clone, Default, Serialize, Eq, PartialEq)]
+pub struct ConstructionInfo {
+	/// Food required for construction
+	pub food: i64,
+	/// Wood required for construction
+	pub wood: i64,
+	/// Stone required for construction
+	pub stone: i64,
+	/// Gold required for construction
+	pub gold: i64,
+	/// Time in seconds to complete construction
+	pub time_seconds: i64,
+}
+
 /// Represents the availability status of a building, including build restrictions and current state
 #[derive(Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct BuildingAvailability {
@@ -25,6 +40,8 @@ pub struct BuildingAvailability {
 	pub max_count: i32,
 	/// List of restrictions preventing construction
 	pub locks: Vec<BuildingLock>,
+	/// Resource costs and time required for construction
+	pub construction: ConstructionInfo,
 }
 
 /// Represents different types of restrictions that can prevent a building from being constructed
@@ -64,6 +81,7 @@ pub type AvailabilityData = (BuildingCount, MaxBuildingCount, Option<MaxBuilding
 /// * `building` - The building definition
 /// * `data` - Tuple containing current count, maximum count, and optional maximum level
 /// * `requirements` - List of building requirements for this building
+/// * `construction` - Construction costs and time for this building
 ///
 /// # Returns
 /// [BuildingAvailability] containing the availability status for the building
@@ -71,6 +89,7 @@ pub fn gen_avail_data(
 	building: Building,
 	data: AvailabilityData,
 	requirements: Vec<BuildingRequirement>,
+	construction: ConstructionInfo,
 ) -> BuildingAvailability {
 	let (owned_count, max_count, max_level) = data;
 	let mut locks: Vec<BuildingLock> = vec![];
@@ -93,6 +112,7 @@ pub fn gen_avail_data(
 		current_count: owned_count,
 		max_count,
 		locks,
+		construction,
 	}
 }
 
@@ -101,19 +121,22 @@ pub fn gen_avail_data(
 /// # Arguments
 /// * `blds` - Map of building definitions by their keys
 /// * `bld_data` - Map containing current counts and maximum limits for each building
-/// * `requirements` - Map of building requirements indexed by building keys
+/// * `reqs_and_info` - Map of building requirements and construction info indexed by building keys
 ///
 /// # Returns
 /// Vector of [BuildingAvailability] containing availability status for each building
 pub fn gen_avail_list(
 	mut blds: HashMap<BuildingKey, Building>,
 	bld_data: HashMap<BuildingKey, AvailabilityData>,
-	requirements: HashMap<BuildingKey, Vec<BuildingRequirement>>,
+	mut reqs_and_info: HashMap<BuildingKey, (Vec<BuildingRequirement>, ConstructionInfo)>,
 ) -> Vec<BuildingAvailability> {
 	bld_data
 		.into_iter()
 		.map(|(bld_key, (owned_count, max_count, max_level))| {
 			let mut locks: Vec<BuildingLock> = vec![];
+
+			// Get requirements and construction info for this building
+			let (reqs, construction) = reqs_and_info.remove(&bld_key).unwrap_or_default();
 
 			// Check if max count is reached
 			if owned_count >= (max_count as i64) {
@@ -121,11 +144,10 @@ pub fn gen_avail_list(
 			}
 
 			// Check requirement locks
-			if let Some(reqs) = requirements.get(&bld_key) {
-				locks.extend(reqs.iter().filter_map(|req| {
+			locks
+				.extend(reqs.iter().filter_map(|req| {
 					parse_req_lock(&bld_key, req, max_level.unwrap_or_default())
 				}));
-			}
 
 			BuildingAvailability {
 				building: blds
@@ -135,6 +157,7 @@ pub fn gen_avail_list(
 				current_count: owned_count,
 				max_count,
 				locks,
+				construction,
 			}
 		})
 		.collect()
@@ -182,7 +205,7 @@ mod tests {
 
 	use chrono::Utc;
 
-	use super::{BuildingLock, gen_avail_data, gen_avail_list};
+	use super::{BuildingLock, ConstructionInfo, gen_avail_data, gen_avail_list};
 	use crate::domain::building::Building;
 	use crate::domain::building::requirement::BuildingRequirement;
 	use crate::domain::factions::FactionCode;
@@ -206,7 +229,12 @@ mod tests {
 		let data = (0, 5, None); // count=0, max_count=5, no max_level yet
 		let requirements: Vec<BuildingRequirement> = vec![];
 
-		let availability = gen_avail_data(building.clone(), data, requirements);
+		let availability = gen_avail_data(
+			building.clone(),
+			data,
+			requirements,
+			ConstructionInfo::default(),
+		);
 
 		assert!(availability.buildable);
 		assert!(availability.locks.is_empty());
@@ -230,9 +258,10 @@ mod tests {
 		bld_data.insert(1, (0_i64, 5_i32, None)); // buildable
 		bld_data.insert(2, (3_i64, 3_i32, Some(3))); // at max count
 
-		let requirements: HashMap<i32, Vec<BuildingRequirement>> = HashMap::new();
+		let reqs_and_info: HashMap<i32, (Vec<BuildingRequirement>, ConstructionInfo)> =
+			HashMap::new();
 
-		let availability_list = gen_avail_list(buildings, bld_data, requirements);
+		let availability_list = gen_avail_list(buildings, bld_data, reqs_and_info);
 
 		assert_eq!(availability_list.len(), 2);
 

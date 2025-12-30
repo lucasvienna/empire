@@ -21,7 +21,7 @@ use crate::domain::building::level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
 use crate::domain::player::PlayerKey;
 use crate::domain::player::buildings::{NewPlayerBuilding, PlayerBuilding, PlayerBuildingKey};
-use crate::game::buildings::requirement_operations;
+use crate::game::buildings::requirement_operations::{self, ConstructionInfo};
 
 /// Constructs a new building for a player.
 ///
@@ -63,7 +63,8 @@ pub fn construct_building(
 
 	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
 	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
-	let bld_avail = requirement_operations::gen_avail_data(bld, avail_data, reqs);
+	let bld_avail =
+		requirement_operations::gen_avail_data(bld, avail_data, reqs, ConstructionInfo::default());
 	trace!("Building availability: {:?}", bld_avail);
 
 	if !bld_avail.buildable {
@@ -184,7 +185,8 @@ pub fn upgrade_building(
 
 	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
 	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
-	let bld_avail = requirement_operations::gen_avail_data(bld, avail_data, reqs);
+	let bld_avail =
+		requirement_operations::gen_avail_data(bld, avail_data, reqs, ConstructionInfo::default());
 	trace!("Building availability: {:?}", bld_avail);
 
 	if !bld_avail.buildable {

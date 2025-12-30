@@ -19,6 +19,7 @@ use crate::domain::building::requirement::{
 };
 use crate::domain::error::Result;
 use crate::domain::factions::{FactionCode, FactionKey};
+use crate::game::buildings::requirement_operations::ConstructionInfo;
 use crate::schema::building_requirement as br;
 use crate::schema::building_requirement::dsl::building_requirement;
 
@@ -158,12 +159,12 @@ pub fn get_for_bld_and_level(
 	Ok(reqs)
 }
 
-/// Retrieves all construction requirements for buildings available to a specific faction.
+/// Retrieves all construction requirements and costs for buildings available to a specific faction.
 ///
-/// This function fetches the initial (level 1) building requirements for all buildings
-/// that are either specific to the given faction or are neutral (available to all factions).
-/// The requirements are organized in a HashMap where each building ID maps to a vector of
-/// its requirements.
+/// This function fetches the initial (level 1) building requirements and construction costs
+/// for all buildings that are either specific to the given faction or are neutral.
+/// The data is organized in a HashMap where each building ID maps to a tuple of
+/// its requirements and construction info.
 ///
 /// # Arguments
 /// * `conn` - Database connection
@@ -172,30 +173,63 @@ pub fn get_for_bld_and_level(
 /// # Returns
 /// A [`Result`] containing a [`HashMap`] where:
 /// * Keys are [`BuildingKey`]s representing available buildings
-/// * Values are vectors of [`BuildingRequirement`]s for each building
+/// * Values are tuples of (requirements vector, construction info)
 pub fn get_construction_reqs(
 	conn: &mut DbConn,
 	faction_key: &FactionKey,
-) -> Result<HashMap<BuildingKey, Vec<BuildingRequirement>>> {
+) -> Result<HashMap<BuildingKey, (Vec<BuildingRequirement>, ConstructionInfo)>> {
 	use crate::schema::{building as bld, building_level as bld_level};
 
-	let requirements_raw = bld::table
+	// Query all buildings with their level 1 data and optional requirements
+	let raw_data = bld::table
 		.filter(
 			bld::faction
 				.eq(faction_key)
 				.or(bld::faction.eq(FactionCode::Neutral)),
 		)
-		.inner_join(bld_level::table.inner_join(building_requirement))
+		.inner_join(bld_level::table.left_join(building_requirement))
 		.filter(bld_level::level.eq(1))
-		.select((bld::id, BuildingRequirement::as_select()))
-		.load::<(BuildingKey, BuildingRequirement)>(conn)?;
+		.select((
+			bld::id,
+			bld_level::req_food,
+			bld_level::req_wood,
+			bld_level::req_stone,
+			bld_level::req_gold,
+			bld_level::upgrade_seconds,
+			Option::<BuildingRequirement>::as_select(),
+		))
+		.load::<(
+			BuildingKey,
+			Option<i64>,
+			Option<i64>,
+			Option<i64>,
+			Option<i64>,
+			i64,
+			Option<BuildingRequirement>,
+		)>(conn)?;
 
-	let requirements: HashMap<BuildingKey, Vec<BuildingRequirement>> = requirements_raw
-		.into_iter()
-		.fold(HashMap::new(), |mut map, (building_id, req)| {
-			map.entry(building_id).or_default().push(req);
+	// Fold into a HashMap, combining requirements and construction info per building
+	let result = raw_data.into_iter().fold(
+		HashMap::new(),
+		|mut map, (building_id, food, wood, stone, gold, time, req)| {
+			let entry = map.entry(building_id).or_insert_with(|| {
+				(
+					Vec::new(),
+					ConstructionInfo {
+						food: food.unwrap_or(0),
+						wood: wood.unwrap_or(0),
+						stone: stone.unwrap_or(0),
+						gold: gold.unwrap_or(0),
+						time_seconds: time,
+					},
+				)
+			});
+			if let Some(requirement) = req {
+				entry.0.push(requirement);
+			}
 			map
-		});
+		},
+	);
 
-	Ok(requirements)
+	Ok(result)
 }
