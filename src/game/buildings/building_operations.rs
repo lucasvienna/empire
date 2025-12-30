@@ -15,7 +15,9 @@ use chrono::prelude::*;
 use diesel::Connection;
 use tracing::{debug, info, instrument, trace, warn};
 
-use crate::db::{DbConn, building_levels, building_requirements, player_buildings, resources};
+use crate::db::{
+	DbConn, building_levels, building_requirements, player_buildings, players, resources,
+};
 use crate::domain::building::BuildingKey;
 use crate::domain::building::level::BuildingLevel;
 use crate::domain::error::{Error, ErrorKind, Result};
@@ -63,8 +65,16 @@ pub fn construct_building(
 
 	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
 	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
-	let bld_avail =
-		requirement_operations::gen_avail_data(bld, avail_data, reqs, ConstructionInfo::default());
+	// Get all building data to look up required building levels
+	let player = players::get_by_id(conn, player_id)?;
+	let (_, all_bld_data) = player_buildings::get_player_bld_counts_levels(conn, &player)?;
+	let bld_avail = requirement_operations::gen_avail_data(
+		bld,
+		avail_data,
+		reqs,
+		ConstructionInfo::default(),
+		&all_bld_data,
+	);
 	trace!("Building availability: {:?}", bld_avail);
 
 	if !bld_avail.buildable {
@@ -185,8 +195,16 @@ pub fn upgrade_building(
 
 	let reqs = building_requirements::get_for_bld_and_level(conn, bld_id, bld_lvl.building_level)?;
 	let (bld, avail_data) = player_buildings::get_player_bld_count_level(conn, player_id, bld_id)?;
-	let bld_avail =
-		requirement_operations::gen_avail_data(bld, avail_data, reqs, ConstructionInfo::default());
+	// Get all building data to look up required building levels
+	let player = players::get_by_id(conn, player_id)?;
+	let (_, all_bld_data) = player_buildings::get_player_bld_counts_levels(conn, &player)?;
+	let bld_avail = requirement_operations::gen_avail_data(
+		bld,
+		avail_data,
+		reqs,
+		ConstructionInfo::default(),
+		&all_bld_data,
+	);
 	trace!("Building availability: {:?}", bld_avail);
 
 	if !bld_avail.buildable {

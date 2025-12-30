@@ -82,6 +82,7 @@ pub type AvailabilityData = (BuildingCount, MaxBuildingCount, Option<MaxBuilding
 /// * `data` - Tuple containing current count, maximum count, and optional maximum level
 /// * `requirements` - List of building requirements for this building
 /// * `construction` - Construction costs and time for this building
+/// * `all_bld_data` - Map of all building availability data for looking up required building levels
 ///
 /// # Returns
 /// [BuildingAvailability] containing the availability status for the building
@@ -90,8 +91,9 @@ pub fn gen_avail_data(
 	data: AvailabilityData,
 	requirements: Vec<BuildingRequirement>,
 	construction: ConstructionInfo,
+	all_bld_data: &HashMap<BuildingKey, AvailabilityData>,
 ) -> BuildingAvailability {
-	let (owned_count, max_count, max_level) = data;
+	let (owned_count, max_count, _) = data;
 	let mut locks: Vec<BuildingLock> = vec![];
 
 	// Check if max count is reached
@@ -100,11 +102,15 @@ pub fn gen_avail_data(
 	}
 
 	// Check requirement locks
-	locks.extend(
-		requirements
-			.iter()
-			.filter_map(|req| parse_req_lock(&building.id, req, max_level.unwrap_or_default())),
-	);
+	// AIDEV-NOTE: Look up the REQUIRED building's level, not the target building's level
+	locks.extend(requirements.iter().filter_map(|req| {
+		let required_bld_level = req
+			.required_building_id
+			.and_then(|req_bld_id| all_bld_data.get(&req_bld_id))
+			.and_then(|(_, _, level)| *level)
+			.unwrap_or(0);
+		parse_req_lock(&building.id, req, required_bld_level)
+	}));
 
 	BuildingAvailability {
 		building,
@@ -250,12 +256,14 @@ mod tests {
 		let building = make_test_building(1, 5);
 		let data = (0, 5, None); // count=0, max_count=5, no max_level yet
 		let requirements: Vec<BuildingRequirement> = vec![];
+		let all_bld_data: HashMap<i32, (i64, i32, Option<i32>)> = HashMap::new();
 
 		let availability = gen_avail_data(
 			building.clone(),
 			data,
 			requirements,
 			ConstructionInfo::default(),
+			&all_bld_data,
 		);
 
 		assert!(availability.buildable);
