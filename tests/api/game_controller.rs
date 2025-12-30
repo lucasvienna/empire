@@ -291,3 +291,81 @@ async fn get_available_buildings() {
 		"Keep should have MaxCountReached lock"
 	);
 }
+
+/// Tests that buildings with Keep level 1 requirements are correctly unlocked for new players.
+///
+/// New players start with a Keep at level 1, so buildings that only require Keep level 1
+/// should NOT have a BuildingLevelRequired lock.
+///
+/// This test verifies the building requirements system correctly checks the level of the
+/// REQUIRED building (Keep), not the level of the building being checked (Warehouse).
+#[tokio::test]
+async fn building_requirements_check_required_building_level() {
+	let server = TestApp::new();
+	let client = reqwest::Client::new();
+	let user = server.create_test_user(Some(FactionCode::Human));
+	let bearer = server.create_bearer_token(&user.id);
+
+	let response = client
+		.get(format!("{}/game/buildings/available", &server.address))
+		.bearer_auth(bearer.token())
+		.send()
+		.await
+		.expect("Failed to execute request.");
+
+	assert_eq!(response.status(), StatusCode::OK);
+
+	let buildings: Vec<serde_json::Value> = response.json().await.unwrap();
+
+	// Find the Warehouse building - it requires Keep level 1 to build
+	let warehouse = buildings
+		.iter()
+		.find(|b| {
+			b.get("building")
+				.and_then(|bld| bld.get("name"))
+				.and_then(|n| n.as_str())
+				== Some("Warehouse")
+		})
+		.expect("Should have Warehouse building");
+
+	// Get the Warehouse's locks
+	let warehouse_locks = warehouse
+		.get("locks")
+		.and_then(|l| l.as_array())
+		.expect("Warehouse should have locks array");
+
+	// The Warehouse requires Keep level 1, and new players start with Keep at level 1.
+	// Therefore, the Warehouse should NOT have a BuildingLevelRequired lock for Keep.
+	let has_keep_level_lock = warehouse_locks.iter().any(|lock| {
+		lock.get("kind").and_then(|k| k.as_str()) == Some("BuildingLevelRequired")
+			&& lock.get("required").and_then(|r| r.as_i64()) == Some(1)
+			&& lock.get("current").and_then(|c| c.as_i64()) == Some(0)
+	});
+
+	assert!(
+		!has_keep_level_lock,
+		"Warehouse should NOT have a BuildingLevelRequired lock for Keep level 1 \
+		since the player starts with Keep at level 1. \
+		Found locks: {:?}",
+		warehouse_locks
+	);
+
+	// Additional verification: the Warehouse should be buildable (no locks preventing it,
+	// assuming no other restrictions like max count)
+	let warehouse_current_count = warehouse
+		.get("current_count")
+		.and_then(|c| c.as_i64())
+		.unwrap_or(0);
+	let warehouse_max_count = warehouse
+		.get("max_count")
+		.and_then(|c| c.as_i64())
+		.unwrap_or(0);
+
+	// If player doesn't have max warehouses, it should be buildable
+	if warehouse_current_count < warehouse_max_count {
+		assert!(
+			warehouse.get("buildable").and_then(|b| b.as_bool()) == Some(true),
+			"Warehouse should be buildable when player has Keep level 1 and hasn't reached max count"
+		);
+	}
+}
