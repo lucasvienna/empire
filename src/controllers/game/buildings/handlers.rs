@@ -95,7 +95,8 @@ pub async fn get_available_buildings(
 	);
 	let (blds, bld_data) = get_player_bld_counts_levels(&mut conn, &player)?;
 	let reqs = get_construction_reqs(&mut conn, &player.faction)?;
-	let avail = gen_avail_list(blds, bld_data, reqs);
+	let mut avail = gen_avail_list(blds, bld_data, reqs);
+	avail.sort_by_key(|a| a.building.id);
 
 	Ok(Json(avail))
 }
