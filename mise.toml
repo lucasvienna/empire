@@ -1,7 +1,7 @@
 [tools]
-prettier = "latest"
+oxfmt = "latest"
 rust = "stable"
 
 [tasks.mdfmt]
-description = "Formats MD files with prettier"
-run = "prettier ./**/*.md --write --prose-wrap always --print-width 100"
+description = "Formats MD files with oxfmt"
+run = "oxfmt ./**/*.md"
