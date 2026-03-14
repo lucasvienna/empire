@@ -40,7 +40,7 @@ axum-test = { version = "19.1.1", features = ["all"] }
 bigdecimal = { version = "0.4.10", features = ["std", "serde", "serde_json"] }
 blake2 = "0.10.6"
 chrono = { version = "0.4.44", features = ["serde"] }
-config = { version = "0.15.19", default-features = false, features = [
+config = { version = "0.15.21", default-features = false, features = [
   "yaml",
   "toml",
   "convert-case",
@@ -49,7 +49,7 @@ config = { version = "0.15.19", default-features = false, features = [
 cookie = { version = "0.18.1", features = ["secure"] }
 data-encoding = "2.10.0"
 derive_more = { version = "2.1.1", features = ["full"] }
-diesel = { version = "2.3.6", features = ["postgres", "extras"] }
+diesel = { version = "2.3.7", features = ["postgres", "extras"] }
 diesel_migrations = "2.3.1"
 dotenvy = "0.15.7"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
@@ -96,4 +96,4 @@ anyhow = "1.0.102"
 empire = { path = "." }
 tokio = { version = "1.50.0", features = ["full"] }
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

@@ -14,7 +14,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  DIESEL_VERSION: 2.3.6
+  DIESEL_VERSION: 2.3.7
   DIESEL_FEATURES: "postgres"
   APP_DATABASE__USERNAME: test
   APP_DATABASE__PASSWORD: test
