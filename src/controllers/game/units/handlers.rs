@@ -288,7 +288,7 @@ pub async fn get_training_queue(
 	}
 
 	// Sort by started_at for consistent ordering
-	entry_dtos.sort_by(|a, b| a.started_at.cmp(&b.started_at));
+	entry_dtos.sort_by_key(|a| a.started_at);
 
 	let total = entry_dtos.len();
 	trace!("Found {} training queue entries", total);
