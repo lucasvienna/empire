@@ -8,7 +8,7 @@ use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn get_game_state_requires_authentication() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 
 	let response = router
 		.oneshot(Request::builder().uri("/game").body(Body::empty()).unwrap())
@@ -61,7 +61,7 @@ async fn get_game_state_success() {
 
 #[tokio::test]
 async fn join_faction_requires_authentication() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 
 	let response = router
 		.oneshot(
@@ -79,7 +79,7 @@ async fn join_faction_requires_authentication() {
 
 #[tokio::test]
 async fn get_buildings_requires_authentication() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 
 	let response = router
 		.oneshot(
@@ -160,7 +160,7 @@ async fn get_building_by_id_not_found() {
 
 #[tokio::test]
 async fn collect_resources_requires_authentication() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 
 	let response = router
 		.oneshot(

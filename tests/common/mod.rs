@@ -9,6 +9,7 @@ use axum::Router;
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
 use axum_test::util::new_random_tokio_tcp_listener;
+use derive_more::Deref;
 use diesel::{Connection, PgConnection, RunQueryDsl, sql_query};
 use empire::Result;
 use empire::configuration::{DatabaseSettings, get_settings};
@@ -21,6 +22,8 @@ use empire::domain::factions::FactionCode;
 use empire::domain::player::{Player, PlayerKey};
 use empire::net::router;
 use secrecy::{ExposeSecret, SecretString};
+use tokio::task::AbortHandle;
+use tracing::{info, warn};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{EnvFilter, fmt, registry};
@@ -28,21 +31,117 @@ use uuid::Uuid;
 
 use crate::common::helpers::*;
 
+type ConnString = String;
+type DbName = String;
+
+/// RAII teardown guard for a test-owned PostgreSQL database.
+///
+/// When the last [`Arc`] clone of this guard is dropped, the associated database
+/// is forcibly dropped via `DROP DATABASE ... WITH (FORCE)`, connecting through the
+/// admin connection string stored in field 0. Field 1 holds the UUID name of the
+/// test database to drop.
+///
+/// The guard is always held behind [`Arc`] and co-owned by every test escape
+/// handle ([`TestPool`], [`TestRouter`]), so teardown fires only after the last
+/// extracted component goes out of scope. Failures during teardown are logged at
+/// `warn` via `tracing` and swallowed — panicking in `Drop` during a failing test
+/// would abort the whole test binary.
+// AIDEV-NOTE: Teardown correctness depends on (a) the admin conn string pointing
+// at the `postgres` DB (not the test DB — a session cannot drop its own database),
+// and (b) every test-facing handle co-owning an Arc clone so drop order waits for
+// the last user.
+pub struct DbGuard(ConnString, DbName);
+
+/// Drop guard that aborts its wrapped [`AbortHandle`] when the guard is dropped.
+///
+/// Used by [`TestApp`] to cancel the spawned axum server task on scope exit instead
+/// of leaving it dangling in the runtime.
+struct AbortOnDrop(AbortHandle);
+
+impl Drop for DbGuard {
+	fn drop(&mut self) {
+		if let Ok(mut conn) = PgConnection::establish(&self.0) {
+			let result = sql_query(format!(r#"DROP DATABASE "{}" WITH (FORCE);"#, self.1).as_str())
+				.execute(&mut conn);
+			match result {
+				Ok(_) => info!("Dropped test database {}", self.1),
+				Err(err) => warn!("Failed to drop test database {}: {:?}", self.1, err),
+			}
+		} else {
+			warn!("Failed to connect to test database {}", self.1);
+		}
+	}
+}
+
+/// Diesel connection pool bundled with a co-owned [`DbGuard`] clone.
+///
+/// Derefs to the inner [`DbPool`], so any `&DbPool` method — `.get()`, pool-state
+/// inspection, etc. — is available through `&TestPool` transparently. The guard
+/// clone at field 1 is what keeps the test database alive for the lifetime of
+/// this value.
+///
+/// Extract the inner pool via `.0` only when handing off to production code that
+/// requires an owned `DbPool`, and make sure something else (the [`TestHarness`],
+/// another handle) still holds the guard for the duration of that use.
+#[derive(Deref)]
+pub struct TestPool(#[deref] pub DbPool, Arc<DbGuard>);
+
+/// Axum [`Router`] bundled with a co-owned [`DbGuard`] clone.
+///
+/// Derefs to [`Router`] for `&Router` method access. Several common methods on
+/// `Router` consume `self` by value (e.g. `tower::ServiceExt::oneshot`,
+/// `axum::serve`) and cannot be reached through `Deref`; use [`TestRouter::split`]
+/// or [`TestRouter::owned`] to extract the inner router for those call sites.
+#[derive(Deref)]
+pub struct TestRouter(#[deref] pub Router, Arc<DbGuard>);
+
+impl TestRouter {
+	/// Consume `self` and return the inner [`Router`], dropping this handle's
+	/// [`Arc<DbGuard>`] clone.
+	///
+	/// Use this **only** when the test provably does not touch the database, or
+	/// when another named binding (a [`TestHarness`], a [`TestPool`]) still holds
+	/// a guard clone for the rest of the test. Calling this on a temporary — e.g.
+	/// `TestHarness::new().router.owned()` — drops the last guard clone at the end
+	/// of the statement, tearing the database down before the router is used.
+	///
+	/// For tests that need both the router (by value) *and* the database, prefer
+	/// [`TestRouter::split`].
+	pub fn owned(self) -> Router {
+		self.0
+	}
+
+	/// Split `self` into the inner [`Router`] and its [`Arc<DbGuard>`] clone.
+	///
+	/// The idiomatic call site binds the guard to a named local so it lives until
+	/// end of scope, then consumes the router:
+	///
+	/// ```ignore
+	/// let (router, _guard) = harness.router.split();
+	/// let response = router.oneshot(request).await.unwrap();
+	/// ```
+	///
+	/// This keeps the database alive for the rest of the test regardless of what
+	/// the consuming router method does with its argument.
+	pub fn split(self) -> (Router, Arc<DbGuard>) {
+		(self.0, self.1)
+	}
+}
+
 /// Test harness containing the core application components for integration testing.
 ///
 /// This struct provides access to the initialized application state, router, and
 /// database pool without actually starting an HTTP server. It's ideal for unit tests
 /// that need to test application logic directly without network overhead.
-#[allow(dead_code)]
 pub struct TestHarness {
+	/// Internal shared pointer to the connection pool.
+	app_pool: AppPool,
 	/// The initialized application instance with all dependencies
 	pub app: Arc<App>,
 	/// The configured Axum router ready for testing
-	pub router: Router,
+	pub router: TestRouter,
 	/// Database connection pool for direct database access in tests
-	pub db_pool: DbPool,
-	/// Internal shared pointer to the connection pool.
-	app_pool: AppPool,
+	pub db_pool: TestPool,
 }
 
 /// Running test server instance with network access.
@@ -50,14 +149,15 @@ pub struct TestHarness {
 /// This struct represents a fully running HTTP server instance bound to a local port.
 /// It provides the server's address for making HTTP requests and access to the
 /// underlying database pool for test setup/teardown operations.
-#[allow(dead_code)]
 pub struct TestApp {
+	/// Internal shared pointer to the connection pool.
+	app_pool: AppPool,
 	/// The HTTP address where the server is listening (e.g., "http://localhost:8080")
 	pub address: String,
 	/// Database connection pool for test data management
-	pub db_pool: DbPool,
-	/// Internal shared pointer to the connection pool.
-	app_pool: AppPool,
+	pub db_pool: TestPool,
+	/// Server join handle drop guard.
+	_handle: AbortOnDrop,
 }
 
 impl TestHarness {
@@ -86,19 +186,20 @@ impl TestHarness {
 		init_keys(&settings.jwt.secret);
 
 		// Create an isolated test database and update settings
-		let (db_pool, updated_db_settings) = create_isolated_test_database(&mut settings.database);
-		settings.database = updated_db_settings.clone();
+		let (db_pool, sys_con_str) = create_isolated_test_database(&mut settings.database);
+		let test_db_name = settings.database.database_name.clone();
 
 		// Initialize application components
 		let pool = Arc::new(db_pool.clone());
 		let app_pool = Arc::clone(&pool);
-		let app = Arc::new(App::with_pool(pool, settings));
+		let app = Arc::new(App::with_pool(pool, settings.clone()));
+		let guard = Arc::new(DbGuard(sys_con_str, test_db_name));
 
 		Self {
 			app: Arc::clone(&app),
-			db_pool,
+			db_pool: TestPool(db_pool, guard.clone()),
 			app_pool,
-			router: router::init(AppState(app)),
+			router: TestRouter(router::init(AppState(app)), guard),
 		}
 	}
 
@@ -114,6 +215,10 @@ impl TestHarness {
 
 	pub fn get_conn(&self) -> DbConn {
 		self.db_pool.get().expect("Failed to get connection")
+	}
+
+	pub fn app_pool(&self) -> AppPool {
+		self.app_pool.clone()
 	}
 }
 
@@ -150,8 +255,8 @@ impl TestApp {
 			.port();
 
 		// Start the server in a background task
-		tokio::spawn(async move {
-			axum::serve(listener, harness.router)
+		let handle = tokio::spawn(async move {
+			axum::serve(listener, harness.router.0)
 				.await
 				.expect("Server failed to start");
 		});
@@ -160,6 +265,7 @@ impl TestApp {
 			address: format!("http://localhost:{port}"),
 			db_pool: harness.db_pool,
 			app_pool,
+			_handle: AbortOnDrop(handle.abort_handle()),
 		}
 	}
 
@@ -201,31 +307,30 @@ impl TestApp {
 /// - Permission grants fail
 /// - Migrations fail to execute
 /// - Connection pool initialization failss.
-fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut DatabaseSettings) {
+fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, String) {
 	// Generate unique database name to avoid conflicts between concurrent tests
 	config.database_name = Uuid::new_v4().to_string();
 
 	// Create connection settings for the PostgreSQL system database
-	let mut system_db_settings = config.clone();
-	system_db_settings.database_name = "postgres".to_string();
-	system_db_settings.username = "postgres".to_string();
-	system_db_settings.password = SecretString::new("password".into());
-	system_db_settings.pool_size = Some(1);
+	let mut db_config = config.clone();
+	db_config.database_name = "postgres".to_string();
+	db_config.username = "postgres".to_string();
+	db_config.password = SecretString::new("password".into());
+	db_config.pool_size = Some(1);
+	let sys_con_str = db_config.connection_string().expose_secret().to_owned();
 
 	// Connect to the system database and create the test database
-	let mut system_conn =
-		PgConnection::establish(system_db_settings.connection_string().expose_secret())
-			.expect("Failed to connect to PostgreSQL system database");
+	let mut system_conn = PgConnection::establish(&sys_con_str)
+		.expect("Failed to connect to PostgreSQL system database");
 
 	sql_query(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
 		.execute(&mut system_conn)
 		.expect("Failed to create test database");
 
 	// Switch to the newly created test database for permission setup
-	system_db_settings.database_name = config.database_name.clone();
-	let mut test_db_conn =
-		PgConnection::establish(system_db_settings.connection_string().expose_secret())
-			.expect("Failed to connect to test database");
+	db_config.database_name = config.database_name.clone();
+	let mut test_db_conn = PgConnection::establish(db_config.connection_string().expose_secret())
+		.expect("Failed to connect to test database");
 
 	// Grant comprehensive permissions to the application user
 	grant_database_permissions(&mut test_db_conn, &config.database_name, &config.username);
@@ -239,7 +344,7 @@ fn create_isolated_test_database(config: &mut DatabaseSettings) -> (DbPool, &mut
 	// Run database seeds after migrations
 	empire::db::seeds::run(&mut app_conn).expect("Failed to run database seeds");
 
-	(initialize_pool(config), config)
+	(initialize_pool(config), sys_con_str)
 }
 
 /// Grants comprehensive database permissions to the specified user.

@@ -18,8 +18,8 @@ use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_worker_pool_lifecycle() {
-	let TestHarness { app, .. } = TestHarness::new();
-	let state = AppState(app);
+	let h = TestHarness::new();
+	let state = AppState(h.app);
 
 	// Start pool
 	let token = CancellationToken::new();
@@ -66,8 +66,8 @@ async fn test_worker_pool_lifecycle() {
 
 #[tokio::test]
 async fn test_worker_pool_cancellation_token() {
-	let TestHarness { app, .. } = TestHarness::new();
-	let state = AppState(app);
+	let h = TestHarness::new();
+	let state = AppState(h.app);
 
 	// Start pool
 	let token = CancellationToken::new();

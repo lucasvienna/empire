@@ -22,7 +22,7 @@ use crate::common::{TestApp, TestHarness};
 async fn get_all() {
 	let harness = TestHarness::new();
 	let user = create_test_user(&mut harness.get_conn(), None);
-	let router = harness.router;
+	let router = harness.router.owned();
 	let bearer = get_bearer(user.id);
 
 	let response = router

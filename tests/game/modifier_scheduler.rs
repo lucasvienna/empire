@@ -12,9 +12,11 @@ use crate::common::TestHarness;
 
 #[tokio::test]
 async fn test_schedule_expiration() {
-	let pool = Arc::new(TestHarness::new().db_pool);
+	let harness = TestHarness::new();
+	let app_pool = harness.app_pool();
+	let pool = Arc::new(harness.db_pool);
 	let mut connection = pool.get().expect("Failed to get connection from pool");
-	let queue = Arc::new(JobQueue::new(pool));
+	let queue = Arc::new(JobQueue::new(app_pool));
 	let scheduler = ModifierScheduler::new(&queue);
 
 	let modifier_id = Uuid::new_v4();

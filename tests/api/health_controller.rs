@@ -8,7 +8,7 @@ use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn health_check_works() {
-	let router = TestHarness::new().router;
+	let router = TestHarness::new().router.owned();
 
 	let response = router
 		.oneshot(
@@ -28,7 +28,7 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn readiness_check_works() {
-	let router = TestHarness::new().router;
+	let router = TestHarness::new().router.owned();
 
 	let response = router
 		.oneshot(
@@ -51,7 +51,7 @@ async fn readiness_check_works() {
 
 #[tokio::test]
 async fn liveness_check_works() {
-	let router = TestHarness::new().router;
+	let router = TestHarness::new().router.owned();
 
 	let response = router
 		.oneshot(

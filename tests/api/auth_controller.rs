@@ -19,7 +19,7 @@ use crate::common::{TestApp, TestHarness};
 
 #[tokio::test]
 async fn login_fails_without_body() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 	let response = router
 		.oneshot(
 			Request::builder()
@@ -36,7 +36,7 @@ async fn login_fails_without_body() {
 
 #[tokio::test]
 async fn login_fails_without_credentials() {
-	let router = TestHarness::new().router;
+	let (router, _guard) = TestHarness::new().router.split();
 	let response = router
 		.oneshot(
 			Request::builder()
@@ -64,7 +64,7 @@ async fn login_fails_without_credentials() {
 async fn login_fails_with_wrong_credentials() {
 	let harness = TestHarness::new();
 	let user = create_test_user(&mut harness.get_conn());
-	let router = harness.router;
+	let router = harness.router.owned();
 
 	let response = router
 		.oneshot(
@@ -93,7 +93,7 @@ async fn login_fails_with_wrong_credentials() {
 async fn login_succeeds_with_correct_credentials() {
 	let harness = TestHarness::new();
 	let user = create_test_user(&mut harness.get_conn());
-	let router = harness.router;
+	let router = harness.router.owned();
 
 	let response = router
 		.oneshot(
@@ -123,7 +123,7 @@ async fn login_succeeds_with_correct_credentials() {
 async fn cannot_register_with_existing_username() {
 	let harness = TestHarness::new();
 	let user = create_test_user(&mut harness.get_conn());
-	let router = harness.router;
+	let router = harness.router.owned();
 
 	let register = RegisterPayload {
 		username: user.name.clone(),
