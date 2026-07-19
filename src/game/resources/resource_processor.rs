@@ -66,7 +66,7 @@ impl JobProcessor for ResourceProcessor {
 	where
 		Self: Sized,
 	{
-		let id = format!("resource-goblin-{}", Ulid::new());
+		let id = format!("resource-goblin-{}", Ulid::generate());
 		let resource_srv = ResourceService::from_ref(app_state);
 		let modifier_srv = ModifierService::from_ref(app_state);
 		debug!("Starting worker {}", id);

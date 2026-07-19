@@ -77,7 +77,7 @@ impl JobProcessor for ModifierProcessor {
 	///
 	/// A new `ModifierProcessor` instance with a unique ID
 	fn new(app_state: &AppState, shutdown_rx: broadcast::Receiver<()>) -> Self {
-		let id = format!("modifier-goblin-{}", Ulid::new());
+		let id = format!("modifier-goblin-{}", Ulid::generate());
 		let srv = ModifierService::from_ref(app_state);
 		debug!("Starting worker {}", id);
 		Self {

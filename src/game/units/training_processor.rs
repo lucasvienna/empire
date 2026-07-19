@@ -66,7 +66,7 @@ impl JobProcessor for TrainingProcessor {
 	where
 		Self: Sized,
 	{
-		let id = format!("training-goblin-{}", Ulid::new());
+		let id = format!("training-goblin-{}", Ulid::generate());
 		let pool = AppPool::from_ref(app_state);
 		debug!("Starting worker {}", id);
 		Self {
