@@ -9,7 +9,7 @@
 use blake2::{Blake2s256, Digest};
 use chrono::{Duration, Utc};
 use cookie::{Cookie, SameSite, time};
-use data_encoding::BASE32_NOPAD_NOCASE;
+use data_encoding::{BASE32_NOPAD_NOCASE, HEXLOWER};
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::db::DbConn;
@@ -201,7 +201,7 @@ fn encode_token(token: impl AsRef<[u8]>) -> String {
 	let mut hasher = Blake2s256::new();
 	Digest::update(&mut hasher, token);
 	let encoded_token = hasher.finalize();
-	let result = format!("{encoded_token:x}");
+	let result = HEXLOWER.encode(&encoded_token);
 	trace!("Token encoded successfully");
 	result
 }
