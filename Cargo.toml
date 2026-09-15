@@ -49,7 +49,7 @@ config = { version = "0.15.25", default-features = false, features = [
 cookie = { version = "0.18.2", features = ["secure"] }
 data-encoding = "2.11.1"
 derive_more = { version = "2.1.1", features = ["full"] }
-diesel = { version = "2.3.12", features = ["postgres", "extras"] }
+diesel = { version = "2.3.13", features = ["postgres", "extras"] }
 diesel_migrations = "2.3.2"
 dotenvy = "0.15.7"
 jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
@@ -58,7 +58,7 @@ logs-wheel = "0.3.1"
 mime = "0.3.17"
 r2d2 = "0.8.10"
 rand = { version = "0.10.2", features = ["default", "serde"] }
-reqwest = { version = "0.13.4", features = ["json"] }
+reqwest = { version = "0.13.5", features = ["json"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde-aux = "4.7.0"
@@ -68,10 +68,10 @@ strum_macros = "0.28.0"
 tokio = { workspace = true }
 tokio-util = { version = "0.7.19", features = ["rt"] }
 tower = { version = "0.5.3", features = ["full"] }
-tower-http = { version = "0.7.0", features = ["full"] }
+tower-http = { version = "0.7.1", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-uuid = { version = "1.25.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+uuid = { version = "1.26.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 unicode-segmentation = "1.13.3"
 validator = "0.21.0"
 ulid = { version = "3.0.0", features = ["serde", "postgres", "uuid"] }
