@@ -36,19 +36,17 @@ axum-extra = { version = "0.12.6", features = [
   "erased-json",
   "with-rejection",
 ] }
-axum-test = { version = "21.1.0", features = ["all"] }
 bigdecimal = { version = "0.4.10", features = ["std", "serde", "serde_json"] }
-blake2 = "0.11.0"
+blake2 = "0.10.6"
 chrono = { version = "0.4.45", features = ["serde"] }
 config = { version = "0.15.25", default-features = false, features = [
   "yaml",
   "toml",
-  "convert-case",
   "async",
 ] }
 cookie = { version = "0.18.2", features = ["secure"] }
 data-encoding = "2.11.1"
-derive_more = { version = "2.1.1", features = ["full"] }
+derive_more = { version = "2.1.1", features = ["deref", "display"] }
 diesel = { version = "2.3.13", features = ["postgres", "extras"] }
 diesel_migrations = "2.3.2"
 dotenvy = "0.15.7"
@@ -58,7 +56,6 @@ logs-wheel = "0.3.1"
 mime = "0.3.17"
 r2d2 = "0.8.10"
 rand = { version = "0.10.2", features = ["default", "serde"] }
-reqwest = { version = "0.13.5", features = ["json"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde-aux = "4.7.0"
@@ -74,13 +71,15 @@ tracing-subscriber = { workspace = true }
 uuid = { version = "1.26.1", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 unicode-segmentation = "1.13.3"
 validator = "0.21.0"
-ulid = { version = "3.0.0", features = ["serde", "postgres", "uuid"] }
+ulid = { version = "3.0.0", features = ["serde", "uuid"] }
 
 [dev-dependencies]
+axum-test = "21.1.0"
 claims = "0.8"
 fake = "5.1"
 quickcheck = "1.1.0"
 quickcheck_macros = "1"
+reqwest = { version = "0.13.5", features = ["json"] }
 
 [workspace]
 members = [".", "crates/rpc"]
