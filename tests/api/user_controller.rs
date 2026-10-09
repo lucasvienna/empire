@@ -62,7 +62,7 @@ async fn create_and_get_by_id() {
 		faction: FactionCode::Human,
 	};
 	let response = client
-		.post(format!("{}/users", &server.address))
+		.post(format!("{}/users", server.address))
 		.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.bearer_auth(bearer.token())
 		.json(&req)
@@ -81,7 +81,7 @@ async fn create_and_get_by_id() {
 
 	let bearer = get_bearer(new_user.id);
 	let response = client
-		.get(format!("{}/users/{}", &server.address, new_user.id))
+		.get(format!("{}/users/{}", server.address, new_user.id))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -109,7 +109,7 @@ async fn update() {
 		email: None,
 	};
 	let response = client
-		.post(format!("{}/register", &server.address))
+		.post(format!("{}/register", server.address))
 		.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&req)
 		.send()
@@ -137,7 +137,7 @@ async fn update() {
 		faction: Some(FactionCode::Human),
 	};
 	let response = client
-		.put(format!("{}/users/{}", &server.address, user.id))
+		.put(format!("{}/users/{}", server.address, user.id))
 		.bearer_auth(bearer.token())
 		.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&body)
@@ -162,7 +162,7 @@ async fn delete() {
 	let bearer = get_bearer(user.id);
 
 	let res = client
-		.delete(format!("{}/users/{}", &server.address, user.id))
+		.delete(format!("{}/users/{}", server.address, user.id))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -170,7 +170,7 @@ async fn delete() {
 	assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
 	let res = client
-		.get(format!("{}/users/{}", &server.address, user.id))
+		.get(format!("{}/users/{}", server.address, user.id))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -184,7 +184,7 @@ async fn delete() {
 	let user2 = create_test_user(&mut server.get_conn(), None);
 	let bearer2 = get_bearer(user2.id); // TODO: add a test to cover the expired player trying to reuse the token
 	let response = client
-		.get(format!("{}/users/{}", &server.address, user.id))
+		.get(format!("{}/users/{}", server.address, user.id))
 		.bearer_auth(bearer2.token())
 		.send()
 		.await

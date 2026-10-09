@@ -164,7 +164,7 @@ async fn user_can_register_and_login() {
 		email: None,
 	};
 	let response = client
-		.post(format!("{}/register", &server.address))
+		.post(format!("{}/register", server.address))
 		.header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&req)
 		.send()
@@ -185,7 +185,7 @@ async fn user_can_register_and_login() {
 		password: req.password.clone(),
 	};
 	let response = client
-		.post(format!("{}/login", &server.address))
+		.post(format!("{}/login", server.address))
 		.header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&req)
 		.send()
@@ -208,7 +208,7 @@ async fn logout_succeeds() {
 		password: "1234".to_string(),
 	};
 	let response = client
-		.post(format!("{}/login", &server.address))
+		.post(format!("{}/login", server.address))
 		.header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&req)
 		.send()
@@ -220,7 +220,7 @@ async fn logout_succeeds() {
 	assert!(cookie.is_some());
 
 	let response = client
-		.post(format!("{}/logout", &server.address))
+		.post(format!("{}/logout", server.address))
 		.header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
 		.send()
 		.await
@@ -245,7 +245,7 @@ async fn session_fails_with_jwt() {
 
 	let bearer = get_bearer(&user.id);
 	let response = client
-		.get(format!("{}/session", &server.address))
+		.get(format!("{}/session", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -272,7 +272,7 @@ async fn session_returns_valid_info() {
 		password: "1234".to_string(),
 	};
 	let response = client
-		.post(format!("{}/login", &server.address))
+		.post(format!("{}/login", server.address))
 		.header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.json(&req)
 		.send()
@@ -283,7 +283,7 @@ async fn session_returns_valid_info() {
 	assert!(cookie.is_some());
 
 	let response = client
-		.get(format!("{}/session", &server.address))
+		.get(format!("{}/session", server.address))
 		.header(http::header::COOKIE, cookie.unwrap().to_str().unwrap())
 		.send()
 		.await

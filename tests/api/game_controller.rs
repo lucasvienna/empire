@@ -25,7 +25,7 @@ async fn get_game_state_success() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game", &server.address))
+		.get(format!("{}/game", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -101,7 +101,7 @@ async fn get_buildings_success() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game/buildings", &server.address))
+		.get(format!("{}/game/buildings", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -148,7 +148,7 @@ async fn get_building_by_id_not_found() {
 	let response = client
 		.get(format!(
 			"{}/game/buildings/{}",
-			&server.address, fake_building_id
+			server.address, fake_building_id
 		))
 		.bearer_auth(bearer.token())
 		.send()
@@ -183,7 +183,7 @@ async fn collect_resources_success() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.post(format!("{}/game/resources/collect", &server.address))
+		.post(format!("{}/game/resources/collect", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -207,7 +207,7 @@ async fn get_available_buildings() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game/buildings/available", &server.address))
+		.get(format!("{}/game/buildings/available", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await
@@ -307,7 +307,7 @@ async fn building_requirements_check_required_building_level() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game/buildings/available", &server.address))
+		.get(format!("{}/game/buildings/available", server.address))
 		.bearer_auth(bearer.token())
 		.send()
 		.await

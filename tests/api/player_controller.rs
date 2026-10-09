@@ -15,7 +15,7 @@ async fn join_faction_success() {
 	let bearer = server.create_bearer_token(&user.id);
 
 	let response = client
-		.put(format!("{}/player/faction", &server.address))
+		.put(format!("{}/player/faction", server.address))
 		.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 		.bearer_auth(bearer.token())
 		.json(&json!({"faction": "human"}))

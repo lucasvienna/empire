@@ -11,7 +11,7 @@ async fn get_factions_returns_200() {
 	let token = app.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game/factions", &app.address))
+		.get(format!("{}/game/factions", app.address))
 		.bearer_auth(token.token())
 		.send()
 		.await
@@ -28,7 +28,7 @@ async fn get_faction_details_returns_200() {
 	let token = app.create_bearer_token(&user.id);
 
 	let response = client
-		.get(format!("{}/game/factions/human", &app.address))
+		.get(format!("{}/game/factions/human", app.address))
 		.bearer_auth(token.token())
 		.send()
 		.await
