@@ -1,5 +1,3 @@
-use argon2::password_hash::SaltString;
-use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHasher, password_hash};
 
 use crate::configuration::JwtSettings;
@@ -15,14 +13,11 @@ use crate::domain::player::Player;
 /// - `Ok(String)`: Contains the password hash in PHC string format (e.g., `$argon2id$v=19$...`).
 /// - `Err(password_hash::Error)`: If there is an issue with hashing the password.
 pub fn hash_password(pwd: impl AsRef<[u8]>) -> Result<String, password_hash::Error> {
-	let salt = SaltString::generate(&mut OsRng);
 	// Argon2 with default params (Argon2id v19)
 	let argon2 = Argon2::default();
 
 	// Hash password to PHC string ($argon2id$v=19$...)
-	let password_hash = argon2.hash_password(pwd.as_ref(), &salt)?.to_string();
-
-	Ok(password_hash)
+	Ok(argon2.hash_password(pwd.as_ref())?.to_string())
 }
 
 /// Creates a JSON Web Token (JWT) for a player with the provided settings.
