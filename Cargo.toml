@@ -41,18 +41,18 @@ bigdecimal = { version = "0.4.11", features = ["std", "serde", "serde_json"] }
 blake2 = "0.11.0"
 chrono = { version = "0.4.45", features = ["serde"] }
 config = { version = "0.15.27", default-features = false, features = ["yaml", "toml", "async"] }
-cookie = "0.18.2"
+cookie = "0.18.3"
 data-encoding = "2.11.1"
 derive_more = { version = "2.1.1", features = ["deref", "display"] }
-diesel = { version = "2.3.14", features = ["postgres", "extras"] }
-diesel_migrations = "2.3.2"
+diesel = { version = "2.4.0", features = ["postgres", "extras"] }
+diesel_migrations = "2.4.0"
 dotenvy = "0.15.7"
 jsonwebtoken = { version = "11.1.0", features = ["aws_lc_rs"] }
 http-body-util = "0.1.5"
 logs-wheel = "0.3.1"
-mime = "0.3.17"
+mime = "0.3.18"
 r2d2 = "0.8.10"
-rand = { version = "0.10.3", features = ["default", "serde"] }
+rand = { version = "0.10.4", features = ["default", "serde"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde-aux = "4.7.0"
@@ -65,7 +65,7 @@ tower = { version = "0.5.3", features = ["full"] }
 tower-http = { version = "0.7.1", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-uuid = { version = "1.29.0", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
+uuid = { version = "1.29.3", features = ["v4", "v7", "fast-rng", "macro-diagnostics", "serde"] }
 unicode-segmentation = "1.13.3"
 validator = "0.21.0"
 ulid = { version = "3.0.0", features = ["serde", "uuid"] }
@@ -82,7 +82,7 @@ reqwest = { version = "0.13.5", features = ["json"] }
 members = [".", "crates/rpc"]
 
 [workspace.dependencies]
-anyhow = "1.0.104"
+anyhow = "1.0.105"
 empire = { path = "." }
 tokio = { version = "1.54.1", features = ["full"] }
 tracing = "0.1.44"
